@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Multi-Stream Loop Matrix (HTML Import Edition)</title>
+    <title>Multi-Stream Loop Matrix (Searchable Edition)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0b0b0b; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; overflow-x: hidden; }
@@ -72,16 +72,49 @@
         }
         .toggle-label { font-size: 14px; font-weight: bold; color: #ddd; }
         
-        .bookmark-select {
+        /* SEARCHABLE AUTOCOMPLETE COMBOBOX STYLES */
+        .search-wrapper { position: relative; max-width: 280px; width: 100%; }
+        .search-input {
+            width: 100%;
             background: #111;
             color: #fff;
             border: 1px solid #444;
-            padding: 6px 12px;
-            border-radius: 6px;
-            outline: none;
-            max-width: 250px;
+            padding: 8px 14px;
+            border-radius: 8px;
             font-size: 13px;
+            outline: none;
+            transition: border-color 0.2s;
         }
+        .search-input:focus { border-color: #0095f6; }
+        
+        .search-dropdown {
+            position: absolute;
+            top: calc(100% + 5px);
+            left: 0;
+            right: 0;
+            background: #1c1c1c;
+            border: 1px solid #333;
+            border-radius: 8px;
+            max-height: 220px;
+            overflow-y: auto;
+            z-index: 999;
+            display: none;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
+        .search-item {
+            padding: 10px 14px;
+            font-size: 13px;
+            color: #ddd;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+            border-bottom: 1px solid #252525;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .search-item:last-child { border-bottom: none; }
+        .search-item:hover, .search-item.selected { background: #0095f6; color: #fff; }
+        .search-no-results { padding: 12px; font-size: 12px; color: #666; text-align: center; }
 
         .file-input-wrapper {
             background: #1a1a1a;
@@ -180,12 +213,12 @@
 
         <div class="toggle-container">
             <span class="toggle-label">📁 Active Shuffle Directory Pool</span>
-            <select id="bookmark-folder-picker" class="bookmark-select">
-                <option value="">Upload bookmark backup files below...</option>
-            </select>
+            <div class="search-wrapper">
+                <input type="text" id="folder-search-input" class="search-input" placeholder="Type to search folder..." autocomplete="off">
+                <div id="search-dropdown-list" class="search-dropdown"></div>
+            </div>
         </div>
 
-        <!-- MOVED TO VERY BOTTOM -->
         <div class="file-input-wrapper" onclick="document.getElementById('bookmark-files').click()">
             <span class="file-label" id="upload-prompt">📂 Click to Upload Bookmark HTML Files (Select multiple to merge)</span>
             <input type="file" id="bookmark-files" accept=".html" multiple>
@@ -227,9 +260,12 @@
     const feedContainer = document.getElementById('feed');
     const container = document.getElementById('url-fields-container');
     const portraitToggle = document.getElementById('portrait-mode-toggle');
-    const folderPicker = document.getElementById('bookmark-folder-picker');
     const fileInput = document.getElementById('bookmark-files');
     const uploadStatus = document.getElementById('upload-status');
+
+    // Autocomplete elements
+    const searchInput = document.getElementById('folder-search-input');
+    const searchDropdown = document.getElementById('search-dropdown-list');
 
     function initLaunchpad() {
         try {
@@ -245,9 +281,16 @@
         const cachedFolders = localStorage.getItem('matrixParsedFolders');
         if (cachedFolders) {
             parsedFoldersMap = JSON.parse(cachedFolders);
-            rebuildFolderDropdown();
+            
+            // Restore previously selected folder if it exists
+            const savedFolder = localStorage.getItem('matrixSelectedFolderId');
+            if (savedFolder && parsedFoldersMap[savedFolder]) {
+                searchInput.value = `${savedFolder} (${parsedFoldersMap[savedFolder].length} links)`;
+                activeFolderLinks = parsedFoldersMap[savedFolder];
+            }
             uploadStatus.textContent = "Active directories loaded from local browser memory.";
         }
+        setupSearchEngine();
     }
 
     fileInput.onchange = async (e) => {
@@ -255,7 +298,6 @@
         if (!files || files.length === 0) return;
 
         let totalFilesProcessed = 0;
-        
         for (let file of files) {
             const text = await file.text();
             parseBookmarkHTML(text);
@@ -263,8 +305,12 @@
         }
 
         localStorage.setItem('matrixParsedFolders', JSON.stringify(parsedFoldersMap));
-        rebuildFolderDropdown();
         uploadStatus.textContent = `Successfully synchronized & merged ${totalFilesProcessed} backup pools!`;
+        
+        // Clear search on new upload to let user pick cleanly
+        searchInput.value = '';
+        activeFolderLinks = [];
+        localStorage.removeItem('matrixSelectedFolderId');
     };
 
     function parseBookmarkHTML(htmlContent) {
@@ -306,29 +352,55 @@
         });
     }
 
-    function rebuildFolderDropdown() {
-        folderPicker.innerHTML = '<option value="">-- Choose an Imported Folder --</option>';
-        const sortedFolders = Object.keys(parsedFoldersMap).sort();
+    // SEARCH & AUTOCOMPLETE LOGIC ENGINE
+    function setupSearchEngine() {
+        // Show all or filtered items on input click/focus
+        searchInput.onfocus = () => { renderSearchSuggestions(searchInput.value); };
         
-        sortedFolders.forEach(folderName => {
-            const opt = document.createElement('option');
-            opt.value = folderName;
-            opt.textContent = `${folderName} (${parsedFoldersMap[folderName].length} links)`;
-            folderPicker.appendChild(opt);
-        });
+        // Filter elements live on keyup
+        searchInput.oninput = () => { renderSearchSuggestions(searchInput.value); };
 
-        const savedFolder = localStorage.getItem('matrixSelectedFolderId');
-        if (savedFolder && parsedFoldersMap[savedFolder]) {
-            folderPicker.value = savedFolder;
-            activeFolderLinks = parsedFoldersMap[savedFolder];
-        }
+        // Hide suggestions when clicking outside the box
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.search-wrapper')) {
+                searchDropdown.style.display = 'none';
+            }
+        });
     }
 
-    folderPicker.onchange = () => {
-        const val = folderPicker.value;
-        localStorage.setItem('matrixSelectedFolderId', val);
-        activeFolderLinks = parsedFoldersMap[val] || [];
-    };
+    function renderSearchSuggestions(query = '') {
+        const folders = Object.keys(parsedFoldersMap);
+        if (folders.length === 0) {
+            searchDropdown.innerHTML = '<div class="search-no-results">Upload bookmark files below first...</div>';
+            searchDropdown.style.display = 'block';
+            return;
+        }
+
+        const normalizedQuery = query.toLowerCase().split(' (')[0].trim(); // strip link counts if active
+        const filtered = folders.filter(f => f.toLowerCase().includes(normalizedQuery)).sort();
+
+        searchDropdown.innerHTML = '';
+        
+        if (filtered.length === 0) {
+            searchDropdown.innerHTML = '<div class="search-no-results">No folders match your search</div>';
+        } else {
+            filtered.forEach(folderName => {
+                const count = parsedFoldersMap[folderName].length;
+                const item = document.createElement('div');
+                item.className = 'search-item';
+                item.textContent = `${folderName} (${count} links)`;
+                
+                item.onclick = () => {
+                    searchInput.value = `${folderName} (${count} links)`;
+                    activeFolderLinks = parsedFoldersMap[folderName];
+                    localStorage.setItem('matrixSelectedFolderId', folderName);
+                    searchDropdown.style.display = 'none';
+                };
+                searchDropdown.appendChild(item);
+            });
+        }
+        searchDropdown.style.display = 'block';
+    }
 
     function getRandomUrl() {
         if (activeFolderLinks.length === 0) return '';
@@ -338,7 +410,7 @@
     document.getElementById('roll-empty-btn').onclick = () => {
         saveInputsToState();
         if (activeFolderLinks.length === 0) {
-            alert('Please select an active directory pool first!');
+            alert('Please search and select an active folder pool from the input bar first!');
             return;
         }
         let changesMade = false;
@@ -395,7 +467,7 @@
             parsedFoldersMap = {};
             activeFolderLinks = [];
             portraitToggle.checked = false;
-            folderPicker.innerHTML = '<option value="">Upload bookmark backup files below...</option>';
+            searchInput.value = '';
             uploadStatus.textContent = '';
             renderInputRows();
         }
