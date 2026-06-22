@@ -39,7 +39,7 @@
             border: 1px solid #333;
             border-radius: 12px;
             padding: 14px 20px;
-            margin-bottom: 20px;
+            margin-top: 20px;
         }
         .toggle-label {
             font-size: 14px;
@@ -121,9 +121,8 @@
             transition: height 0.2s ease;
         }
         
-        /* Class states added via JavaScript depending on toggle position */
         .mode-landscape { height: 100vh; }
-        .mode-portrait { height: 50vh; } /* Stacks panels perfectly into split view segments on vertical layouts */
+        .mode-portrait { height: 50vh; } 
 
         .post-iframe { width: 100%; height: 100%; border: none; display: block; }
         
@@ -221,14 +220,6 @@
         <h2>Stream Loop Launchpad</h2>
         <p class="subtitle">Enter the target workspace URLs to distribute down the scrolling grid pipeline.</p>
         
-        <div class="toggle-container">
-            <span class="toggle-label">📐 Optimize Layout for Portrait Monitor</span>
-            <label class="switch">
-                <input type="checkbox" id="portrait-mode-toggle">
-                <span class="slider"></span>
-            </label>
-        </div>
-
         <div id="url-fields-container">
             </div>
 
@@ -238,6 +229,14 @@
         </div>
 
         <button class="btn btn-launch" id="launch-btn">🚀 LAUNCH MATRIX</button>
+
+        <div class="toggle-container">
+            <span class="toggle-label">📐 Optimize Layout for Portrait Monitor</span>
+            <label class="switch">
+                <input type="checkbox" id="portrait-mode-toggle">
+                <span class="slider"></span>
+            </label>
+        </div>
     </div>
 </div>
 
@@ -263,7 +262,6 @@
     let scrollSpeed = parseFloat(localStorage.getItem('matrixScrollSpeed')) || 1.00;
     let targetUrls = [];
     
-    // Virtual Sub-Pixel Math Tracker to eliminate low-speed integer truncation deadzones
     let accurateYPosition = 0; 
 
     const DEFAULT_URLS = [
@@ -278,7 +276,6 @@
     const container = document.getElementById('url-fields-container');
     const portraitToggle = document.getElementById('portrait-mode-toggle');
 
-    // Pull saved settings out of cache on boot
     function initLaunchpad() {
         const cached = localStorage.getItem('loop_matrix_urls');
         if (cached) {
@@ -287,7 +284,6 @@
             targetUrls = [...DEFAULT_URLS];
         }
 
-        // Keep toggle state checked/unchecked across refreshes
         const savedPortraitState = localStorage.getItem('matrixIsPortrait') === 'true';
         portraitToggle.checked = savedPortraitState;
 
@@ -417,7 +413,6 @@
         initLaunchpad();
     };
 
-    // --- Sub-Pixel Accumulator Engine Loop ---
     const smoothScrollLoop = () => {
         if (!isScrolling) return;
 
@@ -460,10 +455,8 @@
         if (isScrolling) stopScrolling(); else startScrolling();
     };
 
-    // --- Targeted Responsive Snap Navigation Jumps ---
     function jumpNext() {
         const currentPosition = window.scrollY;
-        // Snap distance adjusts perfectly depending on layout height configurations
         const panelEl = document.querySelector('.stream-panel');
         const viewHeight = panelEl ? panelEl.offsetHeight : window.innerHeight;
         const nextTarget = Math.floor((currentPosition + 10) / viewHeight) + 1;
@@ -504,7 +497,6 @@
     document.getElementById('faster').onclick = increaseSpeed;
     document.getElementById('slower').onclick = decreaseSpeed;
 
-    // --- Full System Hotkey Map Bindings ---
     document.addEventListener('keydown', (e) => {
         if (loopScreen.style.display !== 'block') return;
         if (document.activeElement.tagName === 'INPUT') return;
