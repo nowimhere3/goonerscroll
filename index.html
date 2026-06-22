@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Multi-Stream Loop Matrix (Tampermonkey Edition)</title>
+    <title>Multi-Stream Loop Matrix (HTML Import Edition)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0b0b0b; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; overflow-x: hidden; }
@@ -81,8 +81,22 @@
             outline: none;
             max-width: 250px;
             font-size: 13px;
-            width: 100%;
         }
+
+        .file-input-wrapper {
+            background: #1a1a1a;
+            border: 1px dashed #444;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+        .file-input-wrapper:hover { border-color: #0095f6; }
+        .file-input-wrapper input { display: none; }
+        .file-label { font-size: 13px; color: #aaa; cursor: pointer; }
+        .file-status { font-size: 11px; color: #0095f6; margin-top: 5px; font-weight: bold; }
         
         .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
         .switch input { opacity: 0; width: 0; height: 0; }
@@ -144,8 +158,14 @@
 <div id="setup-screen">
     <div class="config-card">
         <h2>Stream Loop Launchpad</h2>
-        <p class="subtitle">Enter workspace URLs or shuffle links dynamically from your active bookmarks.</p>
+        <p class="subtitle">Import your exported bookmarks HTML files to instantly map out folders.</p>
         
+        <div class="file-input-wrapper" onclick="document.getElementById('bookmark-files').click()">
+            <span class="file-label" id="upload-prompt">📂 Click to Upload Bookmark HTML Files (Select multiple if needed)</span>
+            <input type="file" id="bookmark-files" accept=".html" multiple>
+            <div class="file-status" id="upload-status"></div>
+        </div>
+
         <div id="url-fields-container"></div>
 
         <div class="actions-bar">
@@ -167,7 +187,7 @@
         <div class="toggle-container">
             <span class="toggle-label">📁 Active Shuffle Directory Pool</span>
             <select id="bookmark-folder-picker" class="bookmark-select">
-                <option value="">Waiting for Tampermonkey Bridge...</option>
+                <option value="">Upload bookmark file above...</option>
             </select>
         </div>
     </div>
@@ -194,9 +214,11 @@
     let isScrolling = false;
     let scrollSpeed = parseFloat(localStorage.getItem('matrixScrollSpeed')) || 1.00;
     let targetUrls = [];
-    let completeBookmarkTree = {}; 
-    let parsedBookmarkLinks = [];
     let accurateYPosition = 0; 
+
+    // Global parsed pools
+    let parsedFoldersMap = {}; // folderName -> array of URLs
+    let activeFolderLinks = [];
 
     const DEFAULT_URLS = ['https://example.com', 'https://example.com', 'https://example.com'];
 
@@ -206,14 +228,8 @@
     const container = document.getElementById('url-fields-container');
     const portraitToggle = document.getElementById('portrait-mode-toggle');
     const folderPicker = document.getElementById('bookmark-folder-picker');
-
-    // LINKING RECEIVER: Listens for data from Tampermonkey Userscript
-    window.addEventListener("message", (event) => {
-        if (event.data && event.data.type === "MATRIX_BOOKMARK_PAYLOAD") {
-            completeBookmarkTree = event.data.bookmarks;
-            buildFolderDropdown(completeBookmarkTree);
-        }
-    }, false);
+    const fileInput = document.getElementById('bookmark-files');
+    const uploadStatus = document.getElementById('upload-status');
 
     function initLaunchpad() {
         try {
@@ -225,74 +241,111 @@
         }
         portraitToggle.checked = localStorage.getItem('matrixIsPortrait') === 'true';
         renderInputRows();
-        
-        // Notify Tampermonkey script that the UI is completely ready to pull data
-        window.postMessage({ type: "MATRIX_UI_READY" }, "*");
+
+        // Restore parsed bookmarks structure if stored locally
+        const cachedFolders = localStorage.getItem('matrixParsedFolders');
+        if (cachedFolders) {
+            parsedFoldersMap = JSON.parse(cachedFolders);
+            rebuildFolderDropdown();
+            uploadStatus.textContent = "Loaded folder configurations from local storage memory.";
+        }
     }
 
-    function buildFolderDropdown(tree) {
-        folderPicker.innerHTML = '<option value="">-- Choose a Bookmark Folder --</option>';
-        const processNodes = (nodes) => {
-            if (!nodes) return;
-            nodes.forEach(node => {
-                if (!node.url && node.title) { 
-                    const opt = document.createElement('option');
-                    opt.value = node.id;
-                    opt.textContent = node.title;
-                    folderPicker.appendChild(opt);
-                }
-                if (node.children) processNodes(node.children);
-            });
-        };
-        processNodes(tree);
+    // MULTI-FILE HTML PARSER ENGINE
+    fileInput.onchange = async (e) => {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+
+        let totalFilesProcessed = 0;
         
+        for (let file of files) {
+            const text = await file.text();
+            parseBookmarkHTML(text);
+            totalFilesProcessed++;
+        }
+
+        localStorage.setItem('matrixParsedFolders', JSON.stringify(parsedFoldersMap));
+        rebuildFolderDropdown();
+        uploadStatus.textContent = `Successfully merged ${totalFilesProcessed} bookmark backup files!`;
+    };
+
+    function parseBookmarkHTML(htmlContent) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(htmlContent, 'text/html');
+        
+        // Netscape bookmark format uses <H3> tags for folder titles, followed by a <DL> containing items
+        const headers = doc.querySelectorAll('h3');
+        
+        if(headers.length === 0) {
+            // Fallback: Check if there are raw links outside of explicit folders
+            const globalLinks = doc.querySelectorAll('a');
+            if(globalLinks.length > 0) {
+                if(!parsedFoldersMap['Root / Unsorted']) parsedFoldersMap['Root / Unsorted'] = [];
+                globalLinks.forEach(a => { if(a.href) parsedFoldersMap['Root / Unsorted'].push(a.href); });
+            }
+        }
+
+        headers.forEach(h3 => {
+            const folderName = h3.textContent.trim() || 'Unnamed Folder';
+            if (!parsedFoldersMap[folderName]) {
+                parsedFoldersMap[folderName] = [];
+            }
+            
+            // Find the immediate next description list container holding items
+            let nextEl = h3.nextElementSibling;
+            while (nextEl && nextEl.tagName !== 'DL' && nextEl.tagName !== 'H3') {
+                nextEl = nextEl.nextElementSibling;
+            }
+            
+            if (nextEl && nextEl.tagName === 'DL') {
+                const links = nextEl.querySelectorAll('a');
+                links.forEach(a => {
+                    if (a.href && !a.href.startsWith('place:')) {
+                        parsedFoldersMap[folderName].push(a.href);
+                    }
+                });
+            }
+            
+            // Cleanup empty folders
+            if (parsedFoldersMap[folderName].length === 0) {
+                delete parsedFoldersMap[folderName];
+            }
+        });
+    }
+
+    function rebuildFolderDropdown() {
+        folderPicker.innerHTML = '<option value="">-- Choose an Imported Folder --</option>';
+        const sortedFolders = Object.keys(parsedFoldersMap).sort();
+        
+        sortedFolders.forEach(folderName => {
+            const opt = document.createElement('option');
+            opt.value = folderName;
+            opt.textContent = `${folderName} (${parsedFoldersMap[folderName].length} links)`;
+            folderPicker.appendChild(opt);
+        });
+
         const savedFolder = localStorage.getItem('matrixSelectedFolderId');
-        if (savedFolder) {
+        if (savedFolder && parsedFoldersMap[savedFolder]) {
             folderPicker.value = savedFolder;
-            cacheTargetUrlsFromFolder(savedFolder);
+            activeFolderLinks = parsedFoldersMap[savedFolder];
         }
     }
 
     folderPicker.onchange = () => {
-        localStorage.setItem('matrixSelectedFolderId', folderPicker.value);
-        cacheTargetUrlsFromFolder(folderPicker.value);
+        const val = folderPicker.value;
+        localStorage.setItem('matrixSelectedFolderId', val);
+        activeFolderLinks = parsedFoldersMap[val] || [];
     };
 
-    function cacheTargetUrlsFromFolder(folderId) {
-        if (!folderId || !completeBookmarkTree) return;
-        parsedBookmarkLinks = [];
-        
-        const findAndExtract = (nodes) => {
-            if (!nodes) return;
-            for (let node of nodes) {
-                if (node.id === folderId) {
-                    extractLinks(node.children);
-                    return;
-                }
-                if (node.children) findAndExtract(node.children);
-            }
-        };
-
-        const extractLinks = (nodes) => {
-            if (!nodes) return;
-            nodes.forEach(node => {
-                if (node.url) parsedBookmarkLinks.push(node.url);
-                if (node.children) extractLinks(node.children);
-            });
-        };
-
-        findAndExtract(completeBookmarkTree);
-    }
-
     function getRandomUrl() {
-        if (parsedBookmarkLinks.length === 0) return '';
-        return parsedBookmarkLinks[Math.floor(Math.random() * parsedBookmarkLinks.length)];
+        if (activeFolderLinks.length === 0) return '';
+        return activeFolderLinks[Math.floor(Math.random() * activeFolderLinks.length)];
     }
 
     document.getElementById('roll-empty-btn').onclick = () => {
         saveInputsToState();
-        if (parsedBookmarkLinks.length === 0) {
-            alert('Please pick a populated bookmark folder pool first!');
+        if (activeFolderLinks.length === 0) {
+            alert('Please select a populated directory pool dropdown first!');
             return;
         }
         let changesMade = false;
@@ -343,12 +396,14 @@
     };
 
     document.getElementById('clear-cache-btn').onclick = () => {
-        if (confirm('Reset Matrix layout configurations?')) {
+        if (confirm('Clear matrix settings and uploaded bookmark databases?')) {
             localStorage.clear();
             targetUrls = [...DEFAULT_URLS];
+            parsedFoldersMap = {};
+            activeFolderLinks = [];
             portraitToggle.checked = false;
-            folderPicker.value = '';
-            parsedBookmarkLinks = [];
+            folderPicker.innerHTML = '<option value="">Upload bookmark file above...</option>';
+            uploadStatus.textContent = '';
             renderInputRows();
         }
     };
@@ -357,7 +412,7 @@
         saveInputsToState();
         const activeTargets = targetUrls.filter(url => url.length > 0 && url !== 'https://example.com');
         if (activeTargets.length === 0) {
-            alert('Please provide or shuffle in at least one valid URL destination.');
+            alert('Please provide or shuffle in at least one valid stream destination.');
             return;
         }
         launchMatrix(targetUrls);
