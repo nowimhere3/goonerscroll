@@ -2,13 +2,11 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Goon Scroller</title>
+    <title>Multi-Stream Loop Matrix (Tampermonkey Edition)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0b0b0b; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; overflow-x: hidden; }
         
-        /* Step 1: Configuration / Launchpad Screen View */
         #setup-screen {
             display: flex;
             flex-direction: column;
@@ -62,7 +60,6 @@
         .btn-launch { background: #0095f6; color: #fff; width: 100%; margin-top: 15px; font-size: 16px; padding: 14px; }
         .btn-launch:hover { background: #189ffa; }
 
-        /* Dedicated Layout Switch Styling placed explicitly beneath the launch element */
         .toggle-container {
             display: flex;
             align-items: center;
@@ -71,63 +68,39 @@
             border: 1px solid #333;
             border-radius: 12px;
             padding: 14px 20px;
-            margin-top: 15px; 
+            margin-top: 12px;
         }
-        .toggle-label {
-            font-size: 14px;
-            font-weight: bold;
-            color: #ddd;
+        .toggle-label { font-size: 14px; font-weight: bold; color: #ddd; }
+        
+        .bookmark-select {
+            background: #111;
+            color: #fff;
+            border: 1px solid #444;
+            padding: 6px 12px;
+            border-radius: 6px;
+            outline: none;
+            max-width: 250px;
+            font-size: 13px;
+            width: 100%;
         }
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 50px;
-            height: 26px;
-        }
+        
+        .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
         .switch input { opacity: 0; width: 0; height: 0; }
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #444;
-            transition: .3s;
-            border-radius: 34px;
-        }
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 18px;
-            width: 18px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            transition: .3s;
-            border-radius: 50%;
-        }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #444; transition: .3s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px; background-color: white; transition: .3s; border-radius: 50%; }
         input:checked + .slider { background-color: #0095f6; }
         input:checked + .slider:before { transform: translateX(24px); }
 
         .actions-bar { display: flex; justify-content: space-between; margin-top: 15px; }
 
-        /* Step 2: Active Automated Viewport Layer */
         #loop-screen { display: none; }
         #feed { max-width: 100%; margin: 0 auto; display: flex; flex-direction: column; }
         
-        /* Dynamic Layout Architectures */
-        .stream-panel {
-            position: relative;
-            width: 100%;
-            background: #000;
-            border-bottom: 2px solid #222;
-            transition: height 0.2s ease;
-        }
-        
+        .stream-panel { position: relative; width: 100%; background: #000; border-bottom: 2px solid #222; transition: height 0.2s ease; }
         .mode-landscape { height: 100vh; }
         .mode-portrait { height: 50vh; } 
-
         .post-iframe { width: 100%; height: 100%; border: none; display: block; }
         
-        /* Hotswap Floating Input Bar (Fades in on panel hover) */
         .hotswap-overlay {
             position: absolute;
             top: 15px;
@@ -145,68 +118,20 @@
             transform: translateY(-5px);
             z-index: 10000;
             backdrop-filter: blur(8px);
-            width: 320px;
+            width: 360px;
         }
-        .stream-panel:hover .hotswap-overlay {
-            opacity: 1;
-            pointer-events: auto;
-            transform: translateY(0);
-        }
-        .hotswap-input {
-            flex: 1;
-            background: #1a1a1a;
-            border: 1px solid #444;
-            border-radius: 14px;
-            padding: 4px 10px;
-            color: #fff;
-            font-size: 11px;
-            outline: none;
-        }
+        .stream-panel:hover .hotswap-overlay { opacity: 1; pointer-events: auto; transform: translateY(0); }
+        .hotswap-input { flex: 1; background: #1a1a1a; border: 1px solid #444; border-radius: 14px; padding: 4px 10px; color: #fff; font-size: 11px; outline: none; }
         .hotswap-input:focus { border-color: #0095f6; }
-        .hotswap-btn {
-            background: #0095f6;
-            color: #fff;
-            border: none;
-            border-radius: 50%;
-            width: 22px;
-            height: 22px;
-            font-size: 10px;
-            font-weight: bold;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+        
+        .hotswap-btn { background: #0095f6; color: #fff; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 10px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         .hotswap-btn:hover { background: #189ffa; }
+        
+        .dice-btn { background: #ff9f0a; font-size: 12px; }
+        .dice-btn:hover { background: #ffb340; }
 
-        /* Floating Control Dock */
-        #controls {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0,0,0,0.85);
-            padding: 10px 18px;
-            border-radius: 30px;
-            z-index: 2147483647;
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            color: white;
-            border: 1px solid #333;
-            backdrop-filter: blur(10px);
-            white-space: nowrap;
-        }
-        #controls button {
-            background: #222;
-            border: 1px solid #444;
-            color: white;
-            padding: 6px 14px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 13px;
-        }
+        #controls { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); padding: 10px 18px; border-radius: 30px; z-index: 2147483647; display: flex; gap: 10px; align-items: center; color: white; border: 1px solid #333; backdrop-filter: blur(10px); white-space: nowrap; }
+        #controls button { background: #222; border: 1px solid #444; color: white; padding: 6px 14px; border-radius: 20px; cursor: pointer; font-weight: bold; font-size: 13px; }
         #controls button#toggle { background: #0095f6; border: none; }
         #controls button#toggle.pause { background: #ed4956; }
         #controls button.nav-jump { background: #333; color: #fff; border-color: #555; }
@@ -218,14 +143,14 @@
 
 <div id="setup-screen">
     <div class="config-card">
-        <h2>GOON LOOP Scroller</h2>
-        <p class="subtitle">Enter the target workspace URLs to distribute down the scrolling grid pipeline.</p>
+        <h2>Stream Loop Launchpad</h2>
+        <p class="subtitle">Enter workspace URLs or shuffle links dynamically from your active bookmarks.</p>
         
-        <div id="url-fields-container">
-            </div>
+        <div id="url-fields-container"></div>
 
         <div class="actions-bar">
             <button class="btn btn-add" id="add-field-btn">+ Add Stream Row</button>
+            <button class="btn btn-add dice-btn" id="roll-empty-btn">🎲 Fill Empty Slots</button>
             <button class="btn btn-remove" id="clear-cache-btn">Reset Grid</button>
         </div>
 
@@ -237,6 +162,13 @@
                 <input type="checkbox" id="portrait-mode-toggle">
                 <span class="slider"></span>
             </label>
+        </div>
+
+        <div class="toggle-container">
+            <span class="toggle-label">📁 Active Shuffle Directory Pool</span>
+            <select id="bookmark-folder-picker" class="bookmark-select">
+                <option value="">Waiting for Tampermonkey Bridge...</option>
+            </select>
         </div>
     </div>
 </div>
@@ -262,34 +194,117 @@
     let isScrolling = false;
     let scrollSpeed = parseFloat(localStorage.getItem('matrixScrollSpeed')) || 1.00;
     let targetUrls = [];
-    
+    let completeBookmarkTree = {}; 
+    let parsedBookmarkLinks = [];
     let accurateYPosition = 0; 
 
-    const DEFAULT_URLS = [
-        'https://example.com',
-        'https://example.com',
-        'https://example.com'
-    ];
+    const DEFAULT_URLS = ['https://example.com', 'https://example.com', 'https://example.com'];
 
     const setupScreen = document.getElementById('setup-screen');
     const loopScreen = document.getElementById('loop-screen');
     const feedContainer = document.getElementById('feed');
     const container = document.getElementById('url-fields-container');
     const portraitToggle = document.getElementById('portrait-mode-toggle');
+    const folderPicker = document.getElementById('bookmark-folder-picker');
+
+    // LINKING RECEIVER: Listens for data from Tampermonkey Userscript
+    window.addEventListener("message", (event) => {
+        if (event.data && event.data.type === "MATRIX_BOOKMARK_PAYLOAD") {
+            completeBookmarkTree = event.data.bookmarks;
+            buildFolderDropdown(completeBookmarkTree);
+        }
+    }, false);
 
     function initLaunchpad() {
-        const cached = localStorage.getItem('loop_matrix_urls');
-        if (cached) {
-            targetUrls = JSON.parse(cached);
-        } else {
+        try {
+            const cached = localStorage.getItem('loop_matrix_urls');
+            if (cached) targetUrls = JSON.parse(cached);
+            if (!targetUrls || targetUrls.length === 0) targetUrls = [...DEFAULT_URLS];
+        } catch(e) {
             targetUrls = [...DEFAULT_URLS];
         }
-
-        const savedPortraitState = localStorage.getItem('matrixIsPortrait') === 'true';
-        portraitToggle.checked = savedPortraitState;
-
+        portraitToggle.checked = localStorage.getItem('matrixIsPortrait') === 'true';
         renderInputRows();
+        
+        // Notify Tampermonkey script that the UI is completely ready to pull data
+        window.postMessage({ type: "MATRIX_UI_READY" }, "*");
     }
+
+    function buildFolderDropdown(tree) {
+        folderPicker.innerHTML = '<option value="">-- Choose a Bookmark Folder --</option>';
+        const processNodes = (nodes) => {
+            if (!nodes) return;
+            nodes.forEach(node => {
+                if (!node.url && node.title) { 
+                    const opt = document.createElement('option');
+                    opt.value = node.id;
+                    opt.textContent = node.title;
+                    folderPicker.appendChild(opt);
+                }
+                if (node.children) processNodes(node.children);
+            });
+        };
+        processNodes(tree);
+        
+        const savedFolder = localStorage.getItem('matrixSelectedFolderId');
+        if (savedFolder) {
+            folderPicker.value = savedFolder;
+            cacheTargetUrlsFromFolder(savedFolder);
+        }
+    }
+
+    folderPicker.onchange = () => {
+        localStorage.setItem('matrixSelectedFolderId', folderPicker.value);
+        cacheTargetUrlsFromFolder(folderPicker.value);
+    };
+
+    function cacheTargetUrlsFromFolder(folderId) {
+        if (!folderId || !completeBookmarkTree) return;
+        parsedBookmarkLinks = [];
+        
+        const findAndExtract = (nodes) => {
+            if (!nodes) return;
+            for (let node of nodes) {
+                if (node.id === folderId) {
+                    extractLinks(node.children);
+                    return;
+                }
+                if (node.children) findAndExtract(node.children);
+            }
+        };
+
+        const extractLinks = (nodes) => {
+            if (!nodes) return;
+            nodes.forEach(node => {
+                if (node.url) parsedBookmarkLinks.push(node.url);
+                if (node.children) extractLinks(node.children);
+            });
+        };
+
+        findAndExtract(completeBookmarkTree);
+    }
+
+    function getRandomUrl() {
+        if (parsedBookmarkLinks.length === 0) return '';
+        return parsedBookmarkLinks[Math.floor(Math.random() * parsedBookmarkLinks.length)];
+    }
+
+    document.getElementById('roll-empty-btn').onclick = () => {
+        saveInputsToState();
+        if (parsedBookmarkLinks.length === 0) {
+            alert('Please pick a populated bookmark folder pool first!');
+            return;
+        }
+        let changesMade = false;
+        targetUrls = targetUrls.map(url => {
+            if (!url || url.trim() === '' || url === 'https://example.com') {
+                changesMade = true;
+                return getRandomUrl();
+            }
+            return url;
+        });
+        if (changesMade) renderInputRows();
+    };
 
     function renderInputRows() {
         container.innerHTML = '';
@@ -297,7 +312,7 @@
             const row = document.createElement('div');
             row.className = 'url-row';
             row.innerHTML = `
-                <input type="text" class="url-input" value="${url}" placeholder="https://..." data-idx="${idx}">
+                <input type="text" class="url-input" value="${url}" placeholder="Paste URL..." data-idx="${idx}">
                 <button class="btn btn-remove" onclick="removeRow(${idx})">✕</button>
             `;
             container.appendChild(row);
@@ -306,10 +321,11 @@
 
     function saveInputsToState() {
         const inputs = document.querySelectorAll('.url-input');
+        targetUrls = [];
         inputs.forEach(input => {
-            const idx = parseInt(input.getAttribute('data-idx'));
-            targetUrls[idx] = input.value.trim();
+            targetUrls.push(input.value.trim());
         });
+        localStorage.setItem('loop_matrix_urls', JSON.stringify(targetUrls));
         localStorage.setItem('matrixIsPortrait', portraitToggle.checked);
     }
 
@@ -322,41 +338,42 @@
     window.removeRow = (idx) => {
         saveInputsToState();
         targetUrls.splice(idx, 1);
+        if (targetUrls.length === 0) targetUrls = [''];
         renderInputRows();
     };
 
     document.getElementById('clear-cache-btn').onclick = () => {
-        if (confirm('Clear current workspace configurations?')) {
-            localStorage.removeItem('loop_matrix_urls');
-            localStorage.removeItem('matrixIsPortrait');
+        if (confirm('Reset Matrix layout configurations?')) {
+            localStorage.clear();
             targetUrls = [...DEFAULT_URLS];
             portraitToggle.checked = false;
+            folderPicker.value = '';
+            parsedBookmarkLinks = [];
             renderInputRows();
         }
     };
 
     document.getElementById('launch-btn').onclick = () => {
         saveInputsToState();
-        const activeTargets = targetUrls.filter(url => url.length > 0);
+        const activeTargets = targetUrls.filter(url => url.length > 0 && url !== 'https://example.com');
         if (activeTargets.length === 0) {
-            alert('Please provide at least one valid stream destination.');
+            alert('Please provide or shuffle in at least one valid URL destination.');
             return;
         }
-        localStorage.setItem('loop_matrix_urls', JSON.stringify(activeTargets));
-        launchMatrix(activeTargets);
+        launchMatrix(targetUrls);
     };
 
     function launchMatrix(urls) {
         setupScreen.style.display = 'none';
         loopScreen.style.display = 'block';
-        
         feedContainer.innerHTML = '';
-        targetUrls = [...urls]; 
         
         const isPortraitMode = portraitToggle.checked;
         const panelClass = isPortraitMode ? 'stream-panel mode-portrait' : 'stream-panel mode-landscape';
         
         urls.forEach((url, index) => {
+            if (!url) return; 
+            
             const panel = document.createElement('div');
             panel.className = panelClass;
             panel.setAttribute('data-panel-idx', index);
@@ -371,38 +388,41 @@
             const overlay = document.createElement('div');
             overlay.className = 'hotswap-overlay';
             overlay.innerHTML = `
+                <button class="hotswap-btn dice-btn" title="Roll Random Bookmark">🎲</button>
                 <input type="text" class="hotswap-input" value="${url}" placeholder="Swap URL...">
                 <button class="hotswap-btn">✓</button>
             `;
             
+            const diceBtn = overlay.querySelector('.dice-btn');
             const inputField = overlay.querySelector('.hotswap-input');
-            const submitBtn = overlay.querySelector('.hotswap-btn');
+            const submitBtn = overlay.querySelector('.hotswap-btn:not(.dice-btn)');
             
-            const processHotswap = () => {
-                const newUrl = inputField.value.trim();
-                if (newUrl.length > 0) {
-                    iframe.src = newUrl;
-                    targetUrls[index] = newUrl;
+            const processHotswap = (forcedUrl) => {
+                const nextUrl = forcedUrl || inputField.value.trim();
+                if (nextUrl.length > 0) {
+                    iframe.src = nextUrl; 
+                    inputField.value = nextUrl;
+                    targetUrls[index] = nextUrl;
                     localStorage.setItem('loop_matrix_urls', JSON.stringify(targetUrls));
                 }
             };
             
-            submitBtn.onclick = (e) => { e.stopPropagation(); processHotswap(); };
-            inputField.onkeydown = (e) => {
-                if (e.key === 'Enter') {
-                    e.stopPropagation();
-                    processHotswap();
-                }
+            diceBtn.onclick = (e) => {
+                e.stopPropagation();
+                const freshUrl = getRandomUrl();
+                if (freshUrl) processHotswap(freshUrl);
             };
+
+            submitBtn.onclick = (e) => { e.stopPropagation(); processHotswap(); };
+            inputField.onkeydown = (e) => { if (e.key === 'Enter') { e.stopPropagation(); processHotswap(); } };
             
             panel.appendChild(iframe);
             panel.appendChild(overlay);
             feedContainer.appendChild(panel);
         });
 
-        document.getElementById('status').textContent = `${urls.length} streams`;
+        document.getElementById('status').textContent = `${feedContainer.children.length} active streams`;
         updateLabels();
-        
         accurateYPosition = window.scrollY;
         window.scrollTo(0, 0);
     }
@@ -416,24 +436,20 @@
 
     const smoothScrollLoop = () => {
         if (!isScrolling) return;
-
         accurateYPosition += scrollSpeed;
         const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-
         if (accurateYPosition >= maxScroll - 2) {
             accurateYPosition = 0;
             window.scrollTo(0, 0);
         } else {
             window.scrollTo(0, Math.floor(accurateYPosition));
         }
-
         animationFrameId = requestAnimationFrame(smoothScrollLoop);
     };
 
     const startScrolling = () => {
         isScrolling = true;
         accurateYPosition = window.scrollY;
-        
         const toggleBtn = document.getElementById('toggle');
         toggleBtn.textContent = '⏸ PAUSE';
         toggleBtn.className = 'pause';
@@ -448,82 +464,36 @@
         toggleBtn.className = '';
     };
 
-    function updateLabels() {
-        document.getElementById('speed-label').textContent = `Speed: ${scrollSpeed.toFixed(2)}x`;
-    }
-
-    document.getElementById('toggle').onclick = () => {
-        if (isScrolling) stopScrolling(); else startScrolling();
-    };
+    function updateLabels() { document.getElementById('speed-label').textContent = `Speed: ${scrollSpeed.toFixed(2)}x`; }
+    document.getElementById('toggle').onclick = () => { if (isScrolling) stopScrolling(); else startScrolling(); };
 
     function jumpNext() {
         const currentPosition = window.scrollY;
         const panelEl = document.querySelector('.stream-panel');
         const viewHeight = panelEl ? panelEl.offsetHeight : window.innerHeight;
-        const nextTarget = Math.floor((currentPosition + 10) / viewHeight) + 1;
-        accurateYPosition = nextTarget * viewHeight;
-        window.scrollTo({
-            top: accurateYPosition,
-            behavior: 'smooth'
-        });
+        accurateYPosition = (Math.floor((currentPosition + 10) / viewHeight) + 1) * viewHeight;
+        window.scrollTo({ top: accurateYPosition, behavior: 'smooth' });
     }
 
     function jumpPrev() {
         const currentPosition = window.scrollY;
         const panelEl = document.querySelector('.stream-panel');
         const viewHeight = panelEl ? panelEl.offsetHeight : window.innerHeight;
-        const prevTarget = Math.ceil((currentPosition - 10) / viewHeight) - 1;
-        accurateYPosition = Math.max(0, prevTarget * viewHeight);
-        window.scrollTo({
-            top: accurateYPosition,
-            behavior: 'smooth'
-        });
+        accurateYPosition = Math.max(0, (Math.ceil((currentPosition - 10) / viewHeight) - 1) * viewHeight);
+        window.scrollTo({ top: accurateYPosition, behavior: 'smooth' });
     }
 
     document.getElementById('next-page-btn').onclick = jumpNext;
     document.getElementById('prev-page-btn').onclick = jumpPrev;
-
-    function increaseSpeed() {
-        scrollSpeed = Math.min(15, scrollSpeed + 0.05);
-        updateLabels();
-        localStorage.setItem('matrixScrollSpeed', scrollSpeed);
-    }
-
-    function decreaseSpeed() {
-        scrollSpeed = Math.max(0.05, scrollSpeed - 0.05);
-        updateLabels();
-        localStorage.setItem('matrixScrollSpeed', scrollSpeed);
-    }
-
-    document.getElementById('faster').onclick = increaseSpeed;
-    document.getElementById('slower').onclick = decreaseSpeed;
+    document.getElementById('faster').onclick = () => { scrollSpeed = Math.min(15, scrollSpeed + 0.05); updateLabels(); localStorage.setItem('matrixScrollSpeed', scrollSpeed); };
+    document.getElementById('slower').onclick = () => { scrollSpeed = Math.max(0.05, scrollSpeed - 0.05); updateLabels(); localStorage.setItem('matrixScrollSpeed', scrollSpeed); };
 
     document.addEventListener('keydown', (e) => {
-        if (loopScreen.style.display !== 'block') return;
-        if (document.activeElement.tagName === 'INPUT') return;
-
+        if (loopScreen.style.display !== 'block' || document.activeElement.tagName === 'INPUT') return;
         switch (e.key) {
-            case ' ':
-            case 'Spacebar':
-                e.preventDefault();
-                document.getElementById('toggle').click();
-                break;
-            case 'ArrowUp':
-                e.preventDefault();
-                jumpPrev();
-                break;
-            case 'ArrowDown':
-                e.preventDefault();
-                jumpNext();
-                break;
-            case 'ArrowLeft':
-                e.preventDefault();
-                decreaseSpeed();
-                break;
-            case 'ArrowRight':
-                e.preventDefault();
-                increaseSpeed();
-                break;
+            case ' ': case 'Spacebar': e.preventDefault(); document.getElementById('toggle').click(); break;
+            case 'ArrowUp': e.preventDefault(); jumpPrev(); break;
+            case 'ArrowDown': e.preventDefault(); jumpNext(); break;
         }
     });
 
