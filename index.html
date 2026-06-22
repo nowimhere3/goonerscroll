@@ -85,17 +85,17 @@
 
         .file-input-wrapper {
             background: #1a1a1a;
-            border: 1px dashed #444;
+            border: 1px dashed #333;
             padding: 15px;
             border-radius: 12px;
             text-align: center;
-            margin-bottom: 20px;
+            margin-top: 15px;
             cursor: pointer;
-            transition: border-color 0.2s;
+            transition: border-color 0.2s, background 0.2s;
         }
-        .file-input-wrapper:hover { border-color: #0095f6; }
+        .file-input-wrapper:hover { border-color: #0095f6; background: #1e1e1e; }
         .file-input-wrapper input { display: none; }
-        .file-label { font-size: 13px; color: #aaa; cursor: pointer; }
+        .file-label { font-size: 13px; color: #888; cursor: pointer; }
         .file-status { font-size: 11px; color: #0095f6; margin-top: 5px; font-weight: bold; }
         
         .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
@@ -158,14 +158,8 @@
 <div id="setup-screen">
     <div class="config-card">
         <h2>Stream Loop Launchpad</h2>
-        <p class="subtitle">Import your exported bookmarks HTML files to instantly map out folders.</p>
+        <p class="subtitle">Map active URLs or shuffle paths directly via your imported directories.</p>
         
-        <div class="file-input-wrapper" onclick="document.getElementById('bookmark-files').click()">
-            <span class="file-label" id="upload-prompt">📂 Click to Upload Bookmark HTML Files (Select multiple if needed)</span>
-            <input type="file" id="bookmark-files" accept=".html" multiple>
-            <div class="file-status" id="upload-status"></div>
-        </div>
-
         <div id="url-fields-container"></div>
 
         <div class="actions-bar">
@@ -187,8 +181,15 @@
         <div class="toggle-container">
             <span class="toggle-label">📁 Active Shuffle Directory Pool</span>
             <select id="bookmark-folder-picker" class="bookmark-select">
-                <option value="">Upload bookmark file above...</option>
+                <option value="">Upload bookmark backup files below...</option>
             </select>
+        </div>
+
+        <!-- MOVED TO VERY BOTTOM -->
+        <div class="file-input-wrapper" onclick="document.getElementById('bookmark-files').click()">
+            <span class="file-label" id="upload-prompt">📂 Click to Upload Bookmark HTML Files (Select multiple to merge)</span>
+            <input type="file" id="bookmark-files" accept=".html" multiple>
+            <div class="file-status" id="upload-status"></div>
         </div>
     </div>
 </div>
@@ -216,8 +217,7 @@
     let targetUrls = [];
     let accurateYPosition = 0; 
 
-    // Global parsed pools
-    let parsedFoldersMap = {}; // folderName -> array of URLs
+    let parsedFoldersMap = {}; 
     let activeFolderLinks = [];
 
     const DEFAULT_URLS = ['https://example.com', 'https://example.com', 'https://example.com'];
@@ -242,16 +242,14 @@
         portraitToggle.checked = localStorage.getItem('matrixIsPortrait') === 'true';
         renderInputRows();
 
-        // Restore parsed bookmarks structure if stored locally
         const cachedFolders = localStorage.getItem('matrixParsedFolders');
         if (cachedFolders) {
             parsedFoldersMap = JSON.parse(cachedFolders);
             rebuildFolderDropdown();
-            uploadStatus.textContent = "Loaded folder configurations from local storage memory.";
+            uploadStatus.textContent = "Active directories loaded from local browser memory.";
         }
     }
 
-    // MULTI-FILE HTML PARSER ENGINE
     fileInput.onchange = async (e) => {
         const files = e.target.files;
         if (!files || files.length === 0) return;
@@ -266,18 +264,15 @@
 
         localStorage.setItem('matrixParsedFolders', JSON.stringify(parsedFoldersMap));
         rebuildFolderDropdown();
-        uploadStatus.textContent = `Successfully merged ${totalFilesProcessed} bookmark backup files!`;
+        uploadStatus.textContent = `Successfully synchronized & merged ${totalFilesProcessed} backup pools!`;
     };
 
     function parseBookmarkHTML(htmlContent) {
         const parser = new DOMParser();
         const doc = parser.parseFromString(htmlContent, 'text/html');
-        
-        // Netscape bookmark format uses <H3> tags for folder titles, followed by a <DL> containing items
         const headers = doc.querySelectorAll('h3');
         
         if(headers.length === 0) {
-            // Fallback: Check if there are raw links outside of explicit folders
             const globalLinks = doc.querySelectorAll('a');
             if(globalLinks.length > 0) {
                 if(!parsedFoldersMap['Root / Unsorted']) parsedFoldersMap['Root / Unsorted'] = [];
@@ -291,7 +286,6 @@
                 parsedFoldersMap[folderName] = [];
             }
             
-            // Find the immediate next description list container holding items
             let nextEl = h3.nextElementSibling;
             while (nextEl && nextEl.tagName !== 'DL' && nextEl.tagName !== 'H3') {
                 nextEl = nextEl.nextElementSibling;
@@ -306,7 +300,6 @@
                 });
             }
             
-            // Cleanup empty folders
             if (parsedFoldersMap[folderName].length === 0) {
                 delete parsedFoldersMap[folderName];
             }
@@ -345,7 +338,7 @@
     document.getElementById('roll-empty-btn').onclick = () => {
         saveInputsToState();
         if (activeFolderLinks.length === 0) {
-            alert('Please select a populated directory pool dropdown first!');
+            alert('Please select an active directory pool first!');
             return;
         }
         let changesMade = false;
@@ -396,13 +389,13 @@
     };
 
     document.getElementById('clear-cache-btn').onclick = () => {
-        if (confirm('Clear matrix settings and uploaded bookmark databases?')) {
+        if (confirm('Wipe layout configurations and imported link databases?')) {
             localStorage.clear();
             targetUrls = [...DEFAULT_URLS];
             parsedFoldersMap = {};
             activeFolderLinks = [];
             portraitToggle.checked = false;
-            folderPicker.innerHTML = '<option value="">Upload bookmark file above...</option>';
+            folderPicker.innerHTML = '<option value="">Upload bookmark backup files below...</option>';
             uploadStatus.textContent = '';
             renderInputRows();
         }
@@ -412,7 +405,7 @@
         saveInputsToState();
         const activeTargets = targetUrls.filter(url => url.length > 0 && url !== 'https://example.com');
         if (activeTargets.length === 0) {
-            alert('Please provide or shuffle in at least one valid stream destination.');
+            alert('Please provide or shuffle in at least one valid stream target.');
             return;
         }
         launchMatrix(targetUrls);
