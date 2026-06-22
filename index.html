@@ -30,7 +30,39 @@
         h2 { font-size: 24px; margin-bottom: 8px; color: #fff; text-align: center; }
         .subtitle { font-size: 13px; color: #777; text-align: center; margin-bottom: 24px; }
         
-        /* Toggle Switch Styling */
+        .url-row { display: flex; gap: 10px; margin-bottom: 12px; align-items: center; }
+        .url-input {
+            flex: 1;
+            background: #222;
+            border: 1px solid #333;
+            padding: 12px 16px;
+            color: #fff;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .url-input:focus { border-color: #0095f6; }
+        
+        .btn {
+            border: none;
+            padding: 12px 18px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s, transform 0.1s;
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn-add { background: #222; color: #0095f6; border: 1px solid #333; }
+        .btn-add:hover { background: #2a2a2a; }
+        .btn-remove { background: #331417; color: #ed4956; border: 1px solid #4a1a1e; }
+        .btn-remove:hover { background: #441a1f; }
+        
+        .btn-launch { background: #0095f6; color: #fff; width: 100%; margin-top: 15px; font-size: 16px; padding: 14px; }
+        .btn-launch:hover { background: #189ffa; }
+
+        /* Dedicated Layout Switch Styling placed explicitly beneath the launch element */
         .toggle-container {
             display: flex;
             align-items: center;
@@ -39,7 +71,7 @@
             border: 1px solid #333;
             border-radius: 12px;
             padding: 14px 20px;
-            margin-top: 20px;
+            margin-top: 15px; 
         }
         .toggle-label {
             font-size: 14px;
@@ -74,37 +106,6 @@
         }
         input:checked + .slider { background-color: #0095f6; }
         input:checked + .slider:before { transform: translateX(24px); }
-
-        .url-row { display: flex; gap: 10px; margin-bottom: 12px; align-items: center; }
-        .url-input {
-            flex: 1;
-            background: #222;
-            border: 1px solid #333;
-            padding: 12px 16px;
-            color: #fff;
-            border-radius: 8px;
-            font-size: 14px;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-        .url-input:focus { border-color: #0095f6; }
-        
-        .btn {
-            border: none;
-            padding: 12px 18px;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 14px;
-            transition: background 0.2s, transform 0.1s;
-        }
-        .btn:active { transform: scale(0.98); }
-        .btn-add { background: #222; color: #0095f6; border: 1px solid #333; }
-        .btn-add:hover { background: #2a2a2a; }
-        .btn-remove { background: #331417; color: #ed4956; border: 1px solid #4a1a1e; }
-        .btn-remove:hover { background: #441a1f; }
-        .btn-launch { background: #0095f6; color: #fff; width: 100%; margin-top: 15px; font-size: 16px; padding: 14px; }
-        .btn-launch:hover { background: #189ffa; }
 
         .actions-bar { display: flex; justify-content: space-between; margin-top: 15px; }
 
