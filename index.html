@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Multi-Stream Loop Matrix (Searchable Edition)</title>
+    <title>Multi-Stream Loop Matrix (Export Edition)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0b0b0b; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; overflow-x: hidden; }
@@ -72,7 +72,6 @@
         }
         .toggle-label { font-size: 14px; font-weight: bold; color: #ddd; }
         
-        /* SEARCHABLE AUTOCOMPLETE COMBOBOX STYLES */
         .search-wrapper { position: relative; max-width: 280px; width: 100%; }
         .search-input {
             width: 100%;
@@ -116,10 +115,37 @@
         .search-item:hover, .search-item.selected { background: #0095f6; color: #fff; }
         .search-no-results { padding: 12px; font-size: 12px; color: #666; text-align: center; }
 
+        /* ACTIVE DATABASE MANAGER PANEL */
+        .db-editor-panel {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 12px;
+            margin-top: 15px;
+            padding: 15px;
+            display: none;
+        }
+        .db-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #2a2a2a;
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+        }
+        .db-editor-title { font-size: 13px; font-weight: bold; color: #888; }
+        .btn-export-db { background: #0095f6; color: white; padding: 4px 10px; font-size: 11px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
+        .btn-export-db:hover { background: #189ffa; }
+        
+        .db-scroll-box { max-height: 200px; overflow-y: auto; }
+        .db-folder-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: #222; border-radius: 6px; margin-bottom: 6px; border: 1px solid #2d2d2d; }
+        .db-folder-name { font-size: 12px; color: #eee; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 75%; }
+        .btn-inline-delete { background: none; border: none; color: #ed4956; font-size: 11px; cursor: pointer; font-weight: bold; padding: 2px 6px; border-radius: 4px; }
+        .btn-inline-delete:hover { background: #331417; }
+
         .file-input-wrapper {
             background: #1a1a1a;
             border: 1px dashed #333;
-            padding: 15px;
+            padding: 18px;
             border-radius: 12px;
             text-align: center;
             margin-top: 15px;
@@ -128,7 +154,7 @@
         }
         .file-input-wrapper:hover { border-color: #0095f6; background: #1e1e1e; }
         .file-input-wrapper input { display: none; }
-        .file-label { font-size: 13px; color: #888; cursor: pointer; }
+        .file-label { font-size: 13px; color: #aaa; cursor: pointer; }
         .file-status { font-size: 11px; color: #0095f6; margin-top: 5px; font-weight: bold; }
         
         .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
@@ -191,7 +217,7 @@
 <div id="setup-screen">
     <div class="config-card">
         <h2>Stream Loop Launchpad</h2>
-        <p class="subtitle">Map active URLs or shuffle paths directly via your imported directories.</p>
+        <p class="subtitle">Map active URLs or shuffle paths directly via imported lists or bookmark trees.</p>
         
         <div id="url-fields-container"></div>
 
@@ -219,9 +245,17 @@
             </div>
         </div>
 
+        <div id="db-editor-panel" class="db-editor-panel">
+            <div class="db-header-row">
+                <div class="db-editor-title">🛠️ Active Folder Database Manager</div>
+                <button class="btn-export-db" id="export-cleaned-btn">⬇️ Export Cleaned HTML</button>
+            </div>
+            <div id="db-editor-list" class="db-scroll-box"></div>
+        </div>
+
         <div class="file-input-wrapper" onclick="document.getElementById('bookmark-files').click()">
-            <span class="file-label" id="upload-prompt">📂 Click to Upload Bookmark HTML Files (Select multiple to merge)</span>
-            <input type="file" id="bookmark-files" accept=".html" multiple>
+            <span class="file-label" id="upload-prompt">📂 Drop or Upload ANY File Containing Links (.html, .txt, .csv)</span>
+            <input type="file" id="bookmark-files" accept=".html,.txt,.csv" multiple>
             <div class="file-status" id="upload-status"></div>
         </div>
     </div>
@@ -262,10 +296,11 @@
     const portraitToggle = document.getElementById('portrait-mode-toggle');
     const fileInput = document.getElementById('bookmark-files');
     const uploadStatus = document.getElementById('upload-status');
-
-    // Autocomplete elements
     const searchInput = document.getElementById('folder-search-input');
     const searchDropdown = document.getElementById('search-dropdown-list');
+    
+    const dbEditorPanel = document.getElementById('db-editor-panel');
+    const dbEditorList = document.getElementById('db-editor-list');
 
     function initLaunchpad() {
         try {
@@ -281,14 +316,13 @@
         const cachedFolders = localStorage.getItem('matrixParsedFolders');
         if (cachedFolders) {
             parsedFoldersMap = JSON.parse(cachedFolders);
-            
-            // Restore previously selected folder if it exists
             const savedFolder = localStorage.getItem('matrixSelectedFolderId');
             if (savedFolder && parsedFoldersMap[savedFolder]) {
                 searchInput.value = `${savedFolder} (${parsedFoldersMap[savedFolder].length} links)`;
                 activeFolderLinks = parsedFoldersMap[savedFolder];
             }
-            uploadStatus.textContent = "Active directories loaded from local browser memory.";
+            uploadStatus.textContent = "Active link directories loaded from storage.";
+            renderVisualDatabaseManager();
         }
         setupSearchEngine();
     }
@@ -300,14 +334,24 @@
         let totalFilesProcessed = 0;
         for (let file of files) {
             const text = await file.text();
-            parseBookmarkHTML(text);
+            const cleanFileName = file.name.replace(/\.[^/.]+$/, "");
+            
+            if (file.name.endsWith('.html') || file.name.endsWith('.htm')) {
+                const hasFolders = text.includes('<H3') || text.includes('<h3');
+                if (hasFolders) {
+                    parseBookmarkHTML(text);
+                } else {
+                    extractLinksViaRegex(text, `Page: ${cleanFileName}`);
+                }
+            } else {
+                extractLinksViaRegex(text, `List: ${cleanFileName}`);
+            }
             totalFilesProcessed++;
         }
 
-        localStorage.setItem('matrixParsedFolders', JSON.stringify(parsedFoldersMap));
-        uploadStatus.textContent = `Successfully synchronized & merged ${totalFilesProcessed} backup pools!`;
+        saveDatabaseState();
+        uploadStatus.textContent = `Processed and indexed ${totalFilesProcessed} list resource streams!`;
         
-        // Clear search on new upload to let user pick cleanly
         searchInput.value = '';
         activeFolderLinks = [];
         localStorage.removeItem('matrixSelectedFolderId');
@@ -317,20 +361,10 @@
         const parser = new DOMParser();
         const doc = parser.parseFromString(htmlContent, 'text/html');
         const headers = doc.querySelectorAll('h3');
-        
-        if(headers.length === 0) {
-            const globalLinks = doc.querySelectorAll('a');
-            if(globalLinks.length > 0) {
-                if(!parsedFoldersMap['Root / Unsorted']) parsedFoldersMap['Root / Unsorted'] = [];
-                globalLinks.forEach(a => { if(a.href) parsedFoldersMap['Root / Unsorted'].push(a.href); });
-            }
-        }
 
         headers.forEach(h3 => {
             const folderName = h3.textContent.trim() || 'Unnamed Folder';
-            if (!parsedFoldersMap[folderName]) {
-                parsedFoldersMap[folderName] = [];
-            }
+            if (!parsedFoldersMap[folderName]) parsedFoldersMap[folderName] = [];
             
             let nextEl = h3.nextElementSibling;
             while (nextEl && nextEl.tagName !== 'DL' && nextEl.tagName !== 'H3') {
@@ -340,49 +374,143 @@
             if (nextEl && nextEl.tagName === 'DL') {
                 const links = nextEl.querySelectorAll('a');
                 links.forEach(a => {
-                    if (a.href && !a.href.startsWith('place:')) {
-                        parsedFoldersMap[folderName].push(a.href);
+                    let href = a.href;
+                    if (href && !href.startsWith('place:')) {
+                        href = cleanGoogleRedirect(href);
+                        if (!parsedFoldersMap[folderName].includes(href)) parsedFoldersMap[folderName].push(href);
                     }
                 });
             }
-            
-            if (parsedFoldersMap[folderName].length === 0) {
-                delete parsedFoldersMap[folderName];
-            }
+            if (parsedFoldersMap[folderName].length === 0) delete parsedFoldersMap[folderName];
         });
     }
 
-    // SEARCH & AUTOCOMPLETE LOGIC ENGINE
-    function setupSearchEngine() {
-        // Show all or filtered items on input click/focus
-        searchInput.onfocus = () => { renderSearchSuggestions(searchInput.value); };
+    function extractLinksViaRegex(rawText, folderTitle) {
+        const urlRegex = /https?:\/\/[^\s"'><\]\[,)\(\\]+/g;
+        const matches = rawText.match(urlRegex) || [];
         
-        // Filter elements live on keyup
-        searchInput.oninput = () => { renderSearchSuggestions(searchInput.value); };
+        if (matches.length > 0) {
+            if (!parsedFoldersMap[folderTitle]) parsedFoldersMap[folderTitle] = [];
+            
+            matches.forEach(url => {
+                let cleanUrl = cleanGoogleRedirect(url);
+                if (cleanUrl.endsWith('.') || cleanUrl.endsWith(';')) cleanUrl = cleanUrl.slice(0, -1);
+                
+                if (!parsedFoldersMap[folderTitle].includes(cleanUrl)) {
+                    parsedFoldersMap[folderTitle].push(cleanUrl);
+                }
+            });
+            
+            if (parsedFoldersMap[folderTitle].length === 0) delete parsedFoldersMap[folderTitle];
+        }
+    }
 
-        // Hide suggestions when clicking outside the box
+    function cleanGoogleRedirect(url) {
+        if (url.includes('google.com/url?q=')) {
+            const parts = url.split('url?q=')[1];
+            if (parts) return decodeURIComponent(parts.split('&')[0]);
+        }
+        return url;
+    }
+
+    function renderVisualDatabaseManager() {
+        const folders = Object.keys(parsedFoldersMap).sort();
+        if (folders.length === 0) {
+            dbEditorPanel.style.display = 'none';
+            return;
+        }
+
+        dbEditorList.innerHTML = '';
+        folders.forEach(folderName => {
+            const count = parsedFoldersMap[folderName].length;
+            const row = document.createElement('div');
+            row.className = 'db-folder-row';
+            row.innerHTML = `
+                <span class="db-folder-name">📁 <strong>${folderName}</strong> (${count} links)</span>
+                <button class="btn-inline-delete" title="Delete Folder">✕ Delete</button>
+            `;
+
+            row.querySelector('.btn-inline-delete').onclick = () => {
+                delete parsedFoldersMap[folderName];
+                const savedFolder = localStorage.getItem('matrixSelectedFolderId');
+                if (savedFolder === folderName) {
+                    searchInput.value = '';
+                    activeFolderLinks = [];
+                    localStorage.removeItem('matrixSelectedFolderId');
+                }
+                saveDatabaseState();
+            };
+            dbEditorList.appendChild(row);
+        });
+
+        dbEditorPanel.style.display = 'block';
+    }
+
+    function saveDatabaseState() {
+        localStorage.setItem('matrixParsedFolders', JSON.stringify(parsedFoldersMap));
+        renderVisualDatabaseManager();
+    }
+
+    // THE EXPORT ENGINE SYSTEM
+    document.getElementById('export-cleaned-btn').onclick = () => {
+        const folders = Object.keys(parsedFoldersMap);
+        if (folders.length === 0) {
+            alert('Your active data engine is currently empty.');
+            return;
+        }
+
+        // Reconstruct a standard Netscape HTML Bookmark spec structure
+        let htmlOutput = `<!DOCTYPE NETSCAPE-Bookmark-file-1>\n\n<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">\n<TITLE>Bookmarks</TITLE>\n<H1>Bookmarks</H1>\n<DL><p>\n`;
+
+        folders.sort().forEach(folderName => {
+            htmlOutput += `    <DT><H3>${escapeHtml(folderName)}</H3>\n    <DL><p>\n`;
+            parsedFoldersMap[folderName].forEach(url => {
+                htmlOutput += `        <DT><A HREF="${escapeHtml(url)}">${escapeHtml(url)}</A>\n`;
+            });
+            htmlOutput += `    </DL><p>\n`;
+        });
+
+        htmlOutput += `</DL><p>\n`;
+
+        // Trigger safe file download container stream on ChromeOS
+        const blob = new Blob([htmlOutput], { type: 'text/html;charset=utf-8' });
+        const downloadUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = 'cleaned_bookmarks.html';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(downloadUrl);
+    };
+
+    function escapeHtml(str) {
+        return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    function setupSearchEngine() {
+        searchInput.onfocus = () => { renderSearchSuggestions(searchInput.value); };
+        searchInput.oninput = () => { renderSearchSuggestions(searchInput.value); };
         document.addEventListener('click', (e) => {
-            if (!e.target.closest('.search-wrapper')) {
-                searchDropdown.style.display = 'none';
-            }
+            if (!e.target.closest('.search-wrapper')) searchDropdown.style.display = 'none';
         });
     }
 
     function renderSearchSuggestions(query = '') {
         const folders = Object.keys(parsedFoldersMap);
         if (folders.length === 0) {
-            searchDropdown.innerHTML = '<div class="search-no-results">Upload bookmark files below first...</div>';
+            searchDropdown.innerHTML = '<div class="search-no-results">Upload files below first...</div>';
             searchDropdown.style.display = 'block';
             return;
         }
 
-        const normalizedQuery = query.toLowerCase().split(' (')[0].trim(); // strip link counts if active
+        const normalizedQuery = query.toLowerCase().split(' (')[0].trim();
         const filtered = folders.filter(f => f.toLowerCase().includes(normalizedQuery)).sort();
 
         searchDropdown.innerHTML = '';
         
         if (filtered.length === 0) {
-            searchDropdown.innerHTML = '<div class="search-no-results">No folders match your search</div>';
+            searchDropdown.innerHTML = '<div class="search-no-results">No folders match search</div>';
         } else {
             filtered.forEach(folderName => {
                 const count = parsedFoldersMap[folderName].length;
@@ -410,7 +538,7 @@
     document.getElementById('roll-empty-btn').onclick = () => {
         saveInputsToState();
         if (activeFolderLinks.length === 0) {
-            alert('Please search and select an active folder pool from the input bar first!');
+            alert('Please search and select an active directory pool from the input bar first!');
             return;
         }
         let changesMade = false;
@@ -440,9 +568,7 @@
     function saveInputsToState() {
         const inputs = document.querySelectorAll('.url-input');
         targetUrls = [];
-        inputs.forEach(input => {
-            targetUrls.push(input.value.trim());
-        });
+        inputs.forEach(input => targetUrls.push(input.value.trim()));
         localStorage.setItem('loop_matrix_urls', JSON.stringify(targetUrls));
         localStorage.setItem('matrixIsPortrait', portraitToggle.checked);
     }
@@ -470,6 +596,7 @@
             searchInput.value = '';
             uploadStatus.textContent = '';
             renderInputRows();
+            renderVisualDatabaseManager();
         }
     };
 
