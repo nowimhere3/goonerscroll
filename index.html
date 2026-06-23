@@ -704,6 +704,17 @@
     });
 
     initLaunchpad();
+    function decreaseSpeed() { 
+        scrollSpeed = Math.max(0.05, scrollSpeed - 0.05); 
+        updateLabels(); 
+        localStorage.setItem('matrixScrollSpeed', scrollSpeed); 
+    }
+
+    document.getElementById('faster').onclick = increaseSpeed;
+    document.getElementById('slower').onclick = decreaseSpeed;
+
+    // --- Final Initialization ---
+    initLaunchpad();
 </script>
 </body>
 </html>
