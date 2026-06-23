@@ -197,6 +197,21 @@
         }
         .btn-purge:hover { background: #ed4956; color: #fff; }
 
+        .btn-hotswap-delete {
+            background: #1a1a1a;
+            border: 1px solid #555;
+            color: #ccc;
+            border-radius: 10px;
+            padding: 4px 8px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+            transition: background 0.15s;
+        }
+        .btn-hotswap-delete:hover { background: #333; color: #fff; }
+
         /* URL input row — hidden until toggle clicked */
         .hotswap-url-row {
             display: none;
@@ -562,7 +577,8 @@
     let targetUrls = [];
     let databaseStructure = null; 
     let databaseSha = null;       
-    let accurateYPosition = 0; 
+    let accurateYPosition = 0;
+    let urlFolderMap = {}; // tracks which folder each URL slot came from 
 
     const setupScreen = document.getElementById('setup-screen');
     const loopScreen = document.getElementById('loop-screen');
@@ -1014,11 +1030,13 @@
         let sourcePool = [...databaseStructure[randomFolder]].filter(u => !isBlacklisted(u));
         if (sourcePool.length === 0) { alert('All URLs in the selected folder are blacklisted.'); return; }
         
+        urlFolderMap = {}; // all slots from same folder
         const inputs = document.querySelectorAll('.url-grid-field');
-        inputs.forEach(input => {
+        inputs.forEach((input, i) => {
             if (sourcePool.length === 0) sourcePool = [...databaseStructure[randomFolder]].filter(u => !isBlacklisted(u));
             const randIndex = Math.floor(Math.random() * sourcePool.length);
             input.value = sourcePool.splice(randIndex, 1)[0];
+            urlFolderMap[i] = randomFolder;
         });
         saveInputsToState();
     };
@@ -1038,13 +1056,11 @@
         const slotCount = inputs.length;
 
         // Build a folder assignment per slot — max 2 slots per folder
-        const folderUsage = {}; // folderName -> count used
+        const folderUsage = {};
         const slotFolders = [];
 
         for (let i = 0; i < slotCount; i++) {
-            // Filter to folders that haven't hit the 2-use cap
             let available = folders.filter(f => (folderUsage[f] || 0) < 2);
-            // If everything is capped (e.g. only 1 folder exists), reset and allow any
             if (available.length === 0) available = folders;
             const chosen = available[Math.floor(Math.random() * available.length)];
             folderUsage[chosen] = (folderUsage[chosen] || 0) + 1;
@@ -1052,11 +1068,13 @@
         }
 
         // Assign a random URL from each slot's chosen folder
+        urlFolderMap = {};
         inputs.forEach((input, i) => {
             const folder = slotFolders[i];
             const pool = databaseStructure[folder].filter(u => !isBlacklisted(u));
             const picked = pool[Math.floor(Math.random() * pool.length)];
             input.value = picked;
+            urlFolderMap[i] = folder;
         });
 
         // Set dropdown to "manual" since no single folder represents this mix
@@ -1108,13 +1126,22 @@
         urls.forEach((url, index) => {
             const panel = document.createElement('div');
             panel.className = panelClass;
-            
+
+            // Each iframe tracks which folder its URL came from (set via data-source-folder).
+            // urlFolderMap is built before launchMatrix is called for Shuffle All launches.
+            // Falls back to the dirDropdown value for single-folder launches.
+            const launchFolder = (typeof urlFolderMap !== 'undefined' && urlFolderMap[index])
+                ? urlFolderMap[index]
+                : (dirDropdown.value !== 'manual' ? dirDropdown.value : null);
+
             const iframe = document.createElement('iframe');
             iframe.src = url;
             iframe.className = 'post-iframe';
             iframe.allow = 'autoplay; fullscreen';
             iframe.sandbox = 'allow-same-origin allow-scripts allow-forms allow-popups';
-            
+            iframe.setAttribute('data-last-src', url);
+            iframe.setAttribute('data-source-folder', launchFolder || '');
+
             const overlay = document.createElement('div');
             overlay.className = 'hotswap-overlay';
             overlay.innerHTML = `
@@ -1123,6 +1150,7 @@
                     <button class="btn-hotswap-star" title="Save to Playlist">☆</button>
                     <button class="btn-hotswap-reload" title="Reload this panel">⟳</button>
                     <button class="btn-hotswap-shuffle">🎲 SHUFFLE</button>
+                    <button class="btn-hotswap-delete" title="Delete this URL from its folder and load a replacement">❌</button>
                     <button class="btn-purge">🗑️ PURGE</button>
                 </div>
                 <div class="hotswap-url-row">
@@ -1138,38 +1166,56 @@
             const starBtn = overlay.querySelector('.btn-hotswap-star');
             const reloadBtn = overlay.querySelector('.btn-hotswap-reload');
             const shuffleBtn = overlay.querySelector('.btn-hotswap-shuffle');
+            const deleteBtn = overlay.querySelector('.btn-hotswap-delete');
             const purgeBtn = overlay.querySelector('.btn-purge');
 
-            // Star — open bookmark modal for this iframe's current URL
-            starBtn.onclick = (e) => {
-                e.stopPropagation();
-                openBookmarkModal(iframe.src, starBtn);
+            // Get the folder this iframe belongs to
+            const getSourceFolder = () => iframe.getAttribute('data-source-folder') || null;
+
+            // Pick a random non-blacklisted URL from a given folder
+            const loadReplacement = (folderName) => {
+                if (!databaseStructure || !databaseStructure[folderName]) return null;
+                const pool = databaseStructure[folderName].filter(u => !isBlacklisted(u));
+                return pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : null;
             };
 
-            // Reload — soft-reload just this iframe
+            // Central setter — keeps iframe, input, and targetUrls in sync
+            const setIframeUrl = (newUrl) => {
+                iframe.src = newUrl;
+                iframe.setAttribute('data-last-src', newUrl);
+                inputField.value = newUrl;
+                targetUrls[index] = newUrl;
+                localStorage.setItem('loop_matrix_urls', JSON.stringify(targetUrls));
+            };
+
+            starBtn.onclick = (e) => {
+                e.stopPropagation();
+                openBookmarkModal(iframe.getAttribute('data-last-src') || iframe.src, starBtn);
+            };
+
             reloadBtn.onclick = (e) => {
                 e.stopPropagation();
                 reloadBtn.classList.add('spinning');
                 setTimeout(() => reloadBtn.classList.remove('spinning'), 450);
-                const currentSrc = iframe.src;
+                const savedSrc = iframe.getAttribute('data-last-src') || iframe.src;
                 iframe.src = 'about:blank';
-                setTimeout(() => { iframe.src = currentSrc; }, 80);
+                setTimeout(() => { iframe.src = savedSrc; }, 80);
             };
 
-            // Toggle URL field open/closed
             toggleBtn.onclick = (e) => {
                 e.stopPropagation();
                 const isOpen = urlRow.classList.toggle('open');
                 toggleBtn.classList.toggle('active', isOpen);
-                if (isOpen) inputField.focus();
+                if (isOpen) {
+                    inputField.value = iframe.getAttribute('data-last-src') || iframe.src;
+                    inputField.focus();
+                }
             };
 
             const processHotswap = () => {
                 const newUrl = inputField.value.trim();
                 if (newUrl.length > 0) {
-                    iframe.src = newUrl;
-                    targetUrls[index] = newUrl;
-                    localStorage.setItem('loop_matrix_urls', JSON.stringify(targetUrls));
+                    setIframeUrl(newUrl);
                     urlRow.classList.remove('open');
                     toggleBtn.classList.remove('active');
                 }
@@ -1178,93 +1224,77 @@
             submitBtn.onclick = (e) => { e.stopPropagation(); processHotswap(); };
             inputField.onkeydown = (e) => { if (e.key === 'Enter') { e.stopPropagation(); processHotswap(); } };
 
-            // Shuffle — pick random non-blacklisted URL from current folder, no purge
+            // Shuffle — pulls from THIS iframe's own source folder (Option A)
             shuffleBtn.onclick = (e) => {
                 e.stopPropagation();
-                const currentDir = dirDropdown.value;
-                if (!databaseStructure || !databaseStructure[currentDir] || databaseStructure[currentDir].length === 0) {
-                    alert('No repository folder selected or folder is empty.');
-                    return;
-                }
-                const pool = databaseStructure[currentDir].filter(u => !isBlacklisted(u));
-                if (pool.length === 0) {
-                    alert('All URLs in this folder are blacklisted. Clear some blacklist entries first.');
-                    return;
-                }
-                const newUrl = pool[Math.floor(Math.random() * pool.length)];
-                iframe.src = newUrl;
-                inputField.value = newUrl;
-                targetUrls[index] = newUrl;
-                localStorage.setItem('loop_matrix_urls', JSON.stringify(targetUrls));
+                const folder = getSourceFolder();
+                if (!folder) { alert('No source folder tracked for this panel. Use ··· to set a URL manually.'); return; }
+                const newUrl = loadReplacement(folder);
+                if (!newUrl) { alert('No available URLs in this folder (empty or all blacklisted).'); return; }
+                setIframeUrl(newUrl);
             };
-            
+
+            // Delete — removes this specific URL from its folder, loads a fresh replacement
+            // No blacklisting — just "don't want this one right now"
+            deleteBtn.onclick = async (e) => {
+                e.stopPropagation();
+                const deadUrl = iframe.getAttribute('data-last-src') || iframe.src;
+                const folder = getSourceFolder();
+                if (!folder || !databaseStructure || !databaseStructure[folder]) {
+                    alert('No source folder tracked for this panel — cannot delete.'); return;
+                }
+                // Remove from folder array
+                const idx = databaseStructure[folder].indexOf(deadUrl);
+                if (idx !== -1) databaseStructure[folder].splice(idx, 1);
+                // Load fresh replacement from same folder immediately
+                const replacement = loadReplacement(folder);
+                setIframeUrl(replacement || 'about:blank');
+                // Sync to GitHub silently (no alert)
+                await pushDatabaseToRemote(`Deleted URL from folder: ${folder}`);
+            };
+
+            // Purge — domain is dead, blacklist it, remove from all folders, load replacement
             purgeBtn.onclick = async (e) => {
                 e.stopPropagation();
-                const deadUrl = iframe.src;
+                const deadUrl = iframe.getAttribute('data-last-src') || iframe.src;
                 if (!confirm(`Confirm absolute deletion of link from repository records?\nThis will also blacklist the domain locally.\n\n${deadUrl}`)) return;
                 addToBlacklist(deadUrl);
-                
-                let replacementUrl = 'https://example.com';
-                const currentDir = dirDropdown.value;
-                if (databaseStructure && databaseStructure[currentDir] && databaseStructure[currentDir].length > 0) {
-                    const pool = databaseStructure[currentDir];
-                    replacementUrl = pool[Math.floor(Math.random() * pool.length)];
-                }
-                
-                iframe.src = replacementUrl;
-                inputField.value = replacementUrl;
-                targetUrls[index] = replacementUrl;
-                localStorage.setItem('loop_matrix_urls', JSON.stringify(targetUrls));
-
+                const folder = getSourceFolder();
+                const replacement = (folder && loadReplacement(folder)) || 'https://example.com';
+                setIframeUrl(replacement);
                 if (databaseStructure) {
                     let deleted = false;
-                    Object.keys(databaseStructure).forEach(folder => {
-                        const idx = databaseStructure[folder].indexOf(deadUrl);
-                        if (idx !== -1) { databaseStructure[folder].splice(idx, 1); deleted = true; }
+                    Object.keys(databaseStructure).forEach(f => {
+                        const idx = databaseStructure[f].indexOf(deadUrl);
+                        if (idx !== -1) { databaseStructure[f].splice(idx, 1); deleted = true; }
                     });
-                    
                     if (deleted) {
                         const token = localStorage.getItem('git_sync_token');
                         const repo = localStorage.getItem('git_sync_repo');
                         const updatedContent = btoa(unescape(encodeURIComponent(JSON.stringify(databaseStructure, null, 2))));
-                        
                         try {
                             const res = await fetch(`https://api.github.com/repos/${repo}/contents/links.json`, {
                                 method: 'PUT',
                                 headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ message: `Purged dead link via Matrix Launcher Overlay Engine`, content: updatedContent, sha: databaseSha })
                             });
-                            if (res.ok) {
-                                const resData = await res.json();
-                                databaseSha = resData.content.sha; 
-                            }
+                            if (res.ok) { const resData = await res.json(); databaseSha = resData.content.sha; }
                         } catch (err) { console.error('Cloud Sync failed: ', err); }
                     }
                 }
             };
-            
+
             panel.appendChild(iframe);
             panel.appendChild(overlay);
             feedContainer.appendChild(panel);
 
             // --- Viewport Director (Instagram-style play/pause) ---
-            // Fires postMessage into the iframe when it enters/leaves the viewport.
-            // The Tampermonkey script on xvideos.red listens for these and calls
-            // video.play() / video.pause() directly. Other sites are left to their
-            // own native behaviour (most modern players pause themselves off-screen).
             const viewportObserver = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
                     const msg = entry.isIntersecting ? 'LAUNCHPAD_PLAY' : 'LAUNCHPAD_PAUSE';
-                    try {
-                        iframe.contentWindow.postMessage({ type: msg }, '*');
-                    } catch(e) {
-                        // Cross-origin block — site will handle itself
-                    }
+                    try { iframe.contentWindow.postMessage({ type: msg }, '*'); } catch(e) {}
                 });
-            }, {
-                // Fire when panel is >= 50% visible (entering) or drops below 50% (leaving)
-                threshold: 0.5
-            });
+            }, { threshold: 0.5 });
             viewportObserver.observe(panel);
         });
 
