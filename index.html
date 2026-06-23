@@ -31,9 +31,9 @@
         h2 { font-size: 24px; margin-bottom: 8px; color: #fff; text-align: center; }
         .subtitle { font-size: 13px; color: #777; text-align: center; margin-bottom: 24px; }
         
-        /* Git Config Panel Accent */
-        .git-panel { border-top: 3px solid #f1502f; }
+        /* Panel Accents */
         .grid-panel { border-top: 3px solid #0095f6; }
+        .git-panel { border-top: 3px solid #f1502f; }
 
         .input-group { margin-bottom: 15px; }
         .input-group label { display: block; font-size: 12px; color: #aaa; margin-bottom: 6px; font-weight: bold; }
@@ -97,6 +97,23 @@
         .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px; background-color: white; transition: .3s; border-radius: 50%; }
         input:checked + .slider { background-color: #0095f6; }
         input:checked + .slider:before { transform: translateX(24px); }
+
+        /* Collapsible Drawer Mechanics */
+        .drawer-toggle-btn {
+            background: transparent;
+            border: none;
+            color: #777;
+            font-size: 12px;
+            cursor: pointer;
+            text-decoration: underline;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        .drawer-toggle-btn:hover { color: #aaa; }
+        #git-drawer-content {
+            display: none; /* Controlled programmatically via JS */
+            margin-top: 20px;
+        }
 
         /* Step 2: Active Automated Viewport Layer */
         #loop-screen { display: none; }
@@ -164,21 +181,7 @@
 <body>
 
 <div id="setup-screen">
-    <div class="config-card git-panel">
-        <h2>GitHub Cloud Sync Pipeline</h2>
-        <p class="subtitle">Connect your remote database to synchronize directory pools and file purges.</p>
-        
-        <div class="input-group">
-            <label>GitHub Personal Access Token (PAT)</label>
-            <input type="password" id="git-token" class="url-input" placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxx">
-        </div>
-        <div class="input-group">
-            <label>Repository Target (Username/RepoName)</label>
-            <input type="text" id="git-repo" class="url-input" placeholder="YourUsername/stream-matrix">
-        </div>
-        <button class="btn btn-add" style="width:100%;" id="btn-connect-git">⚡ Connect & Fetch Database</button>
-    </div>
-
+    
     <div class="config-card grid-panel">
         <h2>Stream Loop Launchpad</h2>
         <p class="subtitle">Configure grid targets manually or shuffle from active directory folders.</p>
@@ -212,6 +215,26 @@
             </label>
         </div>
     </div>
+
+    <div class="config-card git-panel" style="max-width: 650px; padding: 20px 30px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="font-size: 15px; color: #eee; font-weight: bold;">GitHub Cloud Sync Pipeline</h3>
+            <button class="drawer-toggle-btn" id="btn-toggle-git-drawer">⚙️ Show Connection Settings</button>
+        </div>
+        
+        <div id="git-drawer-content">
+            <p class="subtitle" style="text-align: left; margin-bottom: 15px;">Connect your remote database to synchronize directory pools and file purges.</p>
+            <div class="input-group">
+                <label>GitHub Personal Access Token (PAT)</label>
+                <input type="password" id="git-token" class="url-input" placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxx">
+            </div>
+            <div class="input-group">
+                <label>Repository Target (Username/RepoName)</label>
+                <input type="text" id="git-repo" class="url-input" placeholder="YourUsername/stream-matrix">
+            </div>
+            <button class="btn btn-add" style="width:100%; color: #f1502f; border-color: #f1502f;" id="btn-connect-git">⚡ Connect & Fetch Database</button>
+        </div>
+    </div>
 </div>
 
 <div id="loop-screen">
@@ -236,8 +259,8 @@
     let scrollSpeed = parseFloat(localStorage.getItem('matrixScrollSpeed')) || 1.00;
     
     let targetUrls = [];
-    let databaseStructure = null; // Holds the parsed links.json file contents
-    let databaseSha = null;       // Required by GitHub API to perform edits
+    let databaseStructure = null; 
+    let databaseSha = null;       
     let accurateYPosition = 0; 
 
     const setupScreen = document.getElementById('setup-screen');
@@ -246,6 +269,9 @@
     const container = document.getElementById('url-fields-container');
     const portraitToggle = document.getElementById('portrait-mode-toggle');
     const dirDropdown = document.getElementById('directory-dropdown');
+    
+    const gitDrawerContent = document.getElementById('git-drawer-content');
+    const gitDrawerBtn = document.getElementById('btn-toggle-git-drawer');
 
     function initLaunchpad() {
         // Load Git Credentials
@@ -266,6 +292,17 @@
             fetchDatabaseSilently();
         }
     }
+
+    // Manual Show/Hide Drawer Toggle Mechanics
+    gitDrawerBtn.onclick = () => {
+        if (gitDrawerContent.style.display === 'block') {
+            gitDrawerContent.style.display = 'none';
+            gitDrawerBtn.textContent = '⚙️ Show Connection Settings';
+        } else {
+            gitDrawerContent.style.display = 'block';
+            gitDrawerBtn.textContent = '✕ Hide Settings';
+        }
+    };
 
     function renderInputRows() {
         container.innerHTML = '';
@@ -333,7 +370,6 @@
             databaseSha = data.sha;
             databaseStructure = JSON.parse(atob(data.content));
             
-            // Build out folder entries cleanly
             dirDropdown.innerHTML = '';
             Object.keys(databaseStructure).forEach(folderName => {
                 const opt = document.createElement('option');
@@ -343,6 +379,11 @@
             });
             
             alert('Database synchronized successfully! Directory pools populated.');
+            
+            // Auto-hide panel upon successful authentication handshake
+            gitDrawerContent.style.display = 'none';
+            gitDrawerBtn.textContent = '⚙️ Show Connection Settings';
+            
         } catch (err) {
             alert('Sync Error: ' + err.message);
         }
@@ -380,19 +421,15 @@
         const folders = Object.keys(databaseStructure);
         if (folders.length === 0) return;
         
-        // Pick a folder at random
         const randomFolder = folders[Math.floor(Math.random() * folders.length)];
         dirDropdown.value = randomFolder;
         
-        // Gather links
         let sourcePool = [...databaseStructure[randomFolder]];
         if (sourcePool.length === 0) return;
         
-        // Fill all existing fields with random draws from that folder
         const inputs = document.querySelectorAll('.url-grid-field');
         inputs.forEach(input => {
             if (sourcePool.length === 0) {
-                // Recycle pool if grid size exceeds unique folder count
                 sourcePool = [...databaseStructure[randomFolder]];
             }
             const randIndex = Math.floor(Math.random() * sourcePool.length);
@@ -402,7 +439,6 @@
         saveInputsToState();
     };
 
-    // Auto-fill trigger on direct manual drop selection adjustments
     dirDropdown.onchange = () => {
         const selected = dirDropdown.value;
         if (selected === 'manual' || !databaseStructure) return;
@@ -470,13 +506,11 @@
             submitBtn.onclick = (e) => { e.stopPropagation(); processHotswap(); };
             inputField.onkeydown = (e) => { if (e.key === 'Enter') { e.stopPropagation(); processHotswap(); } };
             
-            // Wire cloud database link deletion mechanics 
             purgeBtn.onclick = async (e) => {
                 e.stopPropagation();
                 const deadUrl = iframe.src;
                 if (!confirm(`Confirm absolute deletion of link from repository records?\n${deadUrl}`)) return;
                 
-                // Immediately pull a clean replacement link locally so your view session isn't stalled
                 let replacementUrl = 'https://example.com';
                 const currentDir = dirDropdown.value;
                 if (databaseStructure && databaseStructure[currentDir] && databaseStructure[currentDir].length > 0) {
@@ -484,13 +518,11 @@
                     replacementUrl = pool[Math.floor(Math.random() * pool.length)];
                 }
                 
-                // Swap viewport instantly
                 iframe.src = replacementUrl;
                 inputField.value = replacementUrl;
                 targetUrls[index] = replacementUrl;
                 localStorage.setItem('loop_matrix_urls', JSON.stringify(targetUrls));
 
-                // Execute background rest sync back to GitHub
                 if (databaseStructure) {
                     let deleted = false;
                     Object.keys(databaseStructure).forEach(folder => {
@@ -518,7 +550,7 @@
                             });
                             if (res.ok) {
                                 const resData = await res.json();
-                                databaseSha = resData.content.sha; // Save fresh SHA tracking value
+                                databaseSha = resData.content.sha; 
                                 console.log('Remote repository synchronized.');
                             }
                         } catch (err) { console.error('Cloud Sync failed: ', err); }
