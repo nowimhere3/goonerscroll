@@ -1,0 +1,12 @@
+{
+  "Folder_A": [
+    "https://example.com/page1",
+    "https://example.com/page2",
+    "https://example.com/page3"
+  ],
+  "Folder_B": [
+    "https://example.com/page4",
+    "https://example.com/page5",
+    "https://example.com/page6"
+  ]
+}
