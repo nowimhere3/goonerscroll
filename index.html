@@ -8,7 +8,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0b0b0b; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; overflow-x: hidden; }
         
-        /* Step 1: Configuration / Launchpad Screen View */
+        /* Setup / Launchpad Layout View */
         #setup-screen {
             display: flex;
             flex-direction: column;
@@ -33,6 +33,7 @@
         
         /* Panel Accents */
         .grid-panel { border-top: 3px solid #0095f6; }
+        .ingest-panel { border-top: 3px solid #ff9800; }
         .git-panel { border-top: 3px solid #f1502f; }
 
         .input-group { margin-bottom: 15px; }
@@ -45,6 +46,21 @@
         .btn-dice:active { transform: rotate(20deg) scale(0.95); }
 
         .directory-select { width: 100%; background: #222; border: 1px solid #333; padding: 12px; color: #fff; border-radius: 8px; font-size: 14px; outline: none; margin-bottom: 15px; }
+
+        /* Dropzone Styling */
+        .dropzone-container {
+            border: 2px dashed #444;
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            background: #1e1e1e;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+            margin-bottom: 15px;
+        }
+        .dropzone-container:hover, .dropzone-container.dragover { border-color: #ff9800; background: #252525; }
+        .dropzone-title { font-size: 14px; font-weight: bold; color: #eee; margin-bottom: 4px; }
+        .dropzone-desc { font-size: 11px; color: #666; }
 
         .url-row { display: flex; gap: 10px; margin-bottom: 12px; align-items: center; }
         .url-input {
@@ -60,15 +76,7 @@
         }
         .url-input:focus { border-color: #0095f6; }
         
-        .btn {
-            border: none;
-            padding: 12px 18px;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 14px;
-            transition: background 0.2s, transform 0.1s;
-        }
+        .btn { border: none; padding: 12px 18px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; transition: background 0.2s, transform 0.1s; }
         .btn:active { transform: scale(0.98); }
         .btn-add { background: #222; color: #0095f6; border: 1px solid #333; }
         .btn-add:hover { background: #2a2a2a; }
@@ -79,17 +87,7 @@
 
         .actions-bar { display: flex; justify-content: space-between; margin-top: 15px; }
 
-        /* Toggle Switch Styling */
-        .toggle-container {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: #222;
-            border: 1px solid #333;
-            border-radius: 12px;
-            padding: 14px 20px;
-            margin-top: 20px;
-        }
+        .toggle-container { display: flex; align-items: center; justify-content: space-between; background: #222; border: 1px solid #333; border-radius: 12px; padding: 14px 20px; margin-top: 20px; }
         .toggle-label { font-size: 14px; font-weight: bold; color: #ddd; }
         .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
         .switch input { opacity: 0; width: 0; height: 0; }
@@ -98,24 +96,12 @@
         input:checked + .slider { background-color: #0095f6; }
         input:checked + .slider:before { transform: translateX(24px); }
 
-        /* Collapsible Drawer Mechanics */
-        .drawer-toggle-btn {
-            background: transparent;
-            border: none;
-            color: #777;
-            font-size: 12px;
-            cursor: pointer;
-            text-decoration: underline;
-            margin-top: 10px;
-            font-weight: bold;
-        }
+        /* Drawer Mechanics */
+        .drawer-toggle-btn { background: transparent; border: none; color: #777; font-size: 12px; cursor: pointer; text-decoration: underline; margin-top: 10px; font-weight: bold; }
         .drawer-toggle-btn:hover { color: #aaa; }
-        #git-drawer-content {
-            display: none; /* Controlled programmatically via JS */
-            margin-top: 20px;
-        }
+        #git-drawer-content { display: none; margin-top: 20px; }
 
-        /* Step 2: Active Automated Viewport Layer */
+        /* Active Viewport Loop Display Canvas */
         #loop-screen { display: none; }
         #feed { max-width: 100%; margin: 0 auto; display: flex; flex-direction: column; }
         
@@ -125,7 +111,7 @@
 
         .post-iframe { width: 100%; height: 100%; border: none; display: block; }
         
-        /* Hotswap Overlay with Purge Actions */
+        /* Hotswap Floating Bar Configuration */
         .hotswap-overlay {
             position: absolute;
             top: 15px;
@@ -152,7 +138,6 @@
         .btn-purge { background: #331417; color: #ed4956; border: 1px solid #4a1a1e; border-radius: 12px; padding: 2px 8px; font-size: 10px; font-weight: bold; cursor: pointer; }
         .btn-purge:hover { background: #ed4956; color: #fff; }
 
-        /* Floating Control Dock */
         #controls {
             position: fixed;
             bottom: 20px;
@@ -216,7 +201,23 @@
         </div>
     </div>
 
-    <div class="config-card git-panel" style="max-width: 650px; padding: 20px 30px;">
+    <div class="config-card ingest-panel">
+        <h2>Ingest Extracted Directories</h2>
+        <p class="subtitle">Drag & drop raw file listings to parse URLs automatically into your cloud repository database.</p>
+        
+        <div class="dropzone-container" id="file-dropzone">
+            <div class="dropzone-title">📥 Drop Bookmark .html, .csv, or .txt Files Here</div>
+            <div class="dropzone-desc">Automated system will extract unique destination strings instantly</div>
+            <input type="file" id="manual-file-pick" style="display: none;" accept=".html,.htm,.txt,.csv">
+        </div>
+
+        <div class="input-group">
+            <label>Destination Folder Directory Name inside Database</label>
+            <input type="text" id="target-folder-input" class="url-input" placeholder="e.g., Imported_Leads_Pool">
+        </div>
+    </div>
+
+    <div class="config-card git-panel" style="padding: 20px 30px;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <h3 style="font-size: 15px; color: #eee; font-weight: bold;">GitHub Cloud Sync Pipeline</h3>
             <button class="drawer-toggle-btn" id="btn-toggle-git-drawer">⚙️ Show Connection Settings</button>
@@ -272,9 +273,10 @@
     
     const gitDrawerContent = document.getElementById('git-drawer-content');
     const gitDrawerBtn = document.getElementById('btn-toggle-git-drawer');
+    const dropzone = document.getElementById('file-dropzone');
+    const fileInput = document.getElementById('manual-file-pick');
 
     function initLaunchpad() {
-        // Load Git Credentials
         document.getElementById('git-token').value = localStorage.getItem('git_sync_token') || '';
         document.getElementById('git-repo').value = localStorage.getItem('git_sync_repo') || '';
 
@@ -293,7 +295,6 @@
         }
     }
 
-    // Manual Show/Hide Drawer Toggle Mechanics
     gitDrawerBtn.onclick = () => {
         if (gitDrawerContent.style.display === 'block') {
             gitDrawerContent.style.display = 'none';
@@ -303,6 +304,107 @@
             gitDrawerBtn.textContent = '✕ Hide Settings';
         }
     };
+
+    // --- Drag & Drop Automated Processing Code ---
+    dropzone.onclick = () => fileInput.click();
+    dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
+    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+    dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('dragover');
+        if (e.dataTransfer.files.length > 0) handleRawFileParse(e.dataTransfer.files[0]);
+    });
+    fileInput.onchange = () => { if (fileInput.files.length > 0) handleRawFileParse(fileInput.files[0]); };
+
+    function handleRawFileParse(file) {
+        if (!databaseStructure) {
+            alert('Please configure and verify your GitHub Pipeline access parameters first.');
+            return;
+        }
+
+        // Generate target folder fallback name if empty
+        let folderField = document.getElementById('target-folder-input').value.trim();
+        if (!folderField) {
+            folderField = file.name.replace(/\.[^/.]+$/, "").replace(/[^a-zA-Z0-9_]/g, "_");
+            document.getElementById('target-folder-input').value = folderField;
+        }
+
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            const rawText = e.target.result;
+            
+            // Comprehensive regex pattern to safely pull distinct full URLs
+            const urlPattern = /https?:\/\/[^\s"'><`)]+/g;
+            let discoveredUrls = rawText.match(urlPattern) || [];
+            
+            // Clean strings and sanitize arrays
+            let cleanUrls = discoveredUrls.map(url => {
+                // Strip trailing characters often left over by dirty HTML/CSV lines
+                return url.split('"')[0].split("'")[0].split('>')[0].split('<')[0];
+            });
+            
+            // De-duplicate lists completely
+            let uniqueUrls = [...new Set(cleanUrls)].filter(url => url.length > 10);
+
+            if (uniqueUrls.length === 0) {
+                alert('No valid target system links found in this specific file array.');
+                return;
+            }
+
+            if (!confirm(`Extracted ${uniqueUrls.length} unique links. Commit these immediately into the folder "${folderField}" on GitHub?`)) return;
+
+            // Push to memory object array map
+            if (!databaseStructure[folderField]) databaseStructure[folderField] = [];
+            databaseStructure[folderField] = [...new Set([...databaseStructure[folderField], ...uniqueUrls])];
+
+            // Re-render folder selections dropdown area
+            updateDirectoryDropdown();
+            dirDropdown.value = folderField;
+
+            // Execute automated update push to remote JSON file repo
+            await pushDatabaseToRemote(`Imported ${uniqueUrls.length} links into folder group: ${folderField}`);
+        };
+        reader.readAsText(file);
+    }
+
+    async function pushDatabaseToRemote(commitMessage) {
+        const token = localStorage.getItem('git_sync_token');
+        const repo = localStorage.getItem('git_sync_repo');
+        if (!token || !repo || !databaseStructure) return;
+
+        const updatedContent = btoa(unescape(encodeURIComponent(JSON.stringify(databaseStructure, null, 2))));
+        
+        try {
+            const res = await fetch(`https://api.github.com/repos/${repo}/contents/links.json`, {
+                method: 'PUT',
+                headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message: commitMessage,
+                    content: updatedContent,
+                    sha: databaseSha
+                })
+            });
+            if (res.ok) {
+                const resData = await res.json();
+                databaseSha = resData.content.sha; // Track unique updated SHA
+                alert('Cloud Repository synchronized successfully! Links integrated.');
+            } else {
+                throw new Error('Push rejected. Double-check branch states or credential authorizations.');
+            }
+        } catch (err) {
+            alert('Cloud Synchronization failed: ' + err.message);
+        }
+    }
+
+    function updateDirectoryDropdown() {
+        dirDropdown.innerHTML = '';
+        Object.keys(databaseStructure).forEach(folderName => {
+            const opt = document.createElement('option');
+            opt.value = folderName;
+            opt.textContent = folderName;
+            dirDropdown.appendChild(opt);
+        });
+    }
 
     function renderInputRows() {
         container.innerHTML = '';
@@ -320,27 +422,16 @@
     function saveInputsToState() {
         const inputs = document.querySelectorAll('.url-grid-field');
         targetUrls = [];
-        inputs.forEach(input => {
-            targetUrls.push(input.value.trim());
-        });
+        inputs.forEach(input => { targetUrls.push(input.value.trim()); });
         localStorage.setItem('loop_matrix_urls', JSON.stringify(targetUrls));
         localStorage.setItem('matrixIsPortrait', portraitToggle.checked);
         localStorage.setItem('git_sync_token', document.getElementById('git-token').value.trim());
         localStorage.setItem('git_sync_repo', document.getElementById('git-repo').value.trim());
     }
 
-    document.getElementById('add-field-btn').onclick = () => {
-        saveInputsToState();
-        targetUrls.push('');
-        renderInputRows();
-    };
-
-    window.removeRow = (idx) => {
-        saveInputsToState();
-        targetUrls.splice(idx, 1);
-        renderInputRows();
-    };
-
+    document.getElementById('add-field-btn').onclick = () => { saveInputsToState(); targetUrls.push(''); renderInputRows(); };
+    window.removeRow = (idx) => { saveInputsToState(); targetUrls.splice(idx, 1); renderInputRows(); };
+    
     document.getElementById('clear-cache-btn').onclick = () => {
         if (confirm('Clear matrix definitions?')) {
             localStorage.removeItem('loop_matrix_urls');
@@ -349,7 +440,7 @@
         }
     };
 
-    // --- GitHub Integration Core Engine ---
+    // --- GitHub Integration Handshake ---
     document.getElementById('btn-connect-git').onclick = async () => {
         saveInputsToState();
         const token = document.getElementById('git-token').value.trim();
@@ -368,22 +459,12 @@
             
             const data = await res.json();
             databaseSha = data.sha;
-            databaseStructure = JSON.parse(atob(data.content));
+            databaseStructure = JSON.parse(decodeURIComponent(escape(atob(data.content))));
             
-            dirDropdown.innerHTML = '';
-            Object.keys(databaseStructure).forEach(folderName => {
-                const opt = document.createElement('option');
-                opt.value = folderName;
-                opt.textContent = folderName;
-                dirDropdown.appendChild(opt);
-            });
-            
+            updateDirectoryDropdown();
             alert('Database synchronized successfully! Directory pools populated.');
-            
-            // Auto-hide panel upon successful authentication handshake
             gitDrawerContent.style.display = 'none';
             gitDrawerBtn.textContent = '⚙️ Show Connection Settings';
-            
         } catch (err) {
             alert('Sync Error: ' + err.message);
         }
@@ -399,25 +480,15 @@
             if (res.ok) {
                 const data = await res.json();
                 databaseSha = data.sha;
-                databaseStructure = JSON.parse(atob(data.content));
-                dirDropdown.innerHTML = '';
-                Object.keys(databaseStructure).forEach(folderName => {
-                    const opt = document.createElement('option');
-                    opt.value = folderName;
-                    opt.textContent = folderName;
-                    dirDropdown.appendChild(opt);
-                });
+                databaseStructure = JSON.parse(decodeURIComponent(escape(atob(data.content))));
+                updateDirectoryDropdown();
             }
         } catch(e){}
     }
 
-    // --- Dice Engine Implementation ---
+    // --- Dice Engine ---
     document.getElementById('dice-shuffle-btn').onclick = () => {
-        if (!databaseStructure) {
-            alert('Please connect your GitHub database pool before using the shuffle engine.');
-            return;
-        }
-        
+        if (!databaseStructure) { alert('Please connect your GitHub database pool before using the shuffle engine.'); return; }
         const folders = Object.keys(databaseStructure);
         if (folders.length === 0) return;
         
@@ -429,13 +500,10 @@
         
         const inputs = document.querySelectorAll('.url-grid-field');
         inputs.forEach(input => {
-            if (sourcePool.length === 0) {
-                sourcePool = [...databaseStructure[randomFolder]];
-            }
+            if (sourcePool.length === 0) sourcePool = [...databaseStructure[randomFolder]];
             const randIndex = Math.floor(Math.random() * sourcePool.length);
             input.value = sourcePool.splice(randIndex, 1)[0];
         });
-        
         saveInputsToState();
     };
 
@@ -457,10 +525,7 @@
     document.getElementById('launch-btn').onclick = () => {
         saveInputsToState();
         const activeTargets = targetUrls.filter(url => url.length > 0);
-        if (activeTargets.length === 0) {
-            alert('Please provide at least one valid stream destination.');
-            return;
-        }
+        if (activeTargets.length === 0) { alert('Please provide at least one valid stream destination.'); return; }
         launchMatrix(activeTargets);
     };
 
@@ -527,31 +592,23 @@
                     let deleted = false;
                     Object.keys(databaseStructure).forEach(folder => {
                         const idx = databaseStructure[folder].indexOf(deadUrl);
-                        if (idx !== -1) {
-                            databaseStructure[folder].splice(idx, 1);
-                            deleted = true;
-                        }
+                        if (idx !== -1) { databaseStructure[folder].splice(idx, 1); deleted = true; }
                     });
                     
                     if (deleted) {
                         const token = localStorage.getItem('git_sync_token');
                         const repo = localStorage.getItem('git_sync_repo');
-                        const updatedContent = btoa(JSON.stringify(databaseStructure, null, 2));
+                        const updatedContent = btoa(unescape(encodeURIComponent(JSON.stringify(databaseStructure, null, 2))));
                         
                         try {
                             const res = await fetch(`https://api.github.com/repos/${repo}/contents/links.json`, {
                                 method: 'PUT',
                                 headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    message: `Purged dead link via Matrix Launcher Overlay Engine`,
-                                    content: updatedContent,
-                                    sha: databaseSha
-                                })
+                                body: JSON.stringify({ message: `Purged dead link via Matrix Launcher Overlay Engine`, content: updatedContent, sha: databaseSha })
                             });
                             if (res.ok) {
                                 const resData = await res.json();
                                 databaseSha = resData.content.sha; 
-                                console.log('Remote repository synchronized.');
                             }
                         } catch (err) { console.error('Cloud Sync failed: ', err); }
                     }
