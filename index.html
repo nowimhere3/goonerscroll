@@ -341,6 +341,61 @@
         .btn-bm-save:hover { background: #ffd700; }
         .btn-bm-cancel { background: #222; color: #777; border: 1px solid #333; border-radius: 8px; padding: 11px 16px; font-weight: bold; font-size: 14px; cursor: pointer; }
         .btn-bm-cancel:hover { color: #fff; }
+        /* Folder Manager Panel */
+        .manager-panel { border-top: 3px solid #26a69a; }
+        .folder-manager-list { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+        .folder-manager-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #111;
+            border: 1px solid #2a2a2a;
+            border-radius: 10px;
+            padding: 10px 12px;
+        }
+        .folder-manager-name {
+            flex: 1;
+            font-size: 13px;
+            color: #ddd;
+            font-weight: bold;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .folder-manager-count {
+            font-size: 11px;
+            color: #555;
+            font-family: monospace;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .btn-fm-export {
+            background: #0a2a1a;
+            border: 1px solid #1a6b3a;
+            color: #4caf50;
+            border-radius: 8px;
+            padding: 5px 10px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .btn-fm-export:hover { background: #0d3a22; }
+        .btn-fm-delete {
+            background: #331417;
+            border: 1px solid #4a1a1e;
+            color: #ed4956;
+            border-radius: 8px;
+            padding: 5px 10px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .btn-fm-delete:hover { background: #ed4956; color: #fff; }
+        .folder-manager-empty { color: #444; font-style: italic; font-size: 13px; text-align: center; padding: 20px 0; }
     </style>
 </head>
 <body>
@@ -441,6 +496,19 @@
             <button class="btn btn-add" style="width:100%; color: #f1502f; border-color: #f1502f;" id="btn-connect-git">⚡ Connect & Fetch Database</button>
         </div>
     </div>
+    <div class="config-card manager-panel" style="padding: 20px 30px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="font-size: 15px; color: #eee; font-weight: bold;">📂 Folder Manager</h3>
+            <button class="drawer-toggle-btn" id="btn-toggle-fm-drawer">📋 Show Folders</button>
+        </div>
+        <div id="fm-drawer-content" style="display:none; margin-top: 20px;">
+            <p class="subtitle" style="text-align:left; margin-bottom: 16px;">Export a folder's URLs as a .txt file, or permanently delete a folder and all its links from the database.</p>
+            <div class="folder-manager-list" id="folder-manager-list">
+                <div class="folder-manager-empty">Connect your GitHub database to manage folders.</div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <!-- Bookmark / Playlist Modal -->
@@ -565,6 +633,91 @@
         }
 
         await pushDatabaseToRemote(`Bookmarked 1 link into playlist: ${targetFolder}`);
+    };
+
+    // --- Folder Manager ---
+    const fmDrawerBtn = document.getElementById('btn-toggle-fm-drawer');
+    const fmDrawerContent = document.getElementById('fm-drawer-content');
+
+    fmDrawerBtn.onclick = () => {
+        const isOpen = fmDrawerContent.style.display === 'block';
+        fmDrawerContent.style.display = isOpen ? 'none' : 'block';
+        fmDrawerBtn.textContent = isOpen ? '📋 Show Folders' : '✕ Hide Folders';
+        if (!isOpen) renderFolderManager();
+    };
+
+    function renderFolderManager() {
+        const list = document.getElementById('folder-manager-list');
+        if (!list) return;
+        if (!databaseStructure || Object.keys(databaseStructure).length === 0) {
+            list.innerHTML = '<div class="folder-manager-empty">Connect your GitHub database to manage folders.</div>';
+            return;
+        }
+        list.innerHTML = '';
+        Object.keys(databaseStructure).forEach(folderName => {
+            const urls = databaseStructure[folderName];
+            const count = urls.length;
+
+            const row = document.createElement('div');
+            row.className = 'folder-manager-row';
+
+            const nameEl = document.createElement('div');
+            nameEl.className = 'folder-manager-name';
+            nameEl.textContent = folderName;
+
+            const countEl = document.createElement('div');
+            countEl.className = 'folder-manager-count';
+            countEl.textContent = `${count} link${count !== 1 ? 's' : ''}`;
+
+            const exportBtn = document.createElement('button');
+            exportBtn.className = 'btn-fm-export';
+            exportBtn.textContent = '⬇ Export';
+            exportBtn.onclick = () => exportFolder(folderName, urls);
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'btn-fm-delete';
+            deleteBtn.textContent = '🗑 Delete';
+            deleteBtn.onclick = () => deleteFolder(folderName, row);
+
+            row.appendChild(nameEl);
+            row.appendChild(countEl);
+            row.appendChild(exportBtn);
+            row.appendChild(deleteBtn);
+            list.appendChild(row);
+        });
+    }
+
+    function exportFolder(folderName, urls) {
+        const content = urls.join('\n');
+        const blob = new Blob([content], { type: 'text/plain' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `${folderName.replace(/[^a-zA-Z0-9_\-]/g, '_')}.txt`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+    }
+
+    async function deleteFolder(folderName, rowEl) {
+        const count = (databaseStructure[folderName] || []).length;
+        if (!confirm(`Permanently delete folder "${folderName}" and all ${count} links from the database?\n\nThis cannot be undone.`)) return;
+
+        delete databaseStructure[folderName];
+
+        // Animate row out
+        rowEl.style.transition = 'opacity 0.3s, transform 0.3s';
+        rowEl.style.opacity = '0';
+        rowEl.style.transform = 'translateX(20px)';
+        setTimeout(() => rowEl.remove(), 300);
+
+        updateDirectoryDropdown();
+        await pushDatabaseToRemote(`Deleted folder: ${folderName}`);
+    }
+
+    // Re-render folder manager whenever database updates
+    const _origUpdateDD = updateDirectoryDropdown;
+    updateDirectoryDropdown = function() {
+        _origUpdateDD();
+        if (fmDrawerContent.style.display === 'block') renderFolderManager();
     };
 
     // --- Blacklist Management ---
