@@ -750,18 +750,23 @@
         const ingestSelect = document.getElementById('ingest-folder-select');
         if (ingestSelect) ingestSelect.innerHTML = '<option value="">— select existing folder —</option>';
 
-        Object.keys(databaseStructure).forEach(folderName => {
+Object.keys(databaseStructure).forEach(folderName => {
+            const count = databaseStructure[folderName].length;
+            const label = `${folderName} (${count})`;
+
             const opt = document.createElement('option');
             opt.value = folderName;
-            opt.textContent = folderName;
+            opt.textContent = label;
             dirDropdown.appendChild(opt);
 
             if (ingestSelect) {
                 const opt2 = document.createElement('option');
                 opt2.value = folderName;
-                opt2.textContent = folderName;
+                opt2.textContent = label;
                 ingestSelect.appendChild(opt2);
             }
+        });
+
         });
     }
 
