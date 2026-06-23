@@ -524,9 +524,10 @@
         const sel = document.getElementById('bm-folder-select');
         sel.innerHTML = '<option value="">— select a folder —</option>';
         Object.keys(databaseStructure).forEach(folder => {
+            const count = databaseStructure[folder].length;
             const opt = document.createElement('option');
             opt.value = folder;
-            opt.textContent = folder;
+            opt.textContent = `${folder} (${count})`;
             sel.appendChild(opt);
         });
 
@@ -750,7 +751,7 @@
         const ingestSelect = document.getElementById('ingest-folder-select');
         if (ingestSelect) ingestSelect.innerHTML = '<option value="">— select existing folder —</option>';
 
-Object.keys(databaseStructure).forEach(folderName => {
+        Object.keys(databaseStructure).forEach(folderName => {
             const count = databaseStructure[folderName].length;
             const label = `${folderName} (${count})`;
 
@@ -765,8 +766,6 @@ Object.keys(databaseStructure).forEach(folderName => {
                 opt2.textContent = label;
                 ingestSelect.appendChild(opt2);
             }
-        });
-
         });
     }
 
@@ -1164,4 +1163,3 @@ Object.keys(databaseStructure).forEach(folderName => {
 </script>
 </body>
 </html>
-
