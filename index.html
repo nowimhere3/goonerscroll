@@ -2,11 +2,13 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Multi-Stream Loop Matrix (Export Edition)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Stream Loop Launchpad (Cloud Sync)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0b0b0b; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; overflow-x: hidden; }
         
+        /* Step 1: Configuration / Launchpad Screen View */
         #setup-screen {
             display: flex;
             flex-direction: column;
@@ -24,10 +26,26 @@
             width: 100%;
             max-width: 650px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            margin-bottom: 20px;
         }
         h2 { font-size: 24px; margin-bottom: 8px; color: #fff; text-align: center; }
         .subtitle { font-size: 13px; color: #777; text-align: center; margin-bottom: 24px; }
         
+        /* Git Config Panel Accent */
+        .git-panel { border-top: 3px solid #f1502f; }
+        .grid-panel { border-top: 3px solid #0095f6; }
+
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; font-size: 12px; color: #aaa; margin-bottom: 6px; font-weight: bold; }
+
+        /* Pool Header & Dice Flex */
+        .pool-header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+        .pool-title-area { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: bold; color: #ddd; }
+        .btn-dice { background: #222; border: 1px solid #444; color: #ff9800; cursor: pointer; padding: 4px 10px; border-radius: 6px; font-size: 14px; transition: transform 0.1s; }
+        .btn-dice:active { transform: rotate(20deg) scale(0.95); }
+
+        .directory-select { width: 100%; background: #222; border: 1px solid #333; padding: 12px; color: #fff; border-radius: 8px; font-size: 14px; outline: none; margin-bottom: 15px; }
+
         .url-row { display: flex; gap: 10px; margin-bottom: 12px; align-items: center; }
         .url-input {
             flex: 1;
@@ -56,10 +74,12 @@
         .btn-add:hover { background: #2a2a2a; }
         .btn-remove { background: #331417; color: #ed4956; border: 1px solid #4a1a1e; }
         .btn-remove:hover { background: #441a1f; }
-        
         .btn-launch { background: #0095f6; color: #fff; width: 100%; margin-top: 15px; font-size: 16px; padding: 14px; }
         .btn-launch:hover { background: #189ffa; }
 
+        .actions-bar { display: flex; justify-content: space-between; margin-top: 15px; }
+
+        /* Toggle Switch Styling */
         .toggle-container {
             display: flex;
             align-items: center;
@@ -68,95 +88,9 @@
             border: 1px solid #333;
             border-radius: 12px;
             padding: 14px 20px;
-            margin-top: 12px;
+            margin-top: 20px;
         }
         .toggle-label { font-size: 14px; font-weight: bold; color: #ddd; }
-        
-        .search-wrapper { position: relative; max-width: 280px; width: 100%; }
-        .search-input {
-            width: 100%;
-            background: #111;
-            color: #fff;
-            border: 1px solid #444;
-            padding: 8px 14px;
-            border-radius: 8px;
-            font-size: 13px;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-        .search-input:focus { border-color: #0095f6; }
-        
-        .search-dropdown {
-            position: absolute;
-            top: calc(100% + 5px);
-            left: 0;
-            right: 0;
-            background: #1c1c1c;
-            border: 1px solid #333;
-            border-radius: 8px;
-            max-height: 220px;
-            overflow-y: auto;
-            z-index: 999;
-            display: none;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-        }
-        .search-item {
-            padding: 10px 14px;
-            font-size: 13px;
-            color: #ddd;
-            cursor: pointer;
-            transition: background 0.15s, color 0.15s;
-            border-bottom: 1px solid #252525;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .search-item:last-child { border-bottom: none; }
-        .search-item:hover, .search-item.selected { background: #0095f6; color: #fff; }
-        .search-no-results { padding: 12px; font-size: 12px; color: #666; text-align: center; }
-
-        /* ACTIVE DATABASE MANAGER PANEL */
-        .db-editor-panel {
-            background: #1a1a1a;
-            border: 1px solid #333;
-            border-radius: 12px;
-            margin-top: 15px;
-            padding: 15px;
-            display: none;
-        }
-        .db-header-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #2a2a2a;
-            padding-bottom: 8px;
-            margin-bottom: 10px;
-        }
-        .db-editor-title { font-size: 13px; font-weight: bold; color: #888; }
-        .btn-export-db { background: #0095f6; color: white; padding: 4px 10px; font-size: 11px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
-        .btn-export-db:hover { background: #189ffa; }
-        
-        .db-scroll-box { max-height: 200px; overflow-y: auto; }
-        .db-folder-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: #222; border-radius: 6px; margin-bottom: 6px; border: 1px solid #2d2d2d; }
-        .db-folder-name { font-size: 12px; color: #eee; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 75%; }
-        .btn-inline-delete { background: none; border: none; color: #ed4956; font-size: 11px; cursor: pointer; font-weight: bold; padding: 2px 6px; border-radius: 4px; }
-        .btn-inline-delete:hover { background: #331417; }
-
-        .file-input-wrapper {
-            background: #1a1a1a;
-            border: 1px dashed #333;
-            padding: 18px;
-            border-radius: 12px;
-            text-align: center;
-            margin-top: 15px;
-            cursor: pointer;
-            transition: border-color 0.2s, background 0.2s;
-        }
-        .file-input-wrapper:hover { border-color: #0095f6; background: #1e1e1e; }
-        .file-input-wrapper input { display: none; }
-        .file-label { font-size: 13px; color: #aaa; cursor: pointer; }
-        .file-status { font-size: 11px; color: #0095f6; margin-top: 5px; font-weight: bold; }
-        
         .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #444; transition: .3s; border-radius: 34px; }
@@ -164,16 +98,17 @@
         input:checked + .slider { background-color: #0095f6; }
         input:checked + .slider:before { transform: translateX(24px); }
 
-        .actions-bar { display: flex; justify-content: space-between; margin-top: 15px; }
-
+        /* Step 2: Active Automated Viewport Layer */
         #loop-screen { display: none; }
         #feed { max-width: 100%; margin: 0 auto; display: flex; flex-direction: column; }
         
-        .stream-panel { position: relative; width: 100%; background: #000; border-bottom: 2px solid #222; transition: height 0.2s ease; }
+        .stream-panel { position: relative; width: 100%; background: #000; border-bottom: 2px solid #222; }
         .mode-landscape { height: 100vh; }
         .mode-portrait { height: 50vh; } 
+
         .post-iframe { width: 100%; height: 100%; border: none; display: block; }
         
+        /* Hotswap Overlay with Purge Actions */
         .hotswap-overlay {
             position: absolute;
             top: 15px;
@@ -191,19 +126,33 @@
             transform: translateY(-5px);
             z-index: 10000;
             backdrop-filter: blur(8px);
-            width: 360px;
+            width: 380px;
         }
         .stream-panel:hover .hotswap-overlay { opacity: 1; pointer-events: auto; transform: translateY(0); }
         .hotswap-input { flex: 1; background: #1a1a1a; border: 1px solid #444; border-radius: 14px; padding: 4px 10px; color: #fff; font-size: 11px; outline: none; }
         .hotswap-input:focus { border-color: #0095f6; }
-        
         .hotswap-btn { background: #0095f6; color: #fff; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 10px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .hotswap-btn:hover { background: #189ffa; }
-        
-        .dice-btn { background: #ff9f0a; font-size: 12px; }
-        .dice-btn:hover { background: #ffb340; }
+        .btn-purge { background: #331417; color: #ed4956; border: 1px solid #4a1a1e; border-radius: 12px; padding: 2px 8px; font-size: 10px; font-weight: bold; cursor: pointer; }
+        .btn-purge:hover { background: #ed4956; color: #fff; }
 
-        #controls { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); padding: 10px 18px; border-radius: 30px; z-index: 2147483647; display: flex; gap: 10px; align-items: center; color: white; border: 1px solid #333; backdrop-filter: blur(10px); white-space: nowrap; }
+        /* Floating Control Dock */
+        #controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.85);
+            padding: 10px 18px;
+            border-radius: 30px;
+            z-index: 2147483647;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            color: white;
+            border: 1px solid #333;
+            backdrop-filter: blur(10px);
+            white-space: nowrap;
+        }
         #controls button { background: #222; border: 1px solid #444; color: white; padding: 6px 14px; border-radius: 20px; cursor: pointer; font-weight: bold; font-size: 13px; }
         #controls button#toggle { background: #0095f6; border: none; }
         #controls button#toggle.pause { background: #ed4956; }
@@ -215,15 +164,41 @@
 <body>
 
 <div id="setup-screen">
-    <div class="config-card">
-        <h2>Stream Loop Launchpad</h2>
-        <p class="subtitle">Map active URLs or shuffle paths directly via imported lists or bookmark trees.</p>
+    <div class="config-card git-panel">
+        <h2>GitHub Cloud Sync Pipeline</h2>
+        <p class="subtitle">Connect your remote database to synchronize directory pools and file purges.</p>
         
-        <div id="url-fields-container"></div>
+        <div class="input-group">
+            <label>GitHub Personal Access Token (PAT)</label>
+            <input type="password" id="git-token" class="url-input" placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxx">
+        </div>
+        <div class="input-group">
+            <label>Repository Target (Username/RepoName)</label>
+            <input type="text" id="git-repo" class="url-input" placeholder="YourUsername/stream-matrix">
+        </div>
+        <button class="btn btn-add" style="width:100%;" id="btn-connect-git">⚡ Connect & Fetch Database</button>
+    </div>
+
+    <div class="config-card grid-panel">
+        <h2>Stream Loop Launchpad</h2>
+        <p class="subtitle">Configure grid targets manually or shuffle from active directory folders.</p>
+        
+        <div class="pool-header-row">
+            <div class="pool-title-area">
+                <span>📁 Active Shuffle Directory Pool</span>
+            </div>
+            <button class="btn-dice" id="dice-shuffle-btn" title="Randomize Folder & Fill Grid">🎲 SHUFFLE</button>
+        </div>
+        
+        <select class="directory-select" id="directory-dropdown">
+            <option value="manual">Manual Configuration Only (No Sync)</option>
+        </select>
+
+        <div id="url-fields-container">
+            </div>
 
         <div class="actions-bar">
             <button class="btn btn-add" id="add-field-btn">+ Add Stream Row</button>
-            <button class="btn btn-add dice-btn" id="roll-empty-btn">🎲 Fill Empty Slots</button>
             <button class="btn btn-remove" id="clear-cache-btn">Reset Grid</button>
         </div>
 
@@ -235,28 +210,6 @@
                 <input type="checkbox" id="portrait-mode-toggle">
                 <span class="slider"></span>
             </label>
-        </div>
-
-        <div class="toggle-container">
-            <span class="toggle-label">📁 Active Shuffle Directory Pool</span>
-            <div class="search-wrapper">
-                <input type="text" id="folder-search-input" class="search-input" placeholder="Type to search folder..." autocomplete="off">
-                <div id="search-dropdown-list" class="search-dropdown"></div>
-            </div>
-        </div>
-
-        <div id="db-editor-panel" class="db-editor-panel">
-            <div class="db-header-row">
-                <div class="db-editor-title">🛠️ Active Folder Database Manager</div>
-                <button class="btn-export-db" id="export-cleaned-btn">⬇️ Export Cleaned HTML</button>
-            </div>
-            <div id="db-editor-list" class="db-scroll-box"></div>
-        </div>
-
-        <div class="file-input-wrapper" onclick="document.getElementById('bookmark-files').click()">
-            <span class="file-label" id="upload-prompt">📂 Drop or Upload ANY File Containing Links (.html, .txt, .csv)</span>
-            <input type="file" id="bookmark-files" accept=".html,.txt,.csv" multiple>
-            <div class="file-status" id="upload-status"></div>
         </div>
     </div>
 </div>
@@ -281,276 +234,38 @@
     let animationFrameId = null;
     let isScrolling = false;
     let scrollSpeed = parseFloat(localStorage.getItem('matrixScrollSpeed')) || 1.00;
+    
     let targetUrls = [];
+    let databaseStructure = null; // Holds the parsed links.json file contents
+    let databaseSha = null;       // Required by GitHub API to perform edits
     let accurateYPosition = 0; 
-
-    let parsedFoldersMap = {}; 
-    let activeFolderLinks = [];
-
-    const DEFAULT_URLS = ['https://example.com', 'https://example.com', 'https://example.com'];
 
     const setupScreen = document.getElementById('setup-screen');
     const loopScreen = document.getElementById('loop-screen');
     const feedContainer = document.getElementById('feed');
     const container = document.getElementById('url-fields-container');
     const portraitToggle = document.getElementById('portrait-mode-toggle');
-    const fileInput = document.getElementById('bookmark-files');
-    const uploadStatus = document.getElementById('upload-status');
-    const searchInput = document.getElementById('folder-search-input');
-    const searchDropdown = document.getElementById('search-dropdown-list');
-    
-    const dbEditorPanel = document.getElementById('db-editor-panel');
-    const dbEditorList = document.getElementById('db-editor-list');
+    const dirDropdown = document.getElementById('directory-dropdown');
 
     function initLaunchpad() {
-        try {
-            const cached = localStorage.getItem('loop_matrix_urls');
-            if (cached) targetUrls = JSON.parse(cached);
-            if (!targetUrls || targetUrls.length === 0) targetUrls = [...DEFAULT_URLS];
-        } catch(e) {
-            targetUrls = [...DEFAULT_URLS];
+        // Load Git Credentials
+        document.getElementById('git-token').value = localStorage.getItem('git_sync_token') || '';
+        document.getElementById('git-repo').value = localStorage.getItem('git_sync_repo') || '';
+
+        const cached = localStorage.getItem('loop_matrix_urls');
+        if (cached) {
+            targetUrls = JSON.parse(cached);
+        } else {
+            targetUrls = ['','',''];
         }
+
         portraitToggle.checked = localStorage.getItem('matrixIsPortrait') === 'true';
         renderInputRows();
-
-        const cachedFolders = localStorage.getItem('matrixParsedFolders');
-        if (cachedFolders) {
-            parsedFoldersMap = JSON.parse(cachedFolders);
-            const savedFolder = localStorage.getItem('matrixSelectedFolderId');
-            if (savedFolder && parsedFoldersMap[savedFolder]) {
-                searchInput.value = `${savedFolder} (${parsedFoldersMap[savedFolder].length} links)`;
-                activeFolderLinks = parsedFoldersMap[savedFolder];
-            }
-            uploadStatus.textContent = "Active link directories loaded from storage.";
-            renderVisualDatabaseManager();
-        }
-        setupSearchEngine();
-    }
-
-    fileInput.onchange = async (e) => {
-        const files = e.target.files;
-        if (!files || files.length === 0) return;
-
-        let totalFilesProcessed = 0;
-        for (let file of files) {
-            const text = await file.text();
-            const cleanFileName = file.name.replace(/\.[^/.]+$/, "");
-            
-            if (file.name.endsWith('.html') || file.name.endsWith('.htm')) {
-                const hasFolders = text.includes('<H3') || text.includes('<h3');
-                if (hasFolders) {
-                    parseBookmarkHTML(text);
-                } else {
-                    extractLinksViaRegex(text, `Page: ${cleanFileName}`);
-                }
-            } else {
-                extractLinksViaRegex(text, `List: ${cleanFileName}`);
-            }
-            totalFilesProcessed++;
-        }
-
-        saveDatabaseState();
-        uploadStatus.textContent = `Processed and indexed ${totalFilesProcessed} list resource streams!`;
         
-        searchInput.value = '';
-        activeFolderLinks = [];
-        localStorage.removeItem('matrixSelectedFolderId');
-    };
-
-    function parseBookmarkHTML(htmlContent) {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(htmlContent, 'text/html');
-        const headers = doc.querySelectorAll('h3');
-
-        headers.forEach(h3 => {
-            const folderName = h3.textContent.trim() || 'Unnamed Folder';
-            if (!parsedFoldersMap[folderName]) parsedFoldersMap[folderName] = [];
-            
-            let nextEl = h3.nextElementSibling;
-            while (nextEl && nextEl.tagName !== 'DL' && nextEl.tagName !== 'H3') {
-                nextEl = nextEl.nextElementSibling;
-            }
-            
-            if (nextEl && nextEl.tagName === 'DL') {
-                const links = nextEl.querySelectorAll('a');
-                links.forEach(a => {
-                    let href = a.href;
-                    if (href && !href.startsWith('place:')) {
-                        href = cleanGoogleRedirect(href);
-                        if (!parsedFoldersMap[folderName].includes(href)) parsedFoldersMap[folderName].push(href);
-                    }
-                });
-            }
-            if (parsedFoldersMap[folderName].length === 0) delete parsedFoldersMap[folderName];
-        });
-    }
-
-    function extractLinksViaRegex(rawText, folderTitle) {
-        const urlRegex = /https?:\/\/[^\s"'><\]\[,)\(\\]+/g;
-        const matches = rawText.match(urlRegex) || [];
-        
-        if (matches.length > 0) {
-            if (!parsedFoldersMap[folderTitle]) parsedFoldersMap[folderTitle] = [];
-            
-            matches.forEach(url => {
-                let cleanUrl = cleanGoogleRedirect(url);
-                if (cleanUrl.endsWith('.') || cleanUrl.endsWith(';')) cleanUrl = cleanUrl.slice(0, -1);
-                
-                if (!parsedFoldersMap[folderTitle].includes(cleanUrl)) {
-                    parsedFoldersMap[folderTitle].push(cleanUrl);
-                }
-            });
-            
-            if (parsedFoldersMap[folderTitle].length === 0) delete parsedFoldersMap[folderTitle];
+        if (localStorage.getItem('git_sync_token') && localStorage.getItem('git_sync_repo')) {
+            fetchDatabaseSilently();
         }
     }
-
-    function cleanGoogleRedirect(url) {
-        if (url.includes('google.com/url?q=')) {
-            const parts = url.split('url?q=')[1];
-            if (parts) return decodeURIComponent(parts.split('&')[0]);
-        }
-        return url;
-    }
-
-    function renderVisualDatabaseManager() {
-        const folders = Object.keys(parsedFoldersMap).sort();
-        if (folders.length === 0) {
-            dbEditorPanel.style.display = 'none';
-            return;
-        }
-
-        dbEditorList.innerHTML = '';
-        folders.forEach(folderName => {
-            const count = parsedFoldersMap[folderName].length;
-            const row = document.createElement('div');
-            row.className = 'db-folder-row';
-            row.innerHTML = `
-                <span class="db-folder-name">📁 <strong>${folderName}</strong> (${count} links)</span>
-                <button class="btn-inline-delete" title="Delete Folder">✕ Delete</button>
-            `;
-
-            row.querySelector('.btn-inline-delete').onclick = () => {
-                delete parsedFoldersMap[folderName];
-                const savedFolder = localStorage.getItem('matrixSelectedFolderId');
-                if (savedFolder === folderName) {
-                    searchInput.value = '';
-                    activeFolderLinks = [];
-                    localStorage.removeItem('matrixSelectedFolderId');
-                }
-                saveDatabaseState();
-            };
-            dbEditorList.appendChild(row);
-        });
-
-        dbEditorPanel.style.display = 'block';
-    }
-
-    function saveDatabaseState() {
-        localStorage.setItem('matrixParsedFolders', JSON.stringify(parsedFoldersMap));
-        renderVisualDatabaseManager();
-    }
-
-    // THE EXPORT ENGINE SYSTEM
-    document.getElementById('export-cleaned-btn').onclick = () => {
-        const folders = Object.keys(parsedFoldersMap);
-        if (folders.length === 0) {
-            alert('Your active data engine is currently empty.');
-            return;
-        }
-
-        // Reconstruct a standard Netscape HTML Bookmark spec structure
-        let htmlOutput = `<!DOCTYPE NETSCAPE-Bookmark-file-1>\n\n<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">\n<TITLE>Bookmarks</TITLE>\n<H1>Bookmarks</H1>\n<DL><p>\n`;
-
-        folders.sort().forEach(folderName => {
-            htmlOutput += `    <DT><H3>${escapeHtml(folderName)}</H3>\n    <DL><p>\n`;
-            parsedFoldersMap[folderName].forEach(url => {
-                htmlOutput += `        <DT><A HREF="${escapeHtml(url)}">${escapeHtml(url)}</A>\n`;
-            });
-            htmlOutput += `    </DL><p>\n`;
-        });
-
-        htmlOutput += `</DL><p>\n`;
-
-        // Trigger safe file download container stream on ChromeOS
-        const blob = new Blob([htmlOutput], { type: 'text/html;charset=utf-8' });
-        const downloadUrl = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = downloadUrl;
-        a.download = 'cleaned_bookmarks.html';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(downloadUrl);
-    };
-
-    function escapeHtml(str) {
-        return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-    }
-
-    function setupSearchEngine() {
-        searchInput.onfocus = () => { renderSearchSuggestions(searchInput.value); };
-        searchInput.oninput = () => { renderSearchSuggestions(searchInput.value); };
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.search-wrapper')) searchDropdown.style.display = 'none';
-        });
-    }
-
-    function renderSearchSuggestions(query = '') {
-        const folders = Object.keys(parsedFoldersMap);
-        if (folders.length === 0) {
-            searchDropdown.innerHTML = '<div class="search-no-results">Upload files below first...</div>';
-            searchDropdown.style.display = 'block';
-            return;
-        }
-
-        const normalizedQuery = query.toLowerCase().split(' (')[0].trim();
-        const filtered = folders.filter(f => f.toLowerCase().includes(normalizedQuery)).sort();
-
-        searchDropdown.innerHTML = '';
-        
-        if (filtered.length === 0) {
-            searchDropdown.innerHTML = '<div class="search-no-results">No folders match search</div>';
-        } else {
-            filtered.forEach(folderName => {
-                const count = parsedFoldersMap[folderName].length;
-                const item = document.createElement('div');
-                item.className = 'search-item';
-                item.textContent = `${folderName} (${count} links)`;
-                
-                item.onclick = () => {
-                    searchInput.value = `${folderName} (${count} links)`;
-                    activeFolderLinks = parsedFoldersMap[folderName];
-                    localStorage.setItem('matrixSelectedFolderId', folderName);
-                    searchDropdown.style.display = 'none';
-                };
-                searchDropdown.appendChild(item);
-            });
-        }
-        searchDropdown.style.display = 'block';
-    }
-
-    function getRandomUrl() {
-        if (activeFolderLinks.length === 0) return '';
-        return activeFolderLinks[Math.floor(Math.random() * activeFolderLinks.length)];
-    }
-
-    document.getElementById('roll-empty-btn').onclick = () => {
-        saveInputsToState();
-        if (activeFolderLinks.length === 0) {
-            alert('Please search and select an active directory pool from the input bar first!');
-            return;
-        }
-        let changesMade = false;
-        targetUrls = targetUrls.map(url => {
-            if (!url || url.trim() === '' || url === 'https://example.com') {
-                changesMade = true;
-                return getRandomUrl();
-            }
-            return url;
-        });
-        if (changesMade) renderInputRows();
-    };
 
     function renderInputRows() {
         container.innerHTML = '';
@@ -558,7 +273,7 @@
             const row = document.createElement('div');
             row.className = 'url-row';
             row.innerHTML = `
-                <input type="text" class="url-input" value="${url}" placeholder="Paste URL..." data-idx="${idx}">
+                <input type="text" class="url-input url-grid-field" value="${url}" placeholder="https://..." data-idx="${idx}">
                 <button class="btn btn-remove" onclick="removeRow(${idx})">✕</button>
             `;
             container.appendChild(row);
@@ -566,11 +281,15 @@
     }
 
     function saveInputsToState() {
-        const inputs = document.querySelectorAll('.url-input');
+        const inputs = document.querySelectorAll('.url-grid-field');
         targetUrls = [];
-        inputs.forEach(input => targetUrls.push(input.value.trim()));
+        inputs.forEach(input => {
+            targetUrls.push(input.value.trim());
+        });
         localStorage.setItem('loop_matrix_urls', JSON.stringify(targetUrls));
         localStorage.setItem('matrixIsPortrait', portraitToggle.checked);
+        localStorage.setItem('git_sync_token', document.getElementById('git-token').value.trim());
+        localStorage.setItem('git_sync_repo', document.getElementById('git-repo').value.trim());
     }
 
     document.getElementById('add-field-btn').onclick = () => {
@@ -582,32 +301,131 @@
     window.removeRow = (idx) => {
         saveInputsToState();
         targetUrls.splice(idx, 1);
-        if (targetUrls.length === 0) targetUrls = [''];
         renderInputRows();
     };
 
     document.getElementById('clear-cache-btn').onclick = () => {
-        if (confirm('Wipe layout configurations and imported link databases?')) {
-            localStorage.clear();
-            targetUrls = [...DEFAULT_URLS];
-            parsedFoldersMap = {};
-            activeFolderLinks = [];
-            portraitToggle.checked = false;
-            searchInput.value = '';
-            uploadStatus.textContent = '';
+        if (confirm('Clear matrix definitions?')) {
+            localStorage.removeItem('loop_matrix_urls');
+            targetUrls = ['','',''];
             renderInputRows();
-            renderVisualDatabaseManager();
         }
+    };
+
+    // --- GitHub Integration Core Engine ---
+    document.getElementById('btn-connect-git').onclick = async () => {
+        saveInputsToState();
+        const token = document.getElementById('git-token').value.trim();
+        const repo = document.getElementById('git-repo').value.trim();
+        
+        if (!token || !repo) {
+            alert('Please populate both Token and Repository target strings.');
+            return;
+        }
+
+        try {
+            const res = await fetch(`https://api.github.com/repos/${repo}/contents/links.json`, {
+                headers: { 'Authorization': `token ${token}` }
+            });
+            if (!res.ok) throw new Error('Could not find or access links.json in root repository area.');
+            
+            const data = await res.json();
+            databaseSha = data.sha;
+            databaseStructure = JSON.parse(atob(data.content));
+            
+            // Build out folder entries cleanly
+            dirDropdown.innerHTML = '';
+            Object.keys(databaseStructure).forEach(folderName => {
+                const opt = document.createElement('option');
+                opt.value = folderName;
+                opt.textContent = folderName;
+                dirDropdown.appendChild(opt);
+            });
+            
+            alert('Database synchronized successfully! Directory pools populated.');
+        } catch (err) {
+            alert('Sync Error: ' + err.message);
+        }
+    };
+
+    async function fetchDatabaseSilently() {
+        const token = localStorage.getItem('git_sync_token');
+        const repo = localStorage.getItem('git_sync_repo');
+        try {
+            const res = await fetch(`https://api.github.com/repos/${repo}/contents/links.json`, {
+                headers: { 'Authorization': `token ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                databaseSha = data.sha;
+                databaseStructure = JSON.parse(atob(data.content));
+                dirDropdown.innerHTML = '';
+                Object.keys(databaseStructure).forEach(folderName => {
+                    const opt = document.createElement('option');
+                    opt.value = folderName;
+                    opt.textContent = folderName;
+                    dirDropdown.appendChild(opt);
+                });
+            }
+        } catch(e){}
+    }
+
+    // --- Dice Engine Implementation ---
+    document.getElementById('dice-shuffle-btn').onclick = () => {
+        if (!databaseStructure) {
+            alert('Please connect your GitHub database pool before using the shuffle engine.');
+            return;
+        }
+        
+        const folders = Object.keys(databaseStructure);
+        if (folders.length === 0) return;
+        
+        // Pick a folder at random
+        const randomFolder = folders[Math.floor(Math.random() * folders.length)];
+        dirDropdown.value = randomFolder;
+        
+        // Gather links
+        let sourcePool = [...databaseStructure[randomFolder]];
+        if (sourcePool.length === 0) return;
+        
+        // Fill all existing fields with random draws from that folder
+        const inputs = document.querySelectorAll('.url-grid-field');
+        inputs.forEach(input => {
+            if (sourcePool.length === 0) {
+                // Recycle pool if grid size exceeds unique folder count
+                sourcePool = [...databaseStructure[randomFolder]];
+            }
+            const randIndex = Math.floor(Math.random() * sourcePool.length);
+            input.value = sourcePool.splice(randIndex, 1)[0];
+        });
+        
+        saveInputsToState();
+    };
+
+    // Auto-fill trigger on direct manual drop selection adjustments
+    dirDropdown.onchange = () => {
+        const selected = dirDropdown.value;
+        if (selected === 'manual' || !databaseStructure) return;
+        
+        let sourcePool = [...databaseStructure[selected]];
+        const inputs = document.querySelectorAll('.url-grid-field');
+        inputs.forEach(input => {
+            if (sourcePool.length > 0) {
+                const randIdx = Math.floor(Math.random() * sourcePool.length);
+                input.value = sourcePool.splice(randIdx, 1)[0];
+            }
+        });
+        saveInputsToState();
     };
 
     document.getElementById('launch-btn').onclick = () => {
         saveInputsToState();
-        const activeTargets = targetUrls.filter(url => url.length > 0 && url !== 'https://example.com');
+        const activeTargets = targetUrls.filter(url => url.length > 0);
         if (activeTargets.length === 0) {
-            alert('Please provide or shuffle in at least one valid stream target.');
+            alert('Please provide at least one valid stream destination.');
             return;
         }
-        launchMatrix(targetUrls);
+        launchMatrix(activeTargets);
     };
 
     function launchMatrix(urls) {
@@ -619,59 +437,103 @@
         const panelClass = isPortraitMode ? 'stream-panel mode-portrait' : 'stream-panel mode-landscape';
         
         urls.forEach((url, index) => {
-            if (!url) return; 
-            
             const panel = document.createElement('div');
             panel.className = panelClass;
-            panel.setAttribute('data-panel-idx', index);
             
             const iframe = document.createElement('iframe');
             iframe.src = url;
             iframe.className = 'post-iframe';
             iframe.allow = 'autoplay; fullscreen';
-            iframe.loading = index > 1 ? 'lazy' : 'eager';
             iframe.sandbox = 'allow-same-origin allow-scripts allow-forms allow-popups';
             
             const overlay = document.createElement('div');
             overlay.className = 'hotswap-overlay';
             overlay.innerHTML = `
-                <button class="hotswap-btn dice-btn" title="Roll Random Bookmark">🎲</button>
-                <input type="text" class="hotswap-input" value="${url}" placeholder="Swap URL...">
+                <input type="text" class="hotswap-input" value="${url}">
                 <button class="hotswap-btn">✓</button>
+                <button class="btn-purge">🗑️ PURGE</button>
             `;
             
-            const diceBtn = overlay.querySelector('.dice-btn');
             const inputField = overlay.querySelector('.hotswap-input');
-            const submitBtn = overlay.querySelector('.hotswap-btn:not(.dice-btn)');
+            const submitBtn = overlay.querySelector('.hotswap-btn');
+            const purgeBtn = overlay.querySelector('.btn-purge');
             
-            const processHotswap = (forcedUrl) => {
-                const nextUrl = forcedUrl || inputField.value.trim();
-                if (nextUrl.length > 0) {
-                    iframe.src = nextUrl; 
-                    inputField.value = nextUrl;
-                    targetUrls[index] = nextUrl;
+            const processHotswap = () => {
+                const newUrl = inputField.value.trim();
+                if (newUrl.length > 0) {
+                    iframe.src = newUrl;
+                    targetUrls[index] = newUrl;
                     localStorage.setItem('loop_matrix_urls', JSON.stringify(targetUrls));
                 }
             };
             
-            diceBtn.onclick = (e) => {
-                e.stopPropagation();
-                const freshUrl = getRandomUrl();
-                if (freshUrl) processHotswap(freshUrl);
-            };
-
             submitBtn.onclick = (e) => { e.stopPropagation(); processHotswap(); };
             inputField.onkeydown = (e) => { if (e.key === 'Enter') { e.stopPropagation(); processHotswap(); } };
+            
+            // Wire cloud database link deletion mechanics 
+            purgeBtn.onclick = async (e) => {
+                e.stopPropagation();
+                const deadUrl = iframe.src;
+                if (!confirm(`Confirm absolute deletion of link from repository records?\n${deadUrl}`)) return;
+                
+                // Immediately pull a clean replacement link locally so your view session isn't stalled
+                let replacementUrl = 'https://example.com';
+                const currentDir = dirDropdown.value;
+                if (databaseStructure && databaseStructure[currentDir] && databaseStructure[currentDir].length > 0) {
+                    const pool = databaseStructure[currentDir];
+                    replacementUrl = pool[Math.floor(Math.random() * pool.length)];
+                }
+                
+                // Swap viewport instantly
+                iframe.src = replacementUrl;
+                inputField.value = replacementUrl;
+                targetUrls[index] = replacementUrl;
+                localStorage.setItem('loop_matrix_urls', JSON.stringify(targetUrls));
+
+                // Execute background rest sync back to GitHub
+                if (databaseStructure) {
+                    let deleted = false;
+                    Object.keys(databaseStructure).forEach(folder => {
+                        const idx = databaseStructure[folder].indexOf(deadUrl);
+                        if (idx !== -1) {
+                            databaseStructure[folder].splice(idx, 1);
+                            deleted = true;
+                        }
+                    });
+                    
+                    if (deleted) {
+                        const token = localStorage.getItem('git_sync_token');
+                        const repo = localStorage.getItem('git_sync_repo');
+                        const updatedContent = btoa(JSON.stringify(databaseStructure, null, 2));
+                        
+                        try {
+                            const res = await fetch(`https://api.github.com/repos/${repo}/contents/links.json`, {
+                                method: 'PUT',
+                                headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    message: `Purged dead link via Matrix Launcher Overlay Engine`,
+                                    content: updatedContent,
+                                    sha: databaseSha
+                                })
+                            });
+                            if (res.ok) {
+                                const resData = await res.json();
+                                databaseSha = resData.content.sha; // Save fresh SHA tracking value
+                                console.log('Remote repository synchronized.');
+                            }
+                        } catch (err) { console.error('Cloud Sync failed: ', err); }
+                    }
+                }
+            };
             
             panel.appendChild(iframe);
             panel.appendChild(overlay);
             feedContainer.appendChild(panel);
         });
 
-        document.getElementById('status').textContent = `${feedContainer.children.length} active streams`;
+        document.getElementById('status').textContent = `${urls.length} streams`;
         updateLabels();
         accurateYPosition = window.scrollY;
-        window.scrollTo(0, 0);
     }
 
     document.getElementById('edit-config-btn').onclick = () => {
@@ -718,7 +580,8 @@
         const currentPosition = window.scrollY;
         const panelEl = document.querySelector('.stream-panel');
         const viewHeight = panelEl ? panelEl.offsetHeight : window.innerHeight;
-        accurateYPosition = (Math.floor((currentPosition + 10) / viewHeight) + 1) * viewHeight;
+        const nextTarget = Math.floor((currentPosition + 10) / viewHeight) + 1;
+        accurateYPosition = nextTarget * viewHeight;
         window.scrollTo({ top: accurateYPosition, behavior: 'smooth' });
     }
 
@@ -726,21 +589,28 @@
         const currentPosition = window.scrollY;
         const panelEl = document.querySelector('.stream-panel');
         const viewHeight = panelEl ? panelEl.offsetHeight : window.innerHeight;
-        accurateYPosition = Math.max(0, (Math.ceil((currentPosition - 10) / viewHeight) - 1) * viewHeight);
+        const prevTarget = Math.ceil((currentPosition - 10) / viewHeight) - 1;
+        accurateYPosition = Math.max(0, prevTarget * viewHeight);
         window.scrollTo({ top: accurateYPosition, behavior: 'smooth' });
     }
 
     document.getElementById('next-page-btn').onclick = jumpNext;
     document.getElementById('prev-page-btn').onclick = jumpPrev;
-    document.getElementById('faster').onclick = () => { scrollSpeed = Math.min(15, scrollSpeed + 0.05); updateLabels(); localStorage.setItem('matrixScrollSpeed', scrollSpeed); };
-    document.getElementById('slower').onclick = () => { scrollSpeed = Math.max(0.05, scrollSpeed - 0.05); updateLabels(); localStorage.setItem('matrixScrollSpeed', scrollSpeed); };
+
+    function increaseSpeed() { scrollSpeed = Math.min(15, scrollSpeed + 0.05); updateLabels(); localStorage.setItem('matrixScrollSpeed', scrollSpeed); }
+    function decreaseSpeed() { scrollSpeed = Math.max(0.05, scrollSpeed - 0.05); updateLabels(); localStorage.setItem('matrixScrollSpeed', scrollSpeed); }
+    document.getElementById('faster').onclick = increaseSpeed;
+    document.getElementById('slower').onclick = decreaseSpeed;
 
     document.addEventListener('keydown', (e) => {
-        if (loopScreen.style.display !== 'block' || document.activeElement.tagName === 'INPUT') return;
+        if (loopScreen.style.display !== 'block') return;
+        if (document.activeElement.tagName === 'INPUT') return;
         switch (e.key) {
             case ' ': case 'Spacebar': e.preventDefault(); document.getElementById('toggle').click(); break;
             case 'ArrowUp': e.preventDefault(); jumpPrev(); break;
             case 'ArrowDown': e.preventDefault(); jumpNext(); break;
+            case 'ArrowLeft': e.preventDefault(); decreaseSpeed(); break;
+            case 'ArrowRight': e.preventDefault(); increaseSpeed(); break;
         }
     });
 
