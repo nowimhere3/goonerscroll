@@ -228,6 +228,41 @@
         #controls button.nav-jump { background: #333; color: #fff; border-color: #555; }
         #controls button.btn-gear { background: #333; font-size: 14px; padding: 6px 10px; }
         #controls .info { color: #888; font-size: 13px; font-family: monospace; }
+
+        /* Blacklist Panel */
+        .blacklist-panel { border-top: 3px solid #9c27b0; }
+        .blacklist-display {
+            font-size: 11px;
+            color: #ed4956;
+            background: #111;
+            padding: 10px 12px;
+            border-radius: 8px;
+            max-height: 120px;
+            overflow-y: auto;
+            border: 1px solid #2a0a0e;
+            line-height: 1.8;
+            font-family: monospace;
+            margin-bottom: 12px;
+            min-height: 36px;
+        }
+        .blacklist-display .bl-empty { color: #444; font-style: italic; }
+        .blacklist-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: #1e0a0e;
+            border: 1px solid #4a1a1e;
+            border-radius: 20px;
+            padding: 2px 8px;
+            margin: 2px 3px;
+            font-size: 11px;
+            color: #ed4956;
+        }
+        .bl-remove-btn { background: none; border: none; color: #555; cursor: pointer; font-size: 11px; padding: 0; line-height: 1; }
+        .bl-remove-btn:hover { color: #ed4956; }
+        .blacklist-manual-row { display: flex; gap: 8px; align-items: center; }
+        .btn-bl-clear { background: #1a0a0a; color: #777; border: 1px solid #333; border-radius: 8px; padding: 8px 14px; font-size: 12px; font-weight: bold; cursor: pointer; }
+        .btn-bl-clear:hover { color: #ed4956; border-color: #4a1a1e; }
     </style>
 </head>
 <body>
@@ -280,6 +315,19 @@
         <div class="input-group">
             <label>Destination Folder Directory Name inside Database</label>
             <input type="text" id="target-folder-input" class="url-input" placeholder="e.g., Imported_Leads_Pool">
+        </div>
+    </div>
+
+    <div class="config-card blacklist-panel">
+        <h2>🚫 Domain Blacklist</h2>
+        <p class="subtitle">Blocked domains are automatically skipped during launch and shuffle. PURGE also blacklists the domain.</p>
+        <div class="blacklist-display" id="blacklist-display">
+            <span class="bl-empty">No domains blacklisted yet.</span>
+        </div>
+        <div class="blacklist-manual-row">
+            <input type="text" id="blacklist-manual-input" class="url-input" placeholder="e.g. deadsite.com">
+            <button class="btn btn-add" id="btn-bl-add" style="white-space:nowrap;">+ Block</button>
+            <button class="btn-bl-clear" id="btn-bl-clear">Clear All</button>
         </div>
     </div>
 
@@ -342,6 +390,48 @@
     const dropzone = document.getElementById('file-dropzone');
     const fileInput = document.getElementById('manual-file-pick');
 
+    // --- Blacklist Management ---
+    let blacklist = JSON.parse(localStorage.getItem('matrix_blacklist') || '[]');
+
+    function isBlacklisted(url) {
+        try {
+            const hostname = new URL(url).hostname;
+            return blacklist.some(domain => hostname === domain || hostname.endsWith('.' + domain));
+        } catch (e) { return false; }
+    }
+
+    function addToBlacklist(url) {
+        try {
+            const domain = new URL(url).hostname;
+            if (domain && !blacklist.includes(domain)) {
+                blacklist.push(domain);
+                localStorage.setItem('matrix_blacklist', JSON.stringify(blacklist));
+                renderBlacklistDisplay();
+            }
+        } catch (e) { console.error('Invalid URL for blacklist:', e); }
+    }
+
+    function removeFromBlacklist(domain) {
+        blacklist = blacklist.filter(d => d !== domain);
+        localStorage.setItem('matrix_blacklist', JSON.stringify(blacklist));
+        renderBlacklistDisplay();
+    }
+
+    function renderBlacklistDisplay() {
+        const display = document.getElementById('blacklist-display');
+        if (!display) return;
+        if (blacklist.length === 0) {
+            display.innerHTML = '<span class="bl-empty">No domains blacklisted yet.</span>';
+            return;
+        }
+        display.innerHTML = blacklist.map(domain =>
+            `<span class="blacklist-tag">${domain}<button class="bl-remove-btn" onclick="removeFromBlacklist('${domain}')" title="Unblock">✕</button></span>`
+        ).join('');
+    }
+
+    // Expose removeFromBlacklist globally for inline onclick
+    window.removeFromBlacklist = removeFromBlacklist;
+
     function initLaunchpad() {
         document.getElementById('git-token').value = localStorage.getItem('git_sync_token') || '';
         document.getElementById('git-repo').value = localStorage.getItem('git_sync_repo') || '';
@@ -355,6 +445,25 @@
 
         portraitToggle.checked = localStorage.getItem('matrixIsPortrait') === 'true';
         renderInputRows();
+        renderBlacklistDisplay();
+
+        document.getElementById('btn-bl-add').onclick = () => {
+            let raw = document.getElementById('blacklist-manual-input').value.trim();
+            if (!raw) return;
+            // Accept bare domain or full URL
+            if (!raw.startsWith('http')) raw = 'https://' + raw;
+            addToBlacklist(raw);
+            document.getElementById('blacklist-manual-input').value = '';
+        };
+
+        document.getElementById('btn-bl-clear').onclick = () => {
+            if (blacklist.length === 0) return;
+            if (confirm('Clear entire domain blacklist?')) {
+                blacklist = [];
+                localStorage.setItem('matrix_blacklist', JSON.stringify(blacklist));
+                renderBlacklistDisplay();
+            }
+        };
         
         if (localStorage.getItem('git_sync_token') && localStorage.getItem('git_sync_repo')) {
             fetchDatabaseSilently();
@@ -553,12 +662,12 @@
         const randomFolder = folders[Math.floor(Math.random() * folders.length)];
         dirDropdown.value = randomFolder;
         
-        let sourcePool = [...databaseStructure[randomFolder]];
-        if (sourcePool.length === 0) return;
+        let sourcePool = [...databaseStructure[randomFolder]].filter(u => !isBlacklisted(u));
+        if (sourcePool.length === 0) { alert('All URLs in the selected folder are blacklisted.'); return; }
         
         const inputs = document.querySelectorAll('.url-grid-field');
         inputs.forEach(input => {
-            if (sourcePool.length === 0) sourcePool = [...databaseStructure[randomFolder]];
+            if (sourcePool.length === 0) sourcePool = [...databaseStructure[randomFolder]].filter(u => !isBlacklisted(u));
             const randIndex = Math.floor(Math.random() * sourcePool.length);
             input.value = sourcePool.splice(randIndex, 1)[0];
         });
@@ -588,6 +697,17 @@
     };
 
     function launchMatrix(urls) {
+        const filteredUrls = urls.filter(url => !isBlacklisted(url));
+        const skipped = urls.length - filteredUrls.length;
+        if (filteredUrls.length === 0) {
+            alert('All provided links are on the domain blacklist. Add new links or clear the blacklist.');
+            return;
+        }
+        if (skipped > 0) {
+            console.info(`[Blacklist] Skipped ${skipped} blacklisted URL(s).`);
+        }
+        urls = filteredUrls;
+
         setupScreen.style.display = 'none';
         loopScreen.style.display = 'block';
         feedContainer.innerHTML = '';
@@ -648,7 +768,7 @@
             submitBtn.onclick = (e) => { e.stopPropagation(); processHotswap(); };
             inputField.onkeydown = (e) => { if (e.key === 'Enter') { e.stopPropagation(); processHotswap(); } };
 
-            // Shuffle — pick random URL from current folder, no purge
+            // Shuffle — pick random non-blacklisted URL from current folder, no purge
             shuffleBtn.onclick = (e) => {
                 e.stopPropagation();
                 const currentDir = dirDropdown.value;
@@ -656,7 +776,11 @@
                     alert('No repository folder selected or folder is empty.');
                     return;
                 }
-                const pool = databaseStructure[currentDir];
+                const pool = databaseStructure[currentDir].filter(u => !isBlacklisted(u));
+                if (pool.length === 0) {
+                    alert('All URLs in this folder are blacklisted. Clear some blacklist entries first.');
+                    return;
+                }
                 const newUrl = pool[Math.floor(Math.random() * pool.length)];
                 iframe.src = newUrl;
                 inputField.value = newUrl;
@@ -667,7 +791,8 @@
             purgeBtn.onclick = async (e) => {
                 e.stopPropagation();
                 const deadUrl = iframe.src;
-                if (!confirm(`Confirm absolute deletion of link from repository records?\n${deadUrl}`)) return;
+                if (!confirm(`Confirm absolute deletion of link from repository records?\nThis will also blacklist the domain locally.\n\n${deadUrl}`)) return;
+                addToBlacklist(deadUrl);
                 
                 let replacementUrl = 'https://example.com';
                 const currentDir = dirDropdown.value;
