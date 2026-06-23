@@ -8,6 +8,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0b0b0b; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; overflow-x: hidden; }
         
+        /* Setup / Launchpad Layout View */
         #setup-screen {
             display: flex;
             flex-direction: column;
@@ -30,6 +31,7 @@
         h2 { font-size: 24px; margin-bottom: 8px; color: #fff; text-align: center; }
         .subtitle { font-size: 13px; color: #777; text-align: center; margin-bottom: 24px; }
         
+        /* Panel Accents */
         .grid-panel { border-top: 3px solid #0095f6; }
         .ingest-panel { border-top: 3px solid #ff9800; }
         .git-panel { border-top: 3px solid #f1502f; }
@@ -37,6 +39,7 @@
         .input-group { margin-bottom: 15px; }
         .input-group label { display: block; font-size: 12px; color: #aaa; margin-bottom: 6px; font-weight: bold; }
 
+        /* Pool Header & Dice Flex */
         .pool-header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
         .pool-title-area { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: bold; color: #ddd; }
         .btn-dice { background: #222; border: 1px solid #444; color: #ff9800; cursor: pointer; padding: 4px 10px; border-radius: 6px; font-size: 14px; transition: transform 0.1s; }
@@ -44,6 +47,7 @@
 
         .directory-select { width: 100%; background: #222; border: 1px solid #333; padding: 12px; color: #fff; border-radius: 8px; font-size: 14px; outline: none; margin-bottom: 15px; }
 
+        /* Dropzone Styling */
         .dropzone-container {
             border: 2px dashed #444;
             border-radius: 12px;
@@ -92,10 +96,12 @@
         input:checked + .slider { background-color: #0095f6; }
         input:checked + .slider:before { transform: translateX(24px); }
 
+        /* Drawer Mechanics */
         .drawer-toggle-btn { background: transparent; border: none; color: #777; font-size: 12px; cursor: pointer; text-decoration: underline; margin-top: 10px; font-weight: bold; }
         .drawer-toggle-btn:hover { color: #aaa; }
         #git-drawer-content { display: none; margin-top: 20px; }
 
+        /* Active Viewport Loop Display Canvas */
         #loop-screen { display: none; }
         #feed { max-width: 100%; margin: 0 auto; display: flex; flex-direction: column; }
         
@@ -105,6 +111,7 @@
 
         .post-iframe { width: 100%; height: 100%; border: none; display: block; }
         
+        /* Hotswap Floating Bar Configuration */
         .hotswap-overlay {
             position: absolute;
             top: 15px;
@@ -127,12 +134,14 @@
         }
         .stream-panel:hover .hotswap-overlay { opacity: 1; pointer-events: auto; transform: translateY(0); }
 
+        /* Icon button row — always visible on hover */
         .hotswap-icon-row {
             display: flex;
             gap: 6px;
             align-items: center;
         }
 
+        /* Three-dot toggle button */
         .btn-hotswap-toggle {
             background: #222;
             border: 1px solid #444;
@@ -153,6 +162,7 @@
         .btn-hotswap-toggle:hover { background: #333; color: #fff; }
         .btn-hotswap-toggle.active { background: #0095f6; border-color: #0095f6; color: #fff; }
 
+        /* Shuffle button — widest */
         .btn-hotswap-shuffle {
             background: #1a2a1a;
             border: 1px solid #3a6b3a;
@@ -169,6 +179,7 @@
         .btn-hotswap-shuffle:hover { background: #223322; }
         .btn-hotswap-shuffle:active { transform: rotate(15deg) scale(0.95); }
 
+        /* Purge button — second widest */
         .btn-purge {
             background: #331417;
             color: #ed4956;
@@ -183,6 +194,7 @@
         }
         .btn-purge:hover { background: #ed4956; color: #fff; }
 
+        /* URL input row — hidden until toggle clicked */
         .hotswap-url-row {
             display: none;
             gap: 5px;
@@ -217,22 +229,7 @@
         #controls button.btn-gear { background: #333; font-size: 14px; padding: 6px 10px; }
         #controls .info { color: #888; font-size: 13px; font-family: monospace; }
 
-        /* Recovery indicator */
-        .recovery-badge {
-            position: absolute;
-            top: 15px;
-            left: 15px;
-            background: rgba(237, 73, 86, 0.9);
-            color: #fff;
-            font-size: 11px;
-            font-weight: bold;
-            padding: 4px 10px;
-            border-radius: 20px;
-            z-index: 9999;
-            display: none;
-            pointer-events: none;
-        }
-
+        /* Blacklist Panel */
         .blacklist-panel { border-top: 3px solid #9c27b0; }
         .blacklist-display {
             font-size: 11px;
@@ -267,6 +264,7 @@
         .btn-bl-clear { background: #1a0a0a; color: #777; border: 1px solid #333; border-radius: 8px; padding: 8px 14px; font-size: 12px; font-weight: bold; cursor: pointer; }
         .btn-bl-clear:hover { color: #ed4956; border-color: #4a1a1e; }
 
+        /* Star / Bookmark button in overlay */
         .btn-hotswap-star {
             background: #1a1a0a;
             border: 1px solid #5a5a00;
@@ -285,6 +283,7 @@
         .btn-hotswap-star:hover { background: #2a2a00; transform: scale(1.15); }
         .btn-hotswap-star.saved { color: #ffd700; background: #2a2200; border-color: #ffd700; }
 
+        /* Reload button */
         .btn-hotswap-reload {
             background: #0a1a2a;
             border: 1px solid #1a5a8a;
@@ -303,6 +302,7 @@
         .btn-hotswap-reload:hover { background: #0d2a3a; }
         .btn-hotswap-reload.spinning { transform: rotate(360deg); transition: transform 0.4s ease; }
 
+        /* Bookmark modal */
         #bookmark-modal {
             display: none;
             position: fixed;
@@ -391,7 +391,20 @@
         </div>
 
         <div class="input-group">
-            <label>Destination Folder Directory Name inside Database</label>
+            <label>Target Folder in Database</label>
+            <select class="directory-select" id="ingest-folder-select" style="margin-bottom:0;">
+                <option value="">— select existing folder —</option>
+            </select>
+        </div>
+
+        <div class="input-group" style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+            <div style="flex:1; height:1px; background:#333;"></div>
+            <span style="font-size:11px; color:#555; font-weight:bold; white-space:nowrap;">OR CREATE NEW</span>
+            <div style="flex:1; height:1px; background:#333;"></div>
+        </div>
+
+        <div class="input-group">
+            <label>New Folder Name</label>
             <input type="text" id="target-folder-input" class="url-input" placeholder="e.g., Imported_Leads_Pool">
         </div>
     </div>
@@ -477,10 +490,7 @@
     let targetUrls = [];
     let databaseStructure = null; 
     let databaseSha = null;       
-    let accurateYPosition = 0;
-
-    // --- Recovery watcher interval handle ---
-    let recoveryWatcherHandle = null;
+    let accurateYPosition = 0; 
 
     const setupScreen = document.getElementById('setup-screen');
     const loopScreen = document.getElementById('loop-screen');
@@ -494,6 +504,7 @@
     const dropzone = document.getElementById('file-dropzone');
     const fileInput = document.getElementById('manual-file-pick');
 
+    // --- Bookmark / Playlist Modal ---
     let bookmarkModal = document.getElementById('bookmark-modal');
     let bookmarkTargetUrl = null;
     let bookmarkStarBtn = null;
@@ -509,6 +520,7 @@
         document.getElementById('bm-url-preview').textContent = url;
         document.getElementById('bm-new-folder-input').value = '';
 
+        // Populate folder dropdown
         const sel = document.getElementById('bm-folder-select');
         sel.innerHTML = '<option value="">— select a folder —</option>';
         Object.keys(databaseStructure).forEach(folder => {
@@ -538,6 +550,7 @@
 
         if (!databaseStructure[targetFolder]) databaseStructure[targetFolder] = [];
 
+        // Allow duplicates across folders — only skip if this exact URL already in this exact folder
         if (!databaseStructure[targetFolder].includes(bookmarkTargetUrl)) {
             databaseStructure[targetFolder].push(bookmarkTargetUrl);
         }
@@ -592,6 +605,7 @@
         ).join('');
     }
 
+    // Expose removeFromBlacklist globally for inline onclick
     window.removeFromBlacklist = removeFromBlacklist;
 
     function initLaunchpad() {
@@ -612,6 +626,7 @@
         document.getElementById('btn-bl-add').onclick = () => {
             let raw = document.getElementById('blacklist-manual-input').value.trim();
             if (!raw) return;
+            // Accept bare domain or full URL
             if (!raw.startsWith('http')) raw = 'https://' + raw;
             addToBlacklist(raw);
             document.getElementById('blacklist-manual-input').value = '';
@@ -641,6 +656,7 @@
         }
     };
 
+    // --- Drag & Drop Automated Processing Code ---
     dropzone.onclick = () => fileInput.click();
     dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
     dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
@@ -658,6 +674,8 @@
         }
 
         let folderField = document.getElementById('target-folder-input').value.trim();
+        const selectedIngestFolder = document.getElementById('ingest-folder-select').value;
+        if (!folderField) folderField = selectedIngestFolder;
         if (!folderField) {
             folderField = file.name.replace(/\.[^/.]+$/, "").replace(/[^a-zA-Z0-9_]/g, "_");
             document.getElementById('target-folder-input').value = folderField;
@@ -674,6 +692,7 @@
                 return url.split('"')[0].split("'")[0].split('>')[0].split('<')[0];
             });
             
+            // De-duplicate within this import batch only (allow same URL in different folders)
             let uniqueUrls = [...new Set(cleanUrls)].filter(url => url.length > 10);
 
             if (uniqueUrls.length === 0) {
@@ -684,6 +703,7 @@
             if (!confirm(`Extracted ${uniqueUrls.length} unique links. Commit these immediately into the folder "${folderField}" on GitHub?`)) return;
 
             if (!databaseStructure[folderField]) databaseStructure[folderField] = [];
+            // Append — duplicates across folders are allowed, only skip exact dupes within this same folder
             const existingInFolder = new Set(databaseStructure[folderField]);
             const newEntries = uniqueUrls.filter(u => !existingInFolder.has(u));
             databaseStructure[folderField] = [...databaseStructure[folderField], ...newEntries];
@@ -727,11 +747,21 @@
 
     function updateDirectoryDropdown() {
         dirDropdown.innerHTML = '';
+        const ingestSelect = document.getElementById('ingest-folder-select');
+        if (ingestSelect) ingestSelect.innerHTML = '<option value="">— select existing folder —</option>';
+
         Object.keys(databaseStructure).forEach(folderName => {
             const opt = document.createElement('option');
             opt.value = folderName;
             opt.textContent = folderName;
             dirDropdown.appendChild(opt);
+
+            if (ingestSelect) {
+                const opt2 = document.createElement('option');
+                opt2.value = folderName;
+                opt2.textContent = folderName;
+                ingestSelect.appendChild(opt2);
+            }
         });
     }
 
@@ -769,6 +799,7 @@
         }
     };
 
+    // --- GitHub Integration Handshake ---
     document.getElementById('btn-connect-git').onclick = async () => {
         saveInputsToState();
         const token = document.getElementById('git-token').value.trim();
@@ -814,6 +845,7 @@
         } catch(e){}
     }
 
+    // --- Dice Engine ---
     document.getElementById('dice-shuffle-btn').onclick = () => {
         if (!databaseStructure) { alert('Please connect your GitHub database pool before using the shuffle engine.'); return; }
         const folders = Object.keys(databaseStructure);
@@ -856,63 +888,6 @@
         launchMatrix(activeTargets);
     };
 
-    // =============================================
-    // IFRAME RECOVERY WATCHER
-    // Detects blank/dead iframes every 3 seconds
-    // and reloads them from their last known good URL.
-    // =============================================
-    function startRecoveryWatcher() {
-        if (recoveryWatcherHandle) clearInterval(recoveryWatcherHandle);
-        recoveryWatcherHandle = setInterval(() => {
-            document.querySelectorAll('.post-iframe').forEach(iframe => {
-                const panel = iframe.closest('.stream-panel');
-                const badge = panel ? panel.querySelector('.recovery-badge') : null;
-                try {
-                    const loc = iframe.contentWindow?.location?.href;
-                    // If we can READ the location and it's blank — the iframe died
-                    if (loc === 'about:blank' || loc === '') {
-                        const savedSrc = iframe.getAttribute('data-last-src');
-                        if (savedSrc && savedSrc !== 'about:blank') {
-                            console.log('[Recovery] Dead iframe detected, reloading:', savedSrc);
-                            if (badge) { badge.textContent = '⚡ Auto-recovering...'; badge.style.display = 'block'; }
-                            iframe.src = savedSrc;
-                            setTimeout(() => { if (badge) badge.style.display = 'none'; }, 3000);
-                        }
-                    }
-                } catch(e) {
-                    // Cross-origin error = page is alive and loaded correctly — this is GOOD
-                    // Save the current src as the last known good URL
-                    if (iframe.src && iframe.src !== 'about:blank') {
-                        iframe.setAttribute('data-last-src', iframe.src);
-                    }
-                }
-            });
-        }, 3000);
-    }
-
-    function stopRecoveryWatcher() {
-        if (recoveryWatcherHandle) {
-            clearInterval(recoveryWatcherHandle);
-            recoveryWatcherHandle = null;
-        }
-    }
-
-    function reloadIframe(iframe, reloadBtn) {
-        reloadBtn.classList.add('spinning');
-        setTimeout(() => reloadBtn.classList.remove('spinning'), 450);
-        const savedSrc = iframe.getAttribute('data-last-src') || iframe.src;
-        iframe.src = 'about:blank';
-        setTimeout(() => {
-            iframe.src = savedSrc;
-            // Update the hotswap input to reflect current URL
-            const panel = iframe.closest('.stream-panel');
-            if (panel) {
-                const input = panel.querySelector('.hotswap-input');
-                if (input) input.value = savedSrc;
-            }
-        }, 150);
-    }
-
     function launchMatrix(urls) {
         const filteredUrls = urls.filter(url => !isBlacklisted(url));
         const skipped = urls.length - filteredUrls.length;
@@ -935,20 +910,12 @@
         urls.forEach((url, index) => {
             const panel = document.createElement('div');
             panel.className = panelClass;
-
-            // Recovery badge (hidden by default)
-            const recoveryBadge = document.createElement('div');
-            recoveryBadge.className = 'recovery-badge';
-            recoveryBadge.textContent = '⚡ Auto-recovering...';
-            panel.appendChild(recoveryBadge);
             
             const iframe = document.createElement('iframe');
             iframe.src = url;
             iframe.className = 'post-iframe';
             iframe.allow = 'autoplay; fullscreen';
             iframe.sandbox = 'allow-same-origin allow-scripts allow-forms allow-popups';
-            // Store last known good URL for recovery
-            iframe.setAttribute('data-last-src', url);
             
             const overlay = document.createElement('div');
             overlay.className = 'hotswap-overlay';
@@ -975,33 +942,34 @@
             const shuffleBtn = overlay.querySelector('.btn-hotswap-shuffle');
             const purgeBtn = overlay.querySelector('.btn-purge');
 
+            // Star — open bookmark modal for this iframe's current URL
             starBtn.onclick = (e) => {
                 e.stopPropagation();
-                openBookmarkModal(iframe.getAttribute('data-last-src') || iframe.src, starBtn);
+                openBookmarkModal(iframe.src, starBtn);
             };
 
-            // FIXED RELOAD: uses data-last-src so it survives cross-origin navigation
+            // Reload — soft-reload just this iframe
             reloadBtn.onclick = (e) => {
                 e.stopPropagation();
-                reloadIframe(iframe, reloadBtn);
+                reloadBtn.classList.add('spinning');
+                setTimeout(() => reloadBtn.classList.remove('spinning'), 450);
+                const currentSrc = iframe.src;
+                iframe.src = 'about:blank';
+                setTimeout(() => { iframe.src = currentSrc; }, 80);
             };
 
+            // Toggle URL field open/closed
             toggleBtn.onclick = (e) => {
                 e.stopPropagation();
                 const isOpen = urlRow.classList.toggle('open');
                 toggleBtn.classList.toggle('active', isOpen);
-                if (isOpen) {
-                    // Sync input with current known URL
-                    inputField.value = iframe.getAttribute('data-last-src') || iframe.src;
-                    inputField.focus();
-                }
+                if (isOpen) inputField.focus();
             };
 
             const processHotswap = () => {
                 const newUrl = inputField.value.trim();
                 if (newUrl.length > 0) {
                     iframe.src = newUrl;
-                    iframe.setAttribute('data-last-src', newUrl);
                     targetUrls[index] = newUrl;
                     localStorage.setItem('loop_matrix_urls', JSON.stringify(targetUrls));
                     urlRow.classList.remove('open');
@@ -1012,6 +980,7 @@
             submitBtn.onclick = (e) => { e.stopPropagation(); processHotswap(); };
             inputField.onkeydown = (e) => { if (e.key === 'Enter') { e.stopPropagation(); processHotswap(); } };
 
+            // Shuffle — pick random non-blacklisted URL from current folder, no purge
             shuffleBtn.onclick = (e) => {
                 e.stopPropagation();
                 const currentDir = dirDropdown.value;
@@ -1026,7 +995,6 @@
                 }
                 const newUrl = pool[Math.floor(Math.random() * pool.length)];
                 iframe.src = newUrl;
-                iframe.setAttribute('data-last-src', newUrl);
                 inputField.value = newUrl;
                 targetUrls[index] = newUrl;
                 localStorage.setItem('loop_matrix_urls', JSON.stringify(targetUrls));
@@ -1034,7 +1002,7 @@
             
             purgeBtn.onclick = async (e) => {
                 e.stopPropagation();
-                const deadUrl = iframe.getAttribute('data-last-src') || iframe.src;
+                const deadUrl = iframe.src;
                 if (!confirm(`Confirm absolute deletion of link from repository records?\nThis will also blacklist the domain locally.\n\n${deadUrl}`)) return;
                 addToBlacklist(deadUrl);
                 
@@ -1046,7 +1014,6 @@
                 }
                 
                 iframe.src = replacementUrl;
-                iframe.setAttribute('data-last-src', replacementUrl);
                 inputField.value = replacementUrl;
                 targetUrls[index] = replacementUrl;
                 localStorage.setItem('loop_matrix_urls', JSON.stringify(targetUrls));
@@ -1081,19 +1048,35 @@
             panel.appendChild(iframe);
             panel.appendChild(overlay);
             feedContainer.appendChild(panel);
+
+            // --- Viewport Director (Instagram-style play/pause) ---
+            // Fires postMessage into the iframe when it enters/leaves the viewport.
+            // The Tampermonkey script on xvideos.red listens for these and calls
+            // video.play() / video.pause() directly. Other sites are left to their
+            // own native behaviour (most modern players pause themselves off-screen).
+            const viewportObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    const msg = entry.isIntersecting ? 'LAUNCHPAD_PLAY' : 'LAUNCHPAD_PAUSE';
+                    try {
+                        iframe.contentWindow.postMessage({ type: msg }, '*');
+                    } catch(e) {
+                        // Cross-origin block — site will handle itself
+                    }
+                });
+            }, {
+                // Fire when panel is >= 50% visible (entering) or drops below 50% (leaving)
+                threshold: 0.5
+            });
+            viewportObserver.observe(panel);
         });
 
         document.getElementById('status').textContent = `${urls.length} streams`;
         updateLabels();
         accurateYPosition = window.scrollY;
-
-        // Start the iframe recovery watcher
-        startRecoveryWatcher();
     }
 
     document.getElementById('edit-config-btn').onclick = () => {
         stopScrolling();
-        stopRecoveryWatcher();
         loopScreen.style.display = 'none';
         setupScreen.style.display = 'flex';
         initLaunchpad();
@@ -1176,3 +1159,4 @@
 </script>
 </body>
 </html>
+
