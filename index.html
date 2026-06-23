@@ -44,6 +44,9 @@
         .pool-title-area { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: bold; color: #ddd; }
         .btn-dice { background: #222; border: 1px solid #444; color: #ff9800; cursor: pointer; padding: 4px 10px; border-radius: 6px; font-size: 14px; transition: transform 0.1s; }
         .btn-dice:active { transform: rotate(20deg) scale(0.95); }
+        .btn-dice-all { background: #1a1200; border: 1px solid #7a5a00; color: #ffd700; cursor: pointer; padding: 4px 12px; border-radius: 6px; font-size: 14px; transition: transform 0.15s; font-weight: bold; }
+        .btn-dice-all:hover { background: #2a1e00; border-color: #ffd700; }
+        .btn-dice-all:active { transform: rotate(20deg) scale(0.95); }
 
         .directory-select { width: 100%; background: #222; border: 1px solid #333; padding: 12px; color: #fff; border-radius: 8px; font-size: 14px; outline: none; margin-bottom: 15px; }
 
@@ -410,7 +413,8 @@
             <div class="pool-title-area">
                 <span>📁 Active Shuffle Directory Pool</span>
             </div>
-            <button class="btn-dice" id="dice-shuffle-btn" title="Randomize Folder & Fill Grid">🎲 SHUFFLE</button>
+            <button class="btn-dice-all" id="dice-shuffle-all-btn" title="Shuffle All Folders — picks a random folder per URL slot">🎲🎲 SHUFFLE ALL</button>
+            <button class="btn-dice" id="dice-shuffle-btn" title="Randomize One Folder & Fill Grid">🎲 SHUFFLE</button>
         </div>
         
         <select class="directory-select" id="directory-dropdown">
@@ -998,7 +1002,7 @@
         } catch(e){}
     }
 
-    // --- Dice Engine ---
+    // --- Dice Engine (Single Folder) ---
     document.getElementById('dice-shuffle-btn').onclick = () => {
         if (!databaseStructure) { alert('Please connect your GitHub database pool before using the shuffle engine.'); return; }
         const folders = Object.keys(databaseStructure);
@@ -1016,6 +1020,47 @@
             const randIndex = Math.floor(Math.random() * sourcePool.length);
             input.value = sourcePool.splice(randIndex, 1)[0];
         });
+        saveInputsToState();
+    };
+
+    // --- Dice Engine (Shuffle ALL — cross-collection) ---
+    // Picks a random folder per URL slot. Max 2 slots may share the same folder.
+    // Pulls a random non-blacklisted URL from each chosen folder independently.
+    document.getElementById('dice-shuffle-all-btn').onclick = () => {
+        if (!databaseStructure) { alert('Please connect your GitHub database pool before using the shuffle engine.'); return; }
+        const folders = Object.keys(databaseStructure).filter(f => {
+            const pool = databaseStructure[f].filter(u => !isBlacklisted(u));
+            return pool.length > 0;
+        });
+        if (folders.length === 0) { alert('No folders with available (non-blacklisted) URLs found.'); return; }
+
+        const inputs = document.querySelectorAll('.url-grid-field');
+        const slotCount = inputs.length;
+
+        // Build a folder assignment per slot — max 2 slots per folder
+        const folderUsage = {}; // folderName -> count used
+        const slotFolders = [];
+
+        for (let i = 0; i < slotCount; i++) {
+            // Filter to folders that haven't hit the 2-use cap
+            let available = folders.filter(f => (folderUsage[f] || 0) < 2);
+            // If everything is capped (e.g. only 1 folder exists), reset and allow any
+            if (available.length === 0) available = folders;
+            const chosen = available[Math.floor(Math.random() * available.length)];
+            folderUsage[chosen] = (folderUsage[chosen] || 0) + 1;
+            slotFolders.push(chosen);
+        }
+
+        // Assign a random URL from each slot's chosen folder
+        inputs.forEach((input, i) => {
+            const folder = slotFolders[i];
+            const pool = databaseStructure[folder].filter(u => !isBlacklisted(u));
+            const picked = pool[Math.floor(Math.random() * pool.length)];
+            input.value = picked;
+        });
+
+        // Set dropdown to "manual" since no single folder represents this mix
+        dirDropdown.value = 'manual';
         saveInputsToState();
     };
 
