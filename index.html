@@ -370,7 +370,27 @@
             border: 1px solid #2a2a2a;
             border-radius: 10px;
             padding: 10px 12px;
+            cursor: default;
+            transition: background 0.15s, border-color 0.15s, opacity 0.15s;
         }
+        .folder-manager-row.drag-over {
+            border-color: #26a69a;
+            background: #0a1f1e;
+        }
+        .folder-manager-row.dragging {
+            opacity: 0.4;
+        }
+        .drag-handle {
+            color: #444;
+            font-size: 16px;
+            cursor: grab;
+            flex-shrink: 0;
+            padding: 0 2px;
+            user-select: none;
+            line-height: 1;
+        }
+        .drag-handle:hover { color: #26a69a; }
+        .drag-handle:active { cursor: grabbing; }
         .folder-manager-name {
             flex: 1;
             font-size: 13px;
@@ -674,12 +694,23 @@
             return;
         }
         list.innerHTML = '';
+
+        let dragSrc = null; // the row being dragged
+
         Object.keys(databaseStructure).forEach(folderName => {
             const urls = databaseStructure[folderName];
             const count = urls.length;
 
             const row = document.createElement('div');
             row.className = 'folder-manager-row';
+            row.draggable = true;
+            row.dataset.folder = folderName;
+
+            // ⠿ drag handle
+            const handle = document.createElement('span');
+            handle.className = 'drag-handle';
+            handle.textContent = '⠿';
+            handle.title = 'Drag to reorder';
 
             const nameEl = document.createElement('div');
             nameEl.className = 'folder-manager-name';
@@ -699,12 +730,72 @@
             deleteBtn.textContent = '🗑 Delete';
             deleteBtn.onclick = () => deleteFolder(folderName, row);
 
+            row.appendChild(handle);
             row.appendChild(nameEl);
             row.appendChild(countEl);
             row.appendChild(exportBtn);
             row.appendChild(deleteBtn);
+
+            // --- Drag events ---
+            row.addEventListener('dragstart', (e) => {
+                dragSrc = row;
+                row.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', folderName);
+            });
+
+            row.addEventListener('dragend', () => {
+                row.classList.remove('dragging');
+                list.querySelectorAll('.folder-manager-row').forEach(r => r.classList.remove('drag-over'));
+            });
+
+            row.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                if (row !== dragSrc) {
+                    list.querySelectorAll('.folder-manager-row').forEach(r => r.classList.remove('drag-over'));
+                    row.classList.add('drag-over');
+                }
+            });
+
+            row.addEventListener('dragleave', () => {
+                row.classList.remove('drag-over');
+            });
+
+            row.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                row.classList.remove('drag-over');
+                if (!dragSrc || dragSrc === row) return;
+
+                // Reorder DOM
+                const rows = [...list.querySelectorAll('.folder-manager-row')];
+                const srcIdx = rows.indexOf(dragSrc);
+                const tgtIdx = rows.indexOf(row);
+                if (srcIdx < tgtIdx) {
+                    list.insertBefore(dragSrc, row.nextSibling);
+                } else {
+                    list.insertBefore(dragSrc, row);
+                }
+
+                // Rebuild databaseStructure key order to match new DOM order
+                await reorderDatabase();
+            });
+
             list.appendChild(row);
         });
+    }
+
+    async function reorderDatabase() {
+        const list = document.getElementById('folder-manager-list');
+        if (!list || !databaseStructure) return;
+
+        const newOrder = [...list.querySelectorAll('.folder-manager-row')].map(r => r.dataset.folder);
+        const reordered = {};
+        newOrder.forEach(key => { if (databaseStructure[key] !== undefined) reordered[key] = databaseStructure[key]; });
+        databaseStructure = reordered;
+
+        updateDirectoryDropdown();
+        await pushDatabaseToRemote('Reordered folders via drag-and-drop');
     }
 
     function exportFolder(folderName, urls) {
