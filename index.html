@@ -528,14 +528,26 @@
             line-height: 1;
         }
         .btn-lock:hover { border-color: #666; color: #aaa; }
-        .btn-lock.locked {
-            background: #1a1200;
-            border-color: #f0c040;
-            color: #f0c040;
+        .btn-lock.url-locked {
+            background: #1a0a0a;
+            border-color: #ed4956;
+            color: #ed4956;
         }
-        .url-row.is-locked .url-input,
-        .curated-row.is-locked .curated-folder-select {
-            opacity: 0.45;
+        .btn-lock.folder-locked {
+            background: #0a1a0a;
+            border-color: #4caf50;
+            color: #4caf50;
+        }
+        .url-row.is-url-locked .url-input,
+        .curated-row.is-url-locked .curated-folder-select {
+            opacity: 0.4;
+        }
+        .url-row.is-folder-locked .url-input {
+            opacity: 0.7;
+        }
+        .curated-row.is-folder-locked .curated-folder-select {
+            opacity: 0.7;
+            pointer-events: none;
         }
     </style>
 </head>
@@ -704,7 +716,8 @@
     let accurateYPosition = 0;
     let urlFolderMap = {}; // tracks which folder each URL slot came from
     let isCuratedMode = false; // when true, each slot has its own folder picker
-    let lockedRows = new Set(); // indices of locked URL rows 
+    // rowLockState: Map of index -> 0 (unlocked), 1 (URL lock), 2 (folder lock)
+    let rowLockState = {};
 
     const setupScreen = document.getElementById('setup-screen');
     const loopScreen = document.getElementById('loop-screen');
@@ -1164,19 +1177,16 @@
 
         const applyDragEvents = (row, idx) => {
             row.draggable = true;
-
             row.addEventListener('dragstart', (e) => {
                 dragSrc = row;
                 row.classList.add('dragging');
                 e.dataTransfer.effectAllowed = 'move';
                 e.dataTransfer.setData('text/plain', String(idx));
             });
-
             row.addEventListener('dragend', () => {
                 row.classList.remove('dragging');
                 container.querySelectorAll('.url-row, .curated-row').forEach(r => r.classList.remove('drag-over'));
             });
-
             row.addEventListener('dragover', (e) => {
                 e.preventDefault();
                 e.dataTransfer.dropEffect = 'move';
@@ -1185,110 +1195,96 @@
                     row.classList.add('drag-over');
                 }
             });
-
             row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
-
             row.addEventListener('drop', (e) => {
                 e.preventDefault();
                 row.classList.remove('drag-over');
                 if (!dragSrc || dragSrc === row) return;
-
-                // Read current order from DOM before mutating
                 const allRows = [...container.querySelectorAll('.url-row, .curated-row')];
                 const srcIdx = allRows.indexOf(dragSrc);
                 const tgtIdx = allRows.indexOf(row);
                 if (srcIdx === -1 || tgtIdx === -1) return;
-
-                // Reorder targetUrls and urlFolderMap to match
                 const newUrls = [...targetUrls];
-                const newFolderMap = { ...urlFolderMap };
-                const newLocked = new Set(lockedRows);
-
-                // Splice src out, insert at target
                 const [movedUrl] = newUrls.splice(srcIdx, 1);
                 newUrls.splice(tgtIdx, 0, movedUrl);
-
-                // Rebuild folder map and lock set with new indices
-                const oldFolders = Object.fromEntries(
-                    Object.entries(urlFolderMap).map(([k, v]) => [parseInt(k), v])
-                );
-                const oldLockArr = [...lockedRows];
-                // Build ordered arrays by old index
-                const orderedFolders = allRows.map((_, i) => oldFolders[i] || null);
-                const orderedLocks = allRows.map((_, i) => oldLockArr.includes(i));
-
-                // Apply the same reorder
+                const orderedFolders = allRows.map((_, i) => urlFolderMap[i] || null);
+                const orderedLocks = allRows.map((_, i) => rowLockState[i] || 0);
                 const [movedFolder] = orderedFolders.splice(srcIdx, 1);
                 orderedFolders.splice(tgtIdx, 0, movedFolder);
                 const [movedLock] = orderedLocks.splice(srcIdx, 1);
                 orderedLocks.splice(tgtIdx, 0, movedLock);
-
                 targetUrls = newUrls;
                 urlFolderMap = {};
+                rowLockState = {};
                 orderedFolders.forEach((f, i) => { if (f) urlFolderMap[i] = f; });
-                lockedRows = new Set(orderedLocks.map((locked, i) => locked ? i : -1).filter(i => i >= 0));
-
+                orderedLocks.forEach((s, i) => { if (s) rowLockState[i] = s; });
                 saveInputsToState();
                 renderInputRows();
             });
         };
 
+        const makeDragHandle = () => {
+            const h = document.createElement('span');
+            h.className = 'row-drag-handle';
+            h.textContent = '⠿';
+            h.title = 'Drag to reorder';
+            h.onmousedown = (e) => e.stopPropagation();
+            return h;
+        };
+
+        // 3-state lock: 0=unlocked 🔓, 1=URL locked 🔒, 2=folder locked 📁
+        const makeLockBtn = (idx, row) => {
+            const btn = document.createElement('button');
+            btn.className = 'btn-lock';
+
+            const applyState = (s) => {
+                row.classList.remove('is-url-locked', 'is-folder-locked');
+                btn.classList.remove('url-locked', 'folder-locked');
+                if (s === 1) {
+                    btn.textContent = '🔒';
+                    btn.title = 'URL Locked — shuffles skip this row entirely.\nClick for Folder Lock.';
+                    btn.classList.add('url-locked');
+                    row.classList.add('is-url-locked');
+                } else if (s === 2) {
+                    btn.textContent = '📁';
+                    btn.title = 'Folder Locked — shuffles pick a new URL from the same folder only.\nClick to unlock.';
+                    btn.classList.add('folder-locked');
+                    row.classList.add('is-folder-locked');
+                } else {
+                    btn.textContent = '🔓';
+                    btn.title = 'Unlocked. Click once for URL Lock 🔒, twice for Folder Lock 📁.';
+                }
+            };
+
+            applyState(rowLockState[idx] || 0);
+
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                const next = ((rowLockState[idx] || 0) + 1) % 3;
+                rowLockState[idx] = next;
+                applyState(next);
+            };
+
+            return btn;
+        };
+
         targetUrls.forEach((url, idx) => {
             const assignedFolder = urlFolderMap[idx] || '';
-            const isLocked = lockedRows.has(idx);
-
-            // --- Shared: drag handle + lock button builders ---
-            const makeDragHandle = () => {
-                const h = document.createElement('span');
-                h.className = 'row-drag-handle';
-                h.textContent = '⠿';
-                h.title = 'Drag to reorder';
-                // Prevent drag handle from also triggering lock/input clicks
-                h.onmousedown = (e) => e.stopPropagation();
-                return h;
-            };
-
-            const makeLockBtn = (row) => {
-                const btn = document.createElement('button');
-                btn.className = 'btn-lock' + (isLocked ? ' locked' : '');
-                btn.title = isLocked ? 'Unlock this row' : 'Lock — shuffles will skip this row';
-                btn.textContent = isLocked ? '🔒' : '🔓';
-                btn.onclick = (e) => {
-                    e.stopPropagation();
-                    if (lockedRows.has(idx)) {
-                        lockedRows.delete(idx);
-                        btn.classList.remove('locked');
-                        btn.textContent = '🔓';
-                        btn.title = 'Lock — shuffles will skip this row';
-                        row.classList.remove('is-locked');
-                    } else {
-                        lockedRows.add(idx);
-                        btn.classList.add('locked');
-                        btn.textContent = '🔒';
-                        btn.title = 'Unlock this row';
-                        row.classList.add('is-locked');
-                    }
-                };
-                return btn;
-            };
+            const lockState = rowLockState[idx] || 0;
 
             if (isCuratedMode) {
-                // --- Curated Row ---
                 const row = document.createElement('div');
-                row.className = 'curated-row' + (isLocked ? ' is-locked' : '');
-
+                row.className = 'curated-row'
+                    + (lockState === 1 ? ' is-url-locked' : '')
+                    + (lockState === 2 ? ' is-folder-locked' : '');
                 const top = document.createElement('div');
                 top.className = 'curated-row-top';
-
                 const handle = makeDragHandle();
-
                 const sel = document.createElement('select');
                 sel.className = 'curated-folder-select';
                 sel.innerHTML = buildFolderOptions(assignedFolder);
-                if (isLocked) sel.style.pointerEvents = 'none';
-
-                const lockBtn = makeLockBtn(row);
-
+                if (lockState === 1 || lockState === 2) sel.style.pointerEvents = 'none';
+                const lockBtn = makeLockBtn(idx, row);
                 const removeBtn = document.createElement('button');
                 removeBtn.className = 'btn btn-remove';
                 removeBtn.textContent = '✕';
@@ -1297,22 +1293,19 @@
                     saveInputsToState();
                     targetUrls.splice(idx, 1);
                     delete urlFolderMap[idx];
-                    lockedRows.delete(idx);
+                    delete rowLockState[idx];
                     renderInputRows();
                 };
-
                 const preview = document.createElement('div');
                 preview.className = 'curated-url-preview';
                 preview.textContent = url || '— no URL loaded yet —';
-
                 const hiddenInput = document.createElement('input');
                 hiddenInput.type = 'hidden';
                 hiddenInput.className = 'url-grid-field';
                 hiddenInput.value = url;
                 hiddenInput.dataset.idx = idx;
-
                 sel.onchange = () => {
-                    if (isLocked) return;
+                    if (lockState === 1 || lockState === 2) return;
                     const folder = sel.value;
                     if (!folder || !databaseStructure || !databaseStructure[folder]) return;
                     const pool = databaseStructure[folder].filter(u => !isBlacklisted(u));
@@ -1323,7 +1316,6 @@
                     urlFolderMap[idx] = folder;
                     saveInputsToState();
                 };
-
                 top.appendChild(handle);
                 top.appendChild(sel);
                 top.appendChild(lockBtn);
@@ -1335,35 +1327,29 @@
                 container.appendChild(row);
 
             } else {
-                // --- Normal Row ---
                 const row = document.createElement('div');
-                row.className = 'url-row' + (isLocked ? ' is-locked' : '');
-                row.style.display = 'flex';
-                row.style.gap = '8px';
-                row.style.alignItems = 'center';
-
+                row.className = 'url-row'
+                    + (lockState === 1 ? ' is-url-locked' : '')
+                    + (lockState === 2 ? ' is-folder-locked' : '');
+                row.style.cssText = 'display:flex; gap:8px; align-items:center;';
                 const handle = makeDragHandle();
-
                 const input = document.createElement('input');
                 input.type = 'text';
                 input.className = 'url-input url-grid-field';
                 input.value = url;
                 input.placeholder = 'https://...';
                 input.dataset.idx = idx;
-                if (isLocked) input.readOnly = true;
-
-                const lockBtn = makeLockBtn(row);
-
+                if (lockState === 1) input.readOnly = true;
+                const lockBtn = makeLockBtn(idx, row);
                 const removeBtn = document.createElement('button');
                 removeBtn.className = 'btn btn-remove';
                 removeBtn.textContent = '✕';
                 removeBtn.onclick = () => {
                     saveInputsToState();
                     targetUrls.splice(idx, 1);
-                    lockedRows.delete(idx);
+                    delete rowLockState[idx];
                     renderInputRows();
                 };
-
                 row.appendChild(handle);
                 row.appendChild(input);
                 row.appendChild(lockBtn);
@@ -1456,7 +1442,18 @@
         urlFolderMap = {}; // all slots from same folder
         const inputs = document.querySelectorAll('.url-grid-field');
         inputs.forEach((input, i) => {
-            if (lockedRows.has(i)) return; // skip locked rows
+            const lock = rowLockState[i] || 0;
+            if (lock === 1) return; // URL locked — skip entirely
+            if (lock === 2) {
+                // Folder locked — pick new URL from same folder
+                const folder = urlFolderMap[i] || randomFolder;
+                const pool = (databaseStructure[folder] || []).filter(u => !isBlacklisted(u));
+                if (pool.length > 0) {
+                    input.value = pool[Math.floor(Math.random() * pool.length)];
+                    targetUrls[i] = input.value;
+                }
+                return;
+            }
             if (sourcePool.length === 0) sourcePool = [...databaseStructure[randomFolder]].filter(u => !isBlacklisted(u));
             const randIndex = Math.floor(Math.random() * sourcePool.length);
             input.value = sourcePool.splice(randIndex, 1)[0];
@@ -1464,7 +1461,6 @@
             urlFolderMap[i] = randomFolder;
         });
         saveInputsToState();
-        // In curated mode, re-render so dropdowns show pre-selected to this folder
         if (isCuratedMode) renderInputRows();
     };
 
@@ -1482,8 +1478,9 @@
         const inputs = document.querySelectorAll('.url-grid-field');
         const slotCount = inputs.length;
 
-        // Only assign folders to unlocked slots
-        const unlockedIndices = [...Array(slotCount).keys()].filter(i => !lockedRows.has(i));
+        // Only assign new folders to fully unlocked slots; folder-locked get new URL from same folder
+        const unlockedIndices = [...Array(slotCount).keys()].filter(i => (rowLockState[i] || 0) === 0);
+        const folderLockedIndices = [...Array(slotCount).keys()].filter(i => (rowLockState[i] || 0) === 2);
 
         const folderUsage = {};
         const slotFolders = {};
@@ -1496,9 +1493,20 @@
             slotFolders[i] = chosen;
         });
 
-        // Assign URLs only to unlocked slots
         inputs.forEach((input, i) => {
-            if (lockedRows.has(i)) return;
+            const lock = rowLockState[i] || 0;
+            if (lock === 1) return; // URL locked — skip
+            if (lock === 2) {
+                // Folder locked — new URL from same folder
+                const folder = urlFolderMap[i];
+                if (!folder || !databaseStructure[folder]) return;
+                const pool = databaseStructure[folder].filter(u => !isBlacklisted(u));
+                if (pool.length > 0) {
+                    input.value = pool[Math.floor(Math.random() * pool.length)];
+                    targetUrls[i] = input.value;
+                }
+                return;
+            }
             const folder = slotFolders[i];
             const pool = databaseStructure[folder].filter(u => !isBlacklisted(u));
             const picked = pool[Math.floor(Math.random() * pool.length)];
@@ -1517,11 +1525,21 @@
     dirDropdown.onchange = () => {
         const selected = dirDropdown.value;
         if (selected === 'manual' || !databaseStructure) return;
-        
         let sourcePool = [...databaseStructure[selected]];
         const inputs = document.querySelectorAll('.url-grid-field');
         inputs.forEach((input, i) => {
-            if (lockedRows.has(i)) return; // skip locked rows
+            const lock = rowLockState[i] || 0;
+            if (lock === 1) return;
+            if (lock === 2) {
+                const folder = urlFolderMap[i];
+                if (!folder || !databaseStructure[folder]) return;
+                const pool = databaseStructure[folder].filter(u => !isBlacklisted(u));
+                if (pool.length > 0) {
+                    input.value = pool[Math.floor(Math.random() * pool.length)];
+                    targetUrls[i] = input.value;
+                }
+                return;
+            }
             if (sourcePool.length > 0) {
                 const randIdx = Math.floor(Math.random() * sourcePool.length);
                 input.value = sourcePool.splice(randIdx, 1)[0];
@@ -1661,6 +1679,7 @@
             inputField.onkeydown = (e) => { if (e.key === 'Enter') { e.stopPropagation(); processHotswap(); } };
 
             // Shuffle — pulls from THIS iframe's own source folder (Option A)
+            // Also respects folder lock — folder-locked slots always stay in their folder
             shuffleBtn.onclick = (e) => {
                 e.stopPropagation();
                 const folder = getSourceFolder();
