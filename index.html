@@ -491,6 +491,52 @@
             text-overflow: ellipsis;
             padding: 0 2px;
         }
+
+        /* URL row drag & lock */
+        .url-row, .curated-row {
+            position: relative;
+        }
+        .url-row.drag-over, .curated-row.drag-over {
+            border-color: #0095f6;
+            background: #0a1a2a;
+        }
+        .url-row.dragging, .curated-row.dragging {
+            opacity: 0.4;
+        }
+        .row-drag-handle {
+            color: #333;
+            font-size: 16px;
+            cursor: grab;
+            flex-shrink: 0;
+            padding: 0 2px;
+            user-select: none;
+            line-height: 1;
+            transition: color 0.15s;
+        }
+        .row-drag-handle:hover { color: #0095f6; }
+        .row-drag-handle:active { cursor: grabbing; }
+        .btn-lock {
+            background: transparent;
+            border: 1px solid #333;
+            border-radius: 8px;
+            color: #444;
+            cursor: pointer;
+            font-size: 13px;
+            padding: 4px 7px;
+            flex-shrink: 0;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
+            line-height: 1;
+        }
+        .btn-lock:hover { border-color: #666; color: #aaa; }
+        .btn-lock.locked {
+            background: #1a1200;
+            border-color: #f0c040;
+            color: #f0c040;
+        }
+        .url-row.is-locked .url-input,
+        .curated-row.is-locked .curated-folder-select {
+            opacity: 0.45;
+        }
     </style>
 </head>
 <body>
@@ -657,7 +703,8 @@
     let databaseSha = null;       
     let accurateYPosition = 0;
     let urlFolderMap = {}; // tracks which folder each URL slot came from
-    let isCuratedMode = false; // when true, each slot has its own folder picker 
+    let isCuratedMode = false; // when true, each slot has its own folder picker
+    let lockedRows = new Set(); // indices of locked URL rows 
 
     const setupScreen = document.getElementById('setup-screen');
     const loopScreen = document.getElementById('loop-screen');
@@ -1113,31 +1160,151 @@
 
     function renderInputRows() {
         container.innerHTML = '';
+        let dragSrc = null;
+
+        const applyDragEvents = (row, idx) => {
+            row.draggable = true;
+
+            row.addEventListener('dragstart', (e) => {
+                dragSrc = row;
+                row.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', String(idx));
+            });
+
+            row.addEventListener('dragend', () => {
+                row.classList.remove('dragging');
+                container.querySelectorAll('.url-row, .curated-row').forEach(r => r.classList.remove('drag-over'));
+            });
+
+            row.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                if (row !== dragSrc) {
+                    container.querySelectorAll('.url-row, .curated-row').forEach(r => r.classList.remove('drag-over'));
+                    row.classList.add('drag-over');
+                }
+            });
+
+            row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
+
+            row.addEventListener('drop', (e) => {
+                e.preventDefault();
+                row.classList.remove('drag-over');
+                if (!dragSrc || dragSrc === row) return;
+
+                // Read current order from DOM before mutating
+                const allRows = [...container.querySelectorAll('.url-row, .curated-row')];
+                const srcIdx = allRows.indexOf(dragSrc);
+                const tgtIdx = allRows.indexOf(row);
+                if (srcIdx === -1 || tgtIdx === -1) return;
+
+                // Reorder targetUrls and urlFolderMap to match
+                const newUrls = [...targetUrls];
+                const newFolderMap = { ...urlFolderMap };
+                const newLocked = new Set(lockedRows);
+
+                // Splice src out, insert at target
+                const [movedUrl] = newUrls.splice(srcIdx, 1);
+                newUrls.splice(tgtIdx, 0, movedUrl);
+
+                // Rebuild folder map and lock set with new indices
+                const oldFolders = Object.fromEntries(
+                    Object.entries(urlFolderMap).map(([k, v]) => [parseInt(k), v])
+                );
+                const oldLockArr = [...lockedRows];
+                // Build ordered arrays by old index
+                const orderedFolders = allRows.map((_, i) => oldFolders[i] || null);
+                const orderedLocks = allRows.map((_, i) => oldLockArr.includes(i));
+
+                // Apply the same reorder
+                const [movedFolder] = orderedFolders.splice(srcIdx, 1);
+                orderedFolders.splice(tgtIdx, 0, movedFolder);
+                const [movedLock] = orderedLocks.splice(srcIdx, 1);
+                orderedLocks.splice(tgtIdx, 0, movedLock);
+
+                targetUrls = newUrls;
+                urlFolderMap = {};
+                orderedFolders.forEach((f, i) => { if (f) urlFolderMap[i] = f; });
+                lockedRows = new Set(orderedLocks.map((locked, i) => locked ? i : -1).filter(i => i >= 0));
+
+                saveInputsToState();
+                renderInputRows();
+            });
+        };
+
         targetUrls.forEach((url, idx) => {
             const assignedFolder = urlFolderMap[idx] || '';
+            const isLocked = lockedRows.has(idx);
+
+            // --- Shared: drag handle + lock button builders ---
+            const makeDragHandle = () => {
+                const h = document.createElement('span');
+                h.className = 'row-drag-handle';
+                h.textContent = '⠿';
+                h.title = 'Drag to reorder';
+                // Prevent drag handle from also triggering lock/input clicks
+                h.onmousedown = (e) => e.stopPropagation();
+                return h;
+            };
+
+            const makeLockBtn = (row) => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-lock' + (isLocked ? ' locked' : '');
+                btn.title = isLocked ? 'Unlock this row' : 'Lock — shuffles will skip this row';
+                btn.textContent = isLocked ? '🔒' : '🔓';
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    if (lockedRows.has(idx)) {
+                        lockedRows.delete(idx);
+                        btn.classList.remove('locked');
+                        btn.textContent = '🔓';
+                        btn.title = 'Lock — shuffles will skip this row';
+                        row.classList.remove('is-locked');
+                    } else {
+                        lockedRows.add(idx);
+                        btn.classList.add('locked');
+                        btn.textContent = '🔒';
+                        btn.title = 'Unlock this row';
+                        row.classList.add('is-locked');
+                    }
+                };
+                return btn;
+            };
 
             if (isCuratedMode) {
                 // --- Curated Row ---
                 const row = document.createElement('div');
-                row.className = 'curated-row';
+                row.className = 'curated-row' + (isLocked ? ' is-locked' : '');
 
                 const top = document.createElement('div');
                 top.className = 'curated-row-top';
 
+                const handle = makeDragHandle();
+
                 const sel = document.createElement('select');
                 sel.className = 'curated-folder-select';
                 sel.innerHTML = buildFolderOptions(assignedFolder);
+                if (isLocked) sel.style.pointerEvents = 'none';
+
+                const lockBtn = makeLockBtn(row);
 
                 const removeBtn = document.createElement('button');
                 removeBtn.className = 'btn btn-remove';
                 removeBtn.textContent = '✕';
-                removeBtn.onclick = () => { saveInputsToState(); targetUrls.splice(idx, 1); delete urlFolderMap[idx]; renderInputRows(); };
+                removeBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    saveInputsToState();
+                    targetUrls.splice(idx, 1);
+                    delete urlFolderMap[idx];
+                    lockedRows.delete(idx);
+                    renderInputRows();
+                };
 
                 const preview = document.createElement('div');
                 preview.className = 'curated-url-preview';
                 preview.textContent = url || '— no URL loaded yet —';
 
-                // Hidden input keeps the URL value accessible for saveInputsToState
                 const hiddenInput = document.createElement('input');
                 hiddenInput.type = 'hidden';
                 hiddenInput.className = 'url-grid-field';
@@ -1145,6 +1312,7 @@
                 hiddenInput.dataset.idx = idx;
 
                 sel.onchange = () => {
+                    if (isLocked) return;
                     const folder = sel.value;
                     if (!folder || !databaseStructure || !databaseStructure[folder]) return;
                     const pool = databaseStructure[folder].filter(u => !isBlacklisted(u));
@@ -1156,21 +1324,51 @@
                     saveInputsToState();
                 };
 
+                top.appendChild(handle);
                 top.appendChild(sel);
+                top.appendChild(lockBtn);
                 top.appendChild(removeBtn);
                 row.appendChild(top);
                 row.appendChild(preview);
                 row.appendChild(hiddenInput);
+                applyDragEvents(row, idx);
                 container.appendChild(row);
 
             } else {
                 // --- Normal Row ---
                 const row = document.createElement('div');
-                row.className = 'url-row';
-                row.innerHTML = `
-                    <input type="text" class="url-input url-grid-field" value="${url}" placeholder="https://..." data-idx="${idx}">
-                    <button class="btn btn-remove" onclick="removeRow(${idx})">✕</button>
-                `;
+                row.className = 'url-row' + (isLocked ? ' is-locked' : '');
+                row.style.display = 'flex';
+                row.style.gap = '8px';
+                row.style.alignItems = 'center';
+
+                const handle = makeDragHandle();
+
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'url-input url-grid-field';
+                input.value = url;
+                input.placeholder = 'https://...';
+                input.dataset.idx = idx;
+                if (isLocked) input.readOnly = true;
+
+                const lockBtn = makeLockBtn(row);
+
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'btn btn-remove';
+                removeBtn.textContent = '✕';
+                removeBtn.onclick = () => {
+                    saveInputsToState();
+                    targetUrls.splice(idx, 1);
+                    lockedRows.delete(idx);
+                    renderInputRows();
+                };
+
+                row.appendChild(handle);
+                row.appendChild(input);
+                row.appendChild(lockBtn);
+                row.appendChild(removeBtn);
+                applyDragEvents(row, idx);
                 container.appendChild(row);
             }
         });
@@ -1258,9 +1456,11 @@
         urlFolderMap = {}; // all slots from same folder
         const inputs = document.querySelectorAll('.url-grid-field');
         inputs.forEach((input, i) => {
+            if (lockedRows.has(i)) return; // skip locked rows
             if (sourcePool.length === 0) sourcePool = [...databaseStructure[randomFolder]].filter(u => !isBlacklisted(u));
             const randIndex = Math.floor(Math.random() * sourcePool.length);
             input.value = sourcePool.splice(randIndex, 1)[0];
+            targetUrls[i] = input.value;
             urlFolderMap[i] = randomFolder;
         });
         saveInputsToState();
@@ -1282,25 +1482,28 @@
         const inputs = document.querySelectorAll('.url-grid-field');
         const slotCount = inputs.length;
 
-        // Build a folder assignment per slot — max 2 slots per folder
-        const folderUsage = {};
-        const slotFolders = [];
+        // Only assign folders to unlocked slots
+        const unlockedIndices = [...Array(slotCount).keys()].filter(i => !lockedRows.has(i));
 
-        for (let i = 0; i < slotCount; i++) {
+        const folderUsage = {};
+        const slotFolders = {};
+
+        unlockedIndices.forEach(i => {
             let available = folders.filter(f => (folderUsage[f] || 0) < 2);
             if (available.length === 0) available = folders;
             const chosen = available[Math.floor(Math.random() * available.length)];
             folderUsage[chosen] = (folderUsage[chosen] || 0) + 1;
-            slotFolders.push(chosen);
-        }
+            slotFolders[i] = chosen;
+        });
 
-        // Assign a random URL from each slot's chosen folder
-        urlFolderMap = {};
+        // Assign URLs only to unlocked slots
         inputs.forEach((input, i) => {
+            if (lockedRows.has(i)) return;
             const folder = slotFolders[i];
             const pool = databaseStructure[folder].filter(u => !isBlacklisted(u));
             const picked = pool[Math.floor(Math.random() * pool.length)];
             input.value = picked;
+            targetUrls[i] = picked;
             urlFolderMap[i] = folder;
         });
 
@@ -1316,12 +1519,13 @@
         if (selected === 'manual' || !databaseStructure) return;
         
         let sourcePool = [...databaseStructure[selected]];
-        urlFolderMap = {};
         const inputs = document.querySelectorAll('.url-grid-field');
         inputs.forEach((input, i) => {
+            if (lockedRows.has(i)) return; // skip locked rows
             if (sourcePool.length > 0) {
                 const randIdx = Math.floor(Math.random() * sourcePool.length);
                 input.value = sourcePool.splice(randIdx, 1)[0];
+                targetUrls[i] = input.value;
                 urlFolderMap[i] = selected;
             }
         });
