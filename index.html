@@ -434,6 +434,63 @@
         }
         .btn-fm-delete:hover { background: #ed4956; color: #fff; }
         .folder-manager-empty { color: #444; font-style: italic; font-size: 13px; text-align: center; padding: 20px 0; }
+
+        /* Curated Mode */
+        .btn-curated {
+            background: #111;
+            border: 1px solid #444;
+            color: #777;
+            cursor: pointer;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: bold;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
+            white-space: nowrap;
+        }
+        .btn-curated:hover { background: #1a1a1a; color: #aaa; }
+        .btn-curated.active {
+            background: #0d2a1a;
+            border-color: #26a69a;
+            color: #26a69a;
+        }
+        .curated-row {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-bottom: 12px;
+            background: #0d1a18;
+            border: 1px solid #1a3a36;
+            border-radius: 10px;
+            padding: 10px 12px;
+        }
+        .curated-row-top {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .curated-folder-select {
+            flex: 1;
+            background: #111;
+            border: 1px solid #26a69a44;
+            color: #26a69a;
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: bold;
+            outline: none;
+            cursor: pointer;
+        }
+        .curated-folder-select:focus { border-color: #26a69a; }
+        .curated-url-preview {
+            font-size: 10px;
+            color: #3a5a56;
+            font-family: monospace;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding: 0 2px;
+        }
     </style>
 </head>
 <body>
@@ -448,6 +505,7 @@
             <div class="pool-title-area">
                 <span>📁 Active Shuffle Directory Pool</span>
             </div>
+            <button class="btn-curated" id="btn-curated-toggle" title="Curated Mode — assign a specific folder to each URL slot">🎯 Curated</button>
             <button class="btn-dice-all" id="dice-shuffle-all-btn" title="Shuffle All Folders — picks a random folder per URL slot">🎲🎲 SHUFFLE ALL</button>
             <button class="btn-dice" id="dice-shuffle-btn" title="Randomize One Folder & Fill Grid">🎲 SHUFFLE</button>
         </div>
@@ -598,7 +656,8 @@
     let databaseStructure = null; 
     let databaseSha = null;       
     let accurateYPosition = 0;
-    let urlFolderMap = {}; // tracks which folder each URL slot came from 
+    let urlFolderMap = {}; // tracks which folder each URL slot came from
+    let isCuratedMode = false; // when true, each slot has its own folder picker 
 
     const setupScreen = document.getElementById('setup-screen');
     const loopScreen = document.getElementById('loop-screen');
@@ -829,6 +888,8 @@
     updateDirectoryDropdown = function() {
         _origUpdateDD();
         if (fmDrawerContent.style.display === 'block') renderFolderManager();
+        // Re-render input rows so curated dropdowns get the latest folder list
+        if (isCuratedMode) renderInputRows();
     };
 
     // --- Blacklist Management ---
@@ -1029,16 +1090,89 @@
         });
     }
 
+    // --- Curated Mode Toggle ---
+    document.getElementById('btn-curated-toggle').onclick = () => {
+        isCuratedMode = !isCuratedMode;
+        const btn = document.getElementById('btn-curated-toggle');
+        btn.classList.toggle('active', isCuratedMode);
+        btn.textContent = isCuratedMode ? '🎯 Curated: ON' : '🎯 Curated';
+        renderInputRows();
+    };
+
+    function buildFolderOptions(selectedFolder) {
+        let opts = '<option value="">— pick a folder —</option>';
+        if (databaseStructure) {
+            Object.keys(databaseStructure).forEach(f => {
+                const count = databaseStructure[f].length;
+                const sel = f === selectedFolder ? ' selected' : '';
+                opts += `<option value="${f}"${sel}>${f} (${count})</option>`;
+            });
+        }
+        return opts;
+    }
+
     function renderInputRows() {
         container.innerHTML = '';
         targetUrls.forEach((url, idx) => {
-            const row = document.createElement('div');
-            row.className = 'url-row';
-            row.innerHTML = `
-                <input type="text" class="url-input url-grid-field" value="${url}" placeholder="https://..." data-idx="${idx}">
-                <button class="btn btn-remove" onclick="removeRow(${idx})">✕</button>
-            `;
-            container.appendChild(row);
+            const assignedFolder = urlFolderMap[idx] || '';
+
+            if (isCuratedMode) {
+                // --- Curated Row ---
+                const row = document.createElement('div');
+                row.className = 'curated-row';
+
+                const top = document.createElement('div');
+                top.className = 'curated-row-top';
+
+                const sel = document.createElement('select');
+                sel.className = 'curated-folder-select';
+                sel.innerHTML = buildFolderOptions(assignedFolder);
+
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'btn btn-remove';
+                removeBtn.textContent = '✕';
+                removeBtn.onclick = () => { saveInputsToState(); targetUrls.splice(idx, 1); delete urlFolderMap[idx]; renderInputRows(); };
+
+                const preview = document.createElement('div');
+                preview.className = 'curated-url-preview';
+                preview.textContent = url || '— no URL loaded yet —';
+
+                // Hidden input keeps the URL value accessible for saveInputsToState
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.className = 'url-grid-field';
+                hiddenInput.value = url;
+                hiddenInput.dataset.idx = idx;
+
+                sel.onchange = () => {
+                    const folder = sel.value;
+                    if (!folder || !databaseStructure || !databaseStructure[folder]) return;
+                    const pool = databaseStructure[folder].filter(u => !isBlacklisted(u));
+                    if (pool.length === 0) { alert('No available URLs in this folder.'); return; }
+                    const picked = pool[Math.floor(Math.random() * pool.length)];
+                    hiddenInput.value = picked;
+                    preview.textContent = picked;
+                    urlFolderMap[idx] = folder;
+                    saveInputsToState();
+                };
+
+                top.appendChild(sel);
+                top.appendChild(removeBtn);
+                row.appendChild(top);
+                row.appendChild(preview);
+                row.appendChild(hiddenInput);
+                container.appendChild(row);
+
+            } else {
+                // --- Normal Row ---
+                const row = document.createElement('div');
+                row.className = 'url-row';
+                row.innerHTML = `
+                    <input type="text" class="url-input url-grid-field" value="${url}" placeholder="https://..." data-idx="${idx}">
+                    <button class="btn btn-remove" onclick="removeRow(${idx})">✕</button>
+                `;
+                container.appendChild(row);
+            }
         });
     }
 
@@ -1130,6 +1264,8 @@
             urlFolderMap[i] = randomFolder;
         });
         saveInputsToState();
+        // In curated mode, re-render so dropdowns show pre-selected to this folder
+        if (isCuratedMode) renderInputRows();
     };
 
     // --- Dice Engine (Shuffle ALL — cross-collection) ---
@@ -1171,6 +1307,8 @@
         // Set dropdown to "manual" since no single folder represents this mix
         dirDropdown.value = 'manual';
         saveInputsToState();
+        // In curated mode, re-render so each slot shows its assigned folder dropdown
+        if (isCuratedMode) renderInputRows();
     };
 
     dirDropdown.onchange = () => {
@@ -1178,14 +1316,17 @@
         if (selected === 'manual' || !databaseStructure) return;
         
         let sourcePool = [...databaseStructure[selected]];
+        urlFolderMap = {};
         const inputs = document.querySelectorAll('.url-grid-field');
-        inputs.forEach(input => {
+        inputs.forEach((input, i) => {
             if (sourcePool.length > 0) {
                 const randIdx = Math.floor(Math.random() * sourcePool.length);
                 input.value = sourcePool.splice(randIdx, 1)[0];
+                urlFolderMap[i] = selected;
             }
         });
         saveInputsToState();
+        if (isCuratedMode) renderInputRows();
     };
 
     document.getElementById('launch-btn').onclick = () => {
