@@ -501,12 +501,17 @@
         .url-row, .curated-row {
             position: relative;
         }
-        .url-row.drag-over, .curated-row.drag-over {
-            border-color: #0095f6;
-            background: #0a1a2a;
-        }
         .url-row.dragging, .curated-row.dragging {
             opacity: 0.4;
+        }
+        /* Insertion line — shows above or below target row */
+        .url-row.drop-above, .curated-row.drop-above {
+            border-top: 2px solid #0095f6;
+            margin-top: -2px;
+        }
+        .url-row.drop-below, .curated-row.drop-below {
+            border-bottom: 2px solid #0095f6;
+            margin-bottom: -2px;
         }
         .row-drag-handle {
             color: #333;
@@ -1182,6 +1187,12 @@
         container.innerHTML = '';
         let dragSrc = null;
 
+        const clearDropIndicators = () => {
+            container.querySelectorAll('.url-row, .curated-row').forEach(r => {
+                r.classList.remove('drop-above', 'drop-below');
+            });
+        };
+
         const applyDragEvents = (row, idx) => {
             row.draggable = true;
             row.addEventListener('dragstart', (e) => {
@@ -1192,39 +1203,64 @@
             });
             row.addEventListener('dragend', () => {
                 row.classList.remove('dragging');
-                container.querySelectorAll('.url-row, .curated-row').forEach(r => r.classList.remove('drag-over'));
+                clearDropIndicators();
             });
             row.addEventListener('dragover', (e) => {
                 e.preventDefault();
                 e.dataTransfer.dropEffect = 'move';
-                if (row !== dragSrc) {
-                    container.querySelectorAll('.url-row, .curated-row').forEach(r => r.classList.remove('drag-over'));
-                    row.classList.add('drag-over');
+                if (row === dragSrc) return;
+                clearDropIndicators();
+                // Determine if cursor is in top or bottom half of the row
+                const rect = row.getBoundingClientRect();
+                const midY = rect.top + rect.height / 2;
+                if (e.clientY < midY) {
+                    row.classList.add('drop-above');
+                } else {
+                    row.classList.add('drop-below');
                 }
             });
-            row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
+            row.addEventListener('dragleave', (e) => {
+                // Only clear if actually leaving this row (not entering a child)
+                if (!row.contains(e.relatedTarget)) {
+                    row.classList.remove('drop-above', 'drop-below');
+                }
+            });
             row.addEventListener('drop', (e) => {
                 e.preventDefault();
-                row.classList.remove('drag-over');
-                if (!dragSrc || dragSrc === row) return;
+                if (!dragSrc || dragSrc === row) { clearDropIndicators(); return; }
+
                 const allRows = [...container.querySelectorAll('.url-row, .curated-row')];
                 const srcIdx = allRows.indexOf(dragSrc);
                 const tgtIdx = allRows.indexOf(row);
-                if (srcIdx === -1 || tgtIdx === -1) return;
+                if (srcIdx === -1 || tgtIdx === -1) { clearDropIndicators(); return; }
+
+                // Determine insert position based on which half was targeted
+                const insertAfter = row.classList.contains('drop-below');
+                clearDropIndicators();
+
                 const newUrls = [...targetUrls];
-                const [movedUrl] = newUrls.splice(srcIdx, 1);
-                newUrls.splice(tgtIdx, 0, movedUrl);
                 const orderedFolders = allRows.map((_, i) => urlFolderMap[i] || null);
                 const orderedLocks = allRows.map((_, i) => rowLockState[i] || 0);
+
+                // Remove src from arrays
+                const [movedUrl] = newUrls.splice(srcIdx, 1);
                 const [movedFolder] = orderedFolders.splice(srcIdx, 1);
-                orderedFolders.splice(tgtIdx, 0, movedFolder);
                 const [movedLock] = orderedLocks.splice(srcIdx, 1);
-                orderedLocks.splice(tgtIdx, 0, movedLock);
+
+                // Calculate adjusted insert index after removal
+                let insertIdx = tgtIdx > srcIdx ? tgtIdx - 1 : tgtIdx;
+                if (insertAfter) insertIdx += 1;
+
+                newUrls.splice(insertIdx, 0, movedUrl);
+                orderedFolders.splice(insertIdx, 0, movedFolder);
+                orderedLocks.splice(insertIdx, 0, movedLock);
+
                 targetUrls = newUrls;
                 urlFolderMap = {};
                 rowLockState = {};
                 orderedFolders.forEach((f, i) => { if (f) urlFolderMap[i] = f; });
                 orderedLocks.forEach((s, i) => { if (s) rowLockState[i] = s; });
+
                 saveInputsToState();
                 renderInputRows();
             });
