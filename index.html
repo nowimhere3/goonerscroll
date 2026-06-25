@@ -522,6 +522,10 @@
         .url-row, .curated-row {
             position: relative;
         }
+        /* Prevent child elements stealing the drag from the row */
+        .url-row *, .curated-row * {
+            -webkit-user-drag: none;
+        }
         .url-row.dragging, .curated-row.dragging {
             opacity: 0.4;
         }
@@ -751,6 +755,8 @@
     let isCuratedMode = false; // when true, each slot has its own folder picker
     // rowLockState: Map of index -> 0 (unlocked), 1 (URL lock), 2 (folder lock)
     let rowLockState = {};
+    // Drag state — must be module-scope so dragstart and drop share the same variable
+    let activeDragIdx = -1;
 
     const setupScreen = document.getElementById('setup-screen');
     const loopScreen = document.getElementById('loop-screen');
@@ -1213,10 +1219,6 @@
             });
         };
 
-        // Use a module-level index so closures all share the same reference
-        // (DOM-reference approach breaks when rows contain input elements)
-        let activeDragIdx = -1;
-
         const applyDragEvents = (row, idx) => {
             row.draggable = true;
 
@@ -1411,6 +1413,7 @@
                 input.value = url;
                 input.placeholder = 'https://...';
                 input.dataset.idx = idx;
+                input.draggable = false;
                 if (lockState === 1) input.readOnly = true;
                 const lockBtn = makeLockBtn(idx, row);
                 const removeBtn = document.createElement('button');
