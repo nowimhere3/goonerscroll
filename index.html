@@ -179,6 +179,56 @@
             transition: background 0.15s;
         }
         .btn-fh-apply:hover { background: #3a2a7a; }
+
+        /* Spacer block in loop view */
+        .spacer-panel {
+            width: 100%;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        /* Spacer toggle row in settings */
+        .spacer-toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #111;
+            border: 1px solid #2a1a5a;
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-top: 14px;
+        }
+        .spacer-toggle-label {
+            font-size: 13px;
+            color: #c9b8ff;
+            font-weight: bold;
+        }
+        .spacer-toggle-sub {
+            font-size: 10px;
+            color: #555;
+            margin-top: 2px;
+        }
+        .spacer-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .spacer-height-input {
+            background: #222;
+            border: 1px solid #5a3aaa;
+            color: #c9b8ff;
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: bold;
+            outline: none;
+            width: 70px;
+            text-align: center;
+        }
+        .spacer-height-input:focus { border-color: #7c4dff; }
         
         /* Hotswap Floating Bar Configuration */
         .hotswap-overlay {
@@ -785,6 +835,21 @@
                 </div>
             </div>
             <button class="btn-fh-apply" id="btn-fh-apply">✓ Save Heights</button>
+
+            <div class="spacer-toggle-row">
+                <div>
+                    <div class="spacer-toggle-label">End Spacer Block</div>
+                    <div class="spacer-toggle-sub">Adds a blank black block after the last stream so it can scroll fully into view</div>
+                </div>
+                <div class="spacer-right">
+                    <input type="text" class="spacer-height-input" id="fh-spacer-input" placeholder="50">
+                    <span class="frame-height-unit">vh</span>
+                    <label class="switch" style="margin:0;">
+                        <input type="checkbox" id="fh-spacer-toggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1130,6 +1195,11 @@
     fhLandscapeInput.value = localStorage.getItem('fh_landscape') || '100';
     fhPortraitInput.value = localStorage.getItem('fh_portrait') || '50';
 
+    const fhSpacerToggle = document.getElementById('fh-spacer-toggle');
+    const fhSpacerInput = document.getElementById('fh-spacer-input');
+    fhSpacerToggle.checked = localStorage.getItem('fh_spacer_on') === 'true';
+    fhSpacerInput.value = localStorage.getItem('fh_spacer_height') || '50';
+
     fhDrawerBtn.onclick = () => {
         const isOpen = fhDrawerContent.style.display === 'block';
         fhDrawerContent.style.display = isOpen ? 'none' : 'block';
@@ -1139,19 +1209,26 @@
     document.getElementById('btn-fh-apply').onclick = () => {
         const land = parseFloat(fhLandscapeInput.value);
         const port = parseFloat(fhPortraitInput.value);
+        const spacerH = parseFloat(fhSpacerInput.value);
         if (isNaN(land) || land < 10 || land > 300) { alert('Landscape height must be between 10 and 300 vh.'); return; }
         if (isNaN(port) || port < 10 || port > 300) { alert('Portrait height must be between 10 and 300 vh.'); return; }
+        if (isNaN(spacerH) || spacerH < 5 || spacerH > 300) { alert('Spacer height must be between 5 and 300 vh.'); return; }
         localStorage.setItem('fh_landscape', land);
         localStorage.setItem('fh_portrait', port);
+        localStorage.setItem('fh_spacer_on', fhSpacerToggle.checked);
+        localStorage.setItem('fh_spacer_height', spacerH);
         fhDrawerBtn.textContent = '↕ Adjust Heights';
         fhDrawerContent.style.display = 'none';
-        alert(`Heights saved! Landscape: ${land}vh · Portrait: ${port}vh\nTake effect on next Launch.`);
+        const spacerStatus = fhSpacerToggle.checked ? ` · Spacer: ${spacerH}vh` : ' · Spacer: off';
+        alert(`Saved! Landscape: ${land}vh · Portrait: ${port}vh${spacerStatus}\nTakes effect on next Launch.`);
     };
 
     function getFrameHeights() {
         return {
             landscape: (parseFloat(localStorage.getItem('fh_landscape')) || 100) + 'vh',
-            portrait: (parseFloat(localStorage.getItem('fh_portrait')) || 50) + 'vh'
+            portrait: (parseFloat(localStorage.getItem('fh_portrait')) || 50) + 'vh',
+            spacerOn: localStorage.getItem('fh_spacer_on') === 'true',
+            spacerHeight: (parseFloat(localStorage.getItem('fh_spacer_height')) || 50) + 'vh'
         };
     }
 
@@ -1970,6 +2047,14 @@
         document.getElementById('status').textContent = `${urls.length} streams`;
         updateLabels();
         accurateYPosition = window.scrollY;
+
+        // Append end spacer block if enabled
+        if (heights.spacerOn) {
+            const spacer = document.createElement('div');
+            spacer.className = 'spacer-panel';
+            spacer.style.height = heights.spacerHeight;
+            feedContainer.appendChild(spacer);
+        }
     }
 
     document.getElementById('edit-config-btn').onclick = () => {
