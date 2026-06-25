@@ -118,67 +118,9 @@
         
         .stream-panel { position: relative; width: 100%; background: #000; border-bottom: 2px solid #222; }
         .mode-landscape { height: 100vh; }
-        .mode-portrait { height: 50vh; }
+        .mode-portrait { height: 50vh; } 
 
         .post-iframe { width: 100%; height: 100%; border: none; display: block; }
-
-        /* Frame Height Panel */
-        .frame-height-panel { border-top: 3px solid #7c4dff; }
-        .frame-height-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-            margin-top: 4px;
-        }
-        .frame-height-group label {
-            display: block;
-            font-size: 11px;
-            color: #aaa;
-            font-weight: bold;
-            margin-bottom: 6px;
-        }
-        .frame-height-group .fh-desc {
-            font-size: 10px;
-            color: #555;
-            margin-bottom: 8px;
-        }
-        .frame-height-input-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .frame-height-input {
-            flex: 1;
-            background: #222;
-            border: 1px solid #5a3aaa;
-            color: #c9b8ff;
-            padding: 10px 12px;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: bold;
-            outline: none;
-            width: 100%;
-        }
-        .frame-height-input:focus { border-color: #7c4dff; }
-        .frame-height-unit {
-            font-size: 12px;
-            color: #555;
-            flex-shrink: 0;
-        }
-        .btn-fh-apply {
-            background: #2a1a5a;
-            border: 1px solid #7c4dff;
-            color: #c9b8ff;
-            border-radius: 8px;
-            padding: 8px 14px;
-            font-size: 12px;
-            font-weight: bold;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 14px;
-            transition: background 0.15s;
-        }
-        .btn-fh-apply:hover { background: #3a2a7a; }
         
         /* Hotswap Floating Bar Configuration */
         .hotswap-overlay {
@@ -759,35 +701,6 @@
         </div>
     </div>
 
-    <div class="config-card frame-height-panel" style="padding: 20px 30px;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h3 style="font-size: 15px; color: #eee; font-weight: bold;">📐 Frame Height Settings</h3>
-            <button class="drawer-toggle-btn" id="btn-toggle-fh-drawer">↕ Adjust Heights</button>
-        </div>
-        <div id="fh-drawer-content" style="display:none; margin-top: 20px;">
-            <p class="subtitle" style="text-align:left; margin-bottom:16px;">Set the height of each iframe panel before launching. Changes apply on next launch.</p>
-            <div class="frame-height-grid">
-                <div class="frame-height-group">
-                    <label>🖥 Landscape Mode Height</label>
-                    <div class="fh-desc">Suggested: 100vh (full screen). Try 80vh–120vh.</div>
-                    <div class="frame-height-input-row">
-                        <input type="text" class="frame-height-input" id="fh-landscape-input" placeholder="100">
-                        <span class="frame-height-unit">vh</span>
-                    </div>
-                </div>
-                <div class="frame-height-group">
-                    <label>📱 Portrait Mode Height</label>
-                    <div class="fh-desc">Suggested: 50vh (half screen). Try 40vh–70vh.</div>
-                    <div class="frame-height-input-row">
-                        <input type="text" class="frame-height-input" id="fh-portrait-input" placeholder="50">
-                        <span class="frame-height-unit">vh</span>
-                    </div>
-                </div>
-            </div>
-            <button class="btn-fh-apply" id="btn-fh-apply">✓ Save Heights</button>
-        </div>
-    </div>
-
 </div>
 
 <!-- Bookmark / Playlist Modal -->
@@ -1119,41 +1032,6 @@
 
     // Expose removeFromBlacklist globally for inline onclick
     window.removeFromBlacklist = removeFromBlacklist;
-
-    // --- Frame Height Settings ---
-    const fhDrawerBtn = document.getElementById('btn-toggle-fh-drawer');
-    const fhDrawerContent = document.getElementById('fh-drawer-content');
-    const fhLandscapeInput = document.getElementById('fh-landscape-input');
-    const fhPortraitInput = document.getElementById('fh-portrait-input');
-
-    // Load saved values into inputs
-    fhLandscapeInput.value = localStorage.getItem('fh_landscape') || '100';
-    fhPortraitInput.value = localStorage.getItem('fh_portrait') || '50';
-
-    fhDrawerBtn.onclick = () => {
-        const isOpen = fhDrawerContent.style.display === 'block';
-        fhDrawerContent.style.display = isOpen ? 'none' : 'block';
-        fhDrawerBtn.textContent = isOpen ? '↕ Adjust Heights' : '✕ Hide';
-    };
-
-    document.getElementById('btn-fh-apply').onclick = () => {
-        const land = parseFloat(fhLandscapeInput.value);
-        const port = parseFloat(fhPortraitInput.value);
-        if (isNaN(land) || land < 10 || land > 300) { alert('Landscape height must be between 10 and 300 vh.'); return; }
-        if (isNaN(port) || port < 10 || port > 300) { alert('Portrait height must be between 10 and 300 vh.'); return; }
-        localStorage.setItem('fh_landscape', land);
-        localStorage.setItem('fh_portrait', port);
-        fhDrawerBtn.textContent = '↕ Adjust Heights';
-        fhDrawerContent.style.display = 'none';
-        alert(`Heights saved! Landscape: ${land}vh · Portrait: ${port}vh\nTake effect on next Launch.`);
-    };
-
-    function getFrameHeights() {
-        return {
-            landscape: (parseFloat(localStorage.getItem('fh_landscape')) || 100) + 'vh',
-            portrait: (parseFloat(localStorage.getItem('fh_portrait')) || 50) + 'vh'
-        };
-    }
 
     function initLaunchpad() {
         document.getElementById('git-token').value = localStorage.getItem('git_sync_token') || '';
@@ -1774,15 +1652,15 @@
         feedContainer.innerHTML = '';
         
         const isPortraitMode = portraitToggle.checked;
-        const heights = getFrameHeights();
-        const panelHeight = isPortraitMode ? heights.portrait : heights.landscape;
         const panelClass = isPortraitMode ? 'stream-panel mode-portrait' : 'stream-panel mode-landscape';
         
         urls.forEach((url, index) => {
             const panel = document.createElement('div');
             panel.className = panelClass;
-            panel.style.height = panelHeight;
 
+            // Each iframe tracks which folder its URL came from (set via data-source-folder).
+            // urlFolderMap is built before launchMatrix is called for Shuffle All launches.
+            // Falls back to the dirDropdown value for single-folder launches.
             const launchFolder = (typeof urlFolderMap !== 'undefined' && urlFolderMap[index])
                 ? urlFolderMap[index]
                 : (dirDropdown.value !== 'manual' ? dirDropdown.value : null);
@@ -1858,6 +1736,7 @@
             };
 
             // Kill — removes this panel from the grid for this session only
+            // No DB changes, no blacklisting. Just gone until next launch.
             killBtn.onclick = (e) => {
                 e.stopPropagation();
                 panel.style.transition = 'opacity 0.25s, transform 0.25s';
@@ -1865,6 +1744,7 @@
                 panel.style.transform = 'scaleY(0.8)';
                 setTimeout(() => {
                     panel.remove();
+                    // Update stream count in controls bar
                     const remaining = feedContainer.querySelectorAll('.stream-panel').length;
                     document.getElementById('status').textContent = `${remaining} streams`;
                 }, 250);
@@ -2056,3 +1936,5 @@
 </script>
 </body>
 </html>
+
+
