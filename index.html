@@ -4,11 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Multi-Stream Loop Launchpad (Cloud Sync)</title>
-    <link rel="icon" type="image/png" href="favicon-96x96.png" sizes="96x96" />
-    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
-    <link rel="shortcut icon" href="favicon.ico" />
-    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
-    <link rel="manifest" href="site.webmanifest" />
+    <!-- Favicon: place these files in the same folder as this HTML file -->
+    <link rel="icon" type="image/png" href="./favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="shortcut icon" href="./favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png" />
+    <link rel="manifest" href="./site.webmanifest" />
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0b0b0b; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; overflow-x: hidden; }
@@ -216,6 +217,24 @@
             transition: background 0.15s;
         }
         .btn-hotswap-delete:hover { background: #333; color: #fff; }
+
+        /* Kill button — removes iframe for session */
+        .btn-hotswap-kill {
+            background: #1a0808;
+            border: 1px solid #5a2020;
+            color: #888;
+            border-radius: 10px;
+            width: 28px;
+            height: 28px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: background 0.15s, color 0.15s;
+        }
+        .btn-hotswap-kill:hover { background: #3a0a0a; color: #ed4956; }
 
         /* URL input row — hidden until toggle clicked */
         .hotswap-url-row {
@@ -1242,14 +1261,16 @@
                 const orderedFolders = allRows.map((_, i) => urlFolderMap[i] || null);
                 const orderedLocks = allRows.map((_, i) => rowLockState[i] || 0);
 
-                // Remove src from arrays
+                // Remove src from all arrays
                 const [movedUrl] = newUrls.splice(srcIdx, 1);
                 const [movedFolder] = orderedFolders.splice(srcIdx, 1);
                 const [movedLock] = orderedLocks.splice(srcIdx, 1);
 
-                // Calculate adjusted insert index after removal
-                let insertIdx = tgtIdx > srcIdx ? tgtIdx - 1 : tgtIdx;
+                // After removal, recalculate where tgt now sits in the shorter array
+                let insertIdx = srcIdx < tgtIdx ? tgtIdx - 1 : tgtIdx;
                 if (insertAfter) insertIdx += 1;
+                // Clamp to valid range
+                insertIdx = Math.max(0, Math.min(insertIdx, newUrls.length));
 
                 newUrls.splice(insertIdx, 0, movedUrl);
                 orderedFolders.splice(insertIdx, 0, movedFolder);
@@ -1648,6 +1669,7 @@
                     <button class="btn-hotswap-reload" title="Reload this panel">⟳</button>
                     <button class="btn-hotswap-shuffle">🎲 SHUFFLE</button>
                     <button class="btn-hotswap-delete" title="Delete this URL from its folder and load a replacement">❌</button>
+                    <button class="btn-hotswap-kill" title="Remove this panel for this session">☠</button>
                     <button class="btn-purge">🗑️ PURGE</button>
                 </div>
                 <div class="hotswap-url-row">
@@ -1664,6 +1686,7 @@
             const reloadBtn = overlay.querySelector('.btn-hotswap-reload');
             const shuffleBtn = overlay.querySelector('.btn-hotswap-shuffle');
             const deleteBtn = overlay.querySelector('.btn-hotswap-delete');
+            const killBtn = overlay.querySelector('.btn-hotswap-kill');
             const purgeBtn = overlay.querySelector('.btn-purge');
 
             // Get the folder this iframe belongs to
@@ -1697,6 +1720,21 @@
                 const savedSrc = iframe.getAttribute('data-last-src') || iframe.src;
                 iframe.src = 'about:blank';
                 setTimeout(() => { iframe.src = savedSrc; }, 80);
+            };
+
+            // Kill — removes this panel from the grid for this session only
+            // No DB changes, no blacklisting. Just gone until next launch.
+            killBtn.onclick = (e) => {
+                e.stopPropagation();
+                panel.style.transition = 'opacity 0.25s, transform 0.25s';
+                panel.style.opacity = '0';
+                panel.style.transform = 'scaleY(0.8)';
+                setTimeout(() => {
+                    panel.remove();
+                    // Update stream count in controls bar
+                    const remaining = feedContainer.querySelectorAll('.stream-panel').length;
+                    document.getElementById('status').textContent = `${remaining} streams`;
+                }, 250);
             };
 
             toggleBtn.onclick = (e) => {
