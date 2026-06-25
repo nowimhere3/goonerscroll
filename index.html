@@ -1248,6 +1248,13 @@
             targetUrls = ['','',''];
         }
 
+        // Restore lock states and folder assignments
+        try { rowLockState = JSON.parse(localStorage.getItem('matrix_lock_state') || '{}'); } catch(e) { rowLockState = {}; }
+        try { urlFolderMap = JSON.parse(localStorage.getItem('matrix_folder_map') || '{}'); } catch(e) { urlFolderMap = {}; }
+        // Convert keys back to integers (JSON stringifies object keys as strings)
+        rowLockState = Object.fromEntries(Object.entries(rowLockState).map(([k,v]) => [parseInt(k), v]));
+        urlFolderMap = Object.fromEntries(Object.entries(urlFolderMap).map(([k,v]) => [parseInt(k), v]));
+
         portraitToggle.checked = localStorage.getItem('matrixIsPortrait') === 'true';
         renderInputRows();
         renderBlacklistDisplay();
@@ -1499,6 +1506,8 @@
                 // Save directly — do NOT call saveInputsToState() here because it
                 // re-reads the DOM inputs (still in old order) and overwrites our reordered array
                 localStorage.setItem('loop_matrix_urls', JSON.stringify(targetUrls));
+                localStorage.setItem('matrix_lock_state', JSON.stringify(rowLockState));
+                localStorage.setItem('matrix_folder_map', JSON.stringify(urlFolderMap));
                 renderInputRows();
             });
         };
@@ -1649,6 +1658,9 @@
         localStorage.setItem('matrixIsPortrait', portraitToggle.checked);
         localStorage.setItem('git_sync_token', document.getElementById('git-token').value.trim());
         localStorage.setItem('git_sync_repo', document.getElementById('git-repo').value.trim());
+        // Persist lock states and folder assignments so they survive reload/browser close
+        localStorage.setItem('matrix_lock_state', JSON.stringify(rowLockState));
+        localStorage.setItem('matrix_folder_map', JSON.stringify(urlFolderMap));
     }
 
     document.getElementById('add-field-btn').onclick = () => { saveInputsToState(); targetUrls.push(''); renderInputRows(); };
