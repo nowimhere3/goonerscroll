@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Multi-Stream Loop Launchpad (Cloud Sync)</title>
-    <!-- Favicon: place these files in the same folder as this HTML file -->
+    <!-- Favicon: place favicon files in the same folder as this HTML file -->
+    <!-- The data URI below acts as a fallback so something always shows in the tab -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230095f6'/><text y='72' x='50' text-anchor='middle' font-size='65' font-family='Arial'>🚀</text></svg>">
     <link rel="icon" type="image/png" href="./favicon-96x96.png" sizes="96x96" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <link rel="shortcut icon" href="./favicon.ico" />
@@ -1204,7 +1206,6 @@
 
     function renderInputRows() {
         container.innerHTML = '';
-        let dragSrc = null;
 
         const clearDropIndicators = () => {
             container.querySelectorAll('.url-row, .curated-row').forEach(r => {
@@ -1212,76 +1213,83 @@
             });
         };
 
+        // Use a module-level index so closures all share the same reference
+        // (DOM-reference approach breaks when rows contain input elements)
+        let activeDragIdx = -1;
+
         const applyDragEvents = (row, idx) => {
             row.draggable = true;
+
             row.addEventListener('dragstart', (e) => {
-                dragSrc = row;
-                row.classList.add('dragging');
+                activeDragIdx = idx;
+                // Small delay so browser can snapshot the element before we dim it
+                setTimeout(() => row.classList.add('dragging'), 0);
                 e.dataTransfer.effectAllowed = 'move';
                 e.dataTransfer.setData('text/plain', String(idx));
             });
+
             row.addEventListener('dragend', () => {
+                activeDragIdx = -1;
                 row.classList.remove('dragging');
                 clearDropIndicators();
             });
+
             row.addEventListener('dragover', (e) => {
                 e.preventDefault();
                 e.dataTransfer.dropEffect = 'move';
-                if (row === dragSrc) return;
+                if (idx === activeDragIdx) return;
                 clearDropIndicators();
-                // Determine if cursor is in top or bottom half of the row
                 const rect = row.getBoundingClientRect();
-                const midY = rect.top + rect.height / 2;
-                if (e.clientY < midY) {
+                if (e.clientY < rect.top + rect.height / 2) {
                     row.classList.add('drop-above');
                 } else {
                     row.classList.add('drop-below');
                 }
             });
+
             row.addEventListener('dragleave', (e) => {
-                // Only clear if actually leaving this row (not entering a child)
                 if (!row.contains(e.relatedTarget)) {
                     row.classList.remove('drop-above', 'drop-below');
                 }
             });
+
             row.addEventListener('drop', (e) => {
                 e.preventDefault();
-                if (!dragSrc || dragSrc === row) { clearDropIndicators(); return; }
-
-                const allRows = [...container.querySelectorAll('.url-row, .curated-row')];
-                const srcIdx = allRows.indexOf(dragSrc);
-                const tgtIdx = allRows.indexOf(row);
-                if (srcIdx === -1 || tgtIdx === -1) { clearDropIndicators(); return; }
-
-                // Determine insert position based on which half was targeted
+                e.stopPropagation();
+                const srcIdx = activeDragIdx;
+                const tgtIdx = idx;
                 const insertAfter = row.classList.contains('drop-below');
                 clearDropIndicators();
 
-                const newUrls = [...targetUrls];
-                const orderedFolders = allRows.map((_, i) => urlFolderMap[i] || null);
-                const orderedLocks = allRows.map((_, i) => rowLockState[i] || 0);
+                if (srcIdx === -1 || srcIdx === tgtIdx) return;
 
-                // Remove src from all arrays
-                const [movedUrl] = newUrls.splice(srcIdx, 1);
-                const [movedFolder] = orderedFolders.splice(srcIdx, 1);
-                const [movedLock] = orderedLocks.splice(srcIdx, 1);
+                // Snapshot current ordered state
+                const urls = [...targetUrls];
+                const folders = [...targetUrls.keys()].map(i => urlFolderMap[i] || null);
+                const locks = [...targetUrls.keys()].map(i => rowLockState[i] || 0);
 
-                // After removal, recalculate where tgt now sits in the shorter array
-                let insertIdx = srcIdx < tgtIdx ? tgtIdx - 1 : tgtIdx;
-                if (insertAfter) insertIdx += 1;
-                // Clamp to valid range
-                insertIdx = Math.max(0, Math.min(insertIdx, newUrls.length));
+                // Pull out the moved items
+                const movedUrl = urls.splice(srcIdx, 1)[0];
+                const movedFolder = folders.splice(srcIdx, 1)[0];
+                const movedLock = locks.splice(srcIdx, 1)[0];
 
-                newUrls.splice(insertIdx, 0, movedUrl);
-                orderedFolders.splice(insertIdx, 0, movedFolder);
-                orderedLocks.splice(insertIdx, 0, movedLock);
+                // Recalculate target index in the now-shorter array
+                let destIdx = srcIdx < tgtIdx ? tgtIdx - 1 : tgtIdx;
+                if (insertAfter) destIdx += 1;
+                destIdx = Math.max(0, Math.min(destIdx, urls.length));
 
-                targetUrls = newUrls;
+                urls.splice(destIdx, 0, movedUrl);
+                folders.splice(destIdx, 0, movedFolder);
+                locks.splice(destIdx, 0, movedLock);
+
+                // Write back
+                targetUrls = urls;
                 urlFolderMap = {};
                 rowLockState = {};
-                orderedFolders.forEach((f, i) => { if (f) urlFolderMap[i] = f; });
-                orderedLocks.forEach((s, i) => { if (s) rowLockState[i] = s; });
+                folders.forEach((f, i) => { if (f) urlFolderMap[i] = f; });
+                locks.forEach((s, i) => { if (s) rowLockState[i] = s; });
 
+                activeDragIdx = -1;
                 saveInputsToState();
                 renderInputRows();
             });
