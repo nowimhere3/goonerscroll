@@ -1224,11 +1224,16 @@
     };
 
     function getFrameHeights() {
+        // Read spacer state live from the DOM toggle so it doesn't require hitting Save first
+        const spacerToggleEl = document.getElementById('fh-spacer-toggle');
+        const spacerInputEl = document.getElementById('fh-spacer-input');
+        const spacerOn = spacerToggleEl ? spacerToggleEl.checked : localStorage.getItem('fh_spacer_on') === 'true';
+        const spacerH = spacerInputEl ? (parseFloat(spacerInputEl.value) || 50) : (parseFloat(localStorage.getItem('fh_spacer_height')) || 50);
         return {
             landscape: (parseFloat(localStorage.getItem('fh_landscape')) || 100) + 'vh',
             portrait: (parseFloat(localStorage.getItem('fh_portrait')) || 50) + 'vh',
-            spacerOn: localStorage.getItem('fh_spacer_on') === 'true',
-            spacerHeight: (parseFloat(localStorage.getItem('fh_spacer_height')) || 50) + 'vh'
+            spacerOn: spacerOn,
+            spacerHeight: spacerH + 'vh'
         };
     }
 
