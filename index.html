@@ -230,20 +230,33 @@
         }
         .spacer-height-input:focus { border-color: #7c4dff; }
 
-        /* Both spacer master row */
-        .spacer-both-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: #1a1030;
-            border: 1px solid #7c4dff44;
-            border-radius: 10px;
-            padding: 12px 16px;
-            margin-top: 14px;
-            margin-bottom: 4px;
+        /* Spacer row lock button */
+        .btn-spacer-lock {
+            background: #0a2a0a;
+            border: 2px solid #4caf50;
+            border-radius: 8px;
+            color: #4caf50;
+            cursor: pointer;
+            font-size: 13px;
+            padding: 4px 8px;
+            flex-shrink: 0;
+            transition: background 0.15s, border-color 0.15s, color 0.15s;
+            line-height: 1;
+            margin-left: 6px;
         }
-        .spacer-both-row .spacer-toggle-label { color: #c9b8ff; }
-        .spacer-both-row .spacer-toggle-sub { color: #5a4a8a; }
+        .btn-spacer-lock.locked {
+            background: #2a0a0a;
+            border-color: #ed4956;
+            color: #ed4956;
+        }
+        .spacer-row-locked .spacer-height-input {
+            opacity: 0.4;
+            pointer-events: none;
+        }
+        .spacer-row-locked .switch {
+            opacity: 0.4;
+            pointer-events: none;
+        }
         
         /* Hotswap Floating Bar Configuration */
         .hotswap-overlay {
@@ -260,17 +273,13 @@
             align-items: stretch;
             opacity: 0;
             pointer-events: none;
-            transition: opacity 0.25s ease, transform 0.25s ease;
+            transition: opacity 0.2s ease, transform 0.2s ease;
             transform: translateY(-5px);
             z-index: 10000;
             backdrop-filter: blur(8px);
             min-width: 42px;
         }
-        .hotswap-overlay.visible {
-            opacity: 1;
-            pointer-events: auto;
-            transform: translateY(0);
-        }
+        .stream-panel:hover .hotswap-overlay { opacity: 1; pointer-events: auto; transform: translateY(0); }
 
         /* Icon button row — always visible on hover */
         .hotswap-icon-row {
@@ -300,36 +309,22 @@
         .btn-hotswap-toggle:hover { background: #333; color: #fff; }
         .btn-hotswap-toggle.active { background: #0095f6; border-color: #0095f6; color: #fff; }
 
-        /* Shuffle button — widest */
+        /* Shuffle button */
         .btn-hotswap-shuffle {
             background: #1a2a1a;
             border: 1px solid #3a6b3a;
             color: #4caf50;
             border-radius: 10px;
-            padding: 4px 8px;
-            font-size: 12px;
+            padding: 4px 10px;
+            font-size: 11px;
             font-weight: bold;
             cursor: pointer;
             white-space: nowrap;
-            flex-shrink: 0;
+            flex: 3;
             transition: background 0.15s;
         }
         .btn-hotswap-shuffle:hover { background: #223322; }
-
-        .btn-hotswap-shuffle-all {
-            background: #1a2a0a;
-            border: 1px solid #6b8a3a;
-            color: #a0d060;
-            border-radius: 10px;
-            padding: 4px 8px;
-            font-size: 12px;
-            font-weight: bold;
-            cursor: pointer;
-            white-space: nowrap;
-            flex-shrink: 0;
-            transition: background 0.15s;
-        }
-        .btn-hotswap-shuffle-all:hover { background: #253315; }
+        .btn-hotswap-shuffle:active { transform: rotate(15deg) scale(0.95); }
 
         /* Purge button — second widest */
         .btn-purge {
@@ -869,23 +864,7 @@
             </div>
             <button class="btn-fh-apply" id="btn-fh-apply">✓ Save Heights</button>
 
-            <!-- Master "Both" spacer control -->
-            <div class="spacer-both-row">
-                <div>
-                    <div class="spacer-toggle-label">Both Spacer Blocks</div>
-                    <div class="spacer-toggle-sub">Controls top &amp; end together — overrides individual toggles when on</div>
-                </div>
-                <div class="spacer-right">
-                    <input type="text" class="spacer-height-input" id="fh-spacer-both-input" placeholder="50">
-                    <span class="frame-height-unit">vh</span>
-                    <label class="switch" style="margin:0;">
-                        <input type="checkbox" id="fh-spacer-both-toggle" checked>
-                        <span class="slider"></span>
-                    </label>
-                </div>
-            </div>
-
-            <div class="spacer-toggle-row">
+            <div class="spacer-toggle-row" id="fh-spacer-top-row">
                 <div>
                     <div class="spacer-toggle-label">Top Spacer Block</div>
                     <div class="spacer-toggle-sub">Adds a blank black block before the first stream</div>
@@ -897,10 +876,11 @@
                         <input type="checkbox" id="fh-spacer-top-toggle">
                         <span class="slider"></span>
                     </label>
+                    <button class="btn-spacer-lock" id="btn-lock-spacer-top" title="Lock — prevents Save Heights from changing this row">🔓</button>
                 </div>
             </div>
 
-            <div class="spacer-toggle-row">
+            <div class="spacer-toggle-row" id="fh-spacer-end-row">
                 <div>
                     <div class="spacer-toggle-label">End Spacer Block</div>
                     <div class="spacer-toggle-sub">Adds a blank black block after the last stream so it can scroll fully into view</div>
@@ -912,6 +892,7 @@
                         <input type="checkbox" id="fh-spacer-toggle">
                         <span class="slider"></span>
                     </label>
+                    <button class="btn-spacer-lock" id="btn-lock-spacer-end" title="Lock — prevents Save Heights from changing this row">🔓</button>
                 </div>
             </div>
         </div>
@@ -1263,28 +1244,45 @@
     const fhSpacerInput = document.getElementById('fh-spacer-input');
     const fhSpacerTopToggle = document.getElementById('fh-spacer-top-toggle');
     const fhSpacerTopInput = document.getElementById('fh-spacer-top-input');
-    const fhSpacerBothToggle = document.getElementById('fh-spacer-both-toggle');
-    const fhSpacerBothInput = document.getElementById('fh-spacer-both-input');
 
     // Load saved values — all spacers default to ON
-    fhSpacerBothToggle.checked = localStorage.getItem('fh_spacer_both_on') !== 'false';
-    fhSpacerBothInput.value = localStorage.getItem('fh_spacer_both_height') || '50';
     fhSpacerToggle.checked = localStorage.getItem('fh_spacer_on') !== 'false';
     fhSpacerInput.value = localStorage.getItem('fh_spacer_height') || '50';
     fhSpacerTopToggle.checked = localStorage.getItem('fh_spacer_top_on') !== 'false';
     fhSpacerTopInput.value = localStorage.getItem('fh_spacer_top_height') || '50';
 
-    // When "Both" height changes, sync to both individual inputs
-    fhSpacerBothInput.oninput = () => {
-        fhSpacerInput.value = fhSpacerBothInput.value;
-        fhSpacerTopInput.value = fhSpacerBothInput.value;
-    };
+    // --- Spacer Row Locks ---
+    function applySpacerLockUI(which, locked) {
+        const rowEl = document.getElementById(which === 'top' ? 'fh-spacer-top-row' : 'fh-spacer-end-row');
+        const btn = document.getElementById(which === 'top' ? 'btn-lock-spacer-top' : 'btn-lock-spacer-end');
+        if (!rowEl || !btn) return;
+        if (locked) {
+            rowEl.classList.add('spacer-row-locked');
+            btn.classList.add('locked');
+            btn.textContent = '🔒';
+            btn.title = 'Locked — click to unlock';
+        } else {
+            rowEl.classList.remove('spacer-row-locked');
+            btn.classList.remove('locked');
+            btn.textContent = '🔓';
+            btn.title = 'Lock — prevents Save Heights and Both from changing this row';
+        }
+    }
 
-    // When "Both" toggle changes, sync both individual toggles
-    fhSpacerBothToggle.onchange = () => {
-        fhSpacerToggle.checked = fhSpacerBothToggle.checked;
-        fhSpacerTopToggle.checked = fhSpacerBothToggle.checked;
-    };
+    function wireSpacerLock(which) {
+        const key = `fh_lock_spacer_${which}`;
+        const btn = document.getElementById(which === 'top' ? 'btn-lock-spacer-top' : 'btn-lock-spacer-end');
+        // Load persisted lock state
+        applySpacerLockUI(which, localStorage.getItem(key) === 'true');
+        btn.onclick = () => {
+            const nowLocked = localStorage.getItem(key) !== 'true';
+            localStorage.setItem(key, nowLocked);
+            applySpacerLockUI(which, nowLocked);
+        };
+    }
+
+    wireSpacerLock('top');
+    wireSpacerLock('end');
 
     fhDrawerBtn.onclick = () => {
         const isOpen = fhDrawerContent.style.display === 'block';
@@ -1303,12 +1301,15 @@
         if (isNaN(spacerTopH) || spacerTopH < 5 || spacerTopH > 300) { alert('Top spacer height must be between 5 and 300 vh.'); return; }
         localStorage.setItem('fh_landscape', land);
         localStorage.setItem('fh_portrait', port);
-        localStorage.setItem('fh_spacer_on', fhSpacerToggle.checked);
-        localStorage.setItem('fh_spacer_height', spacerH);
-        localStorage.setItem('fh_spacer_top_on', fhSpacerTopToggle.checked);
-        localStorage.setItem('fh_spacer_top_height', spacerTopH);
-        localStorage.setItem('fh_spacer_both_on', fhSpacerBothToggle.checked);
-        localStorage.setItem('fh_spacer_both_height', parseFloat(fhSpacerBothInput.value) || 50);
+        // Only save individual spacer rows if they are not locked
+        if (localStorage.getItem('fh_lock_spacer_top') !== 'true') {
+            localStorage.setItem('fh_spacer_top_on', fhSpacerTopToggle.checked);
+            localStorage.setItem('fh_spacer_top_height', spacerTopH);
+        }
+        if (localStorage.getItem('fh_lock_spacer_end') !== 'true') {
+            localStorage.setItem('fh_spacer_on', fhSpacerToggle.checked);
+            localStorage.setItem('fh_spacer_height', spacerH);
+        }
         fhDrawerBtn.textContent = '↕ Adjust Heights';
         fhDrawerContent.style.display = 'none';
         alert(`Saved! Landscape: ${land}vh · Portrait: ${port}vh\nTakes effect on next Launch.`);
@@ -1319,17 +1320,11 @@
         const spacerInputEl = document.getElementById('fh-spacer-input');
         const spacerTopToggleEl = document.getElementById('fh-spacer-top-toggle');
         const spacerTopInputEl = document.getElementById('fh-spacer-top-input');
-        const spacerBothToggleEl = document.getElementById('fh-spacer-both-toggle');
-        const spacerBothInputEl = document.getElementById('fh-spacer-both-input');
 
-        const bothOn = spacerBothToggleEl ? spacerBothToggleEl.checked : localStorage.getItem('fh_spacer_both_on') !== 'false';
-        const bothH = spacerBothInputEl ? (parseFloat(spacerBothInputEl.value) || 50) : (parseFloat(localStorage.getItem('fh_spacer_both_height')) || 50);
-
-        // "Both" master overrides individual toggles when on
-        const spacerOn = bothOn ? true : (spacerToggleEl ? spacerToggleEl.checked : localStorage.getItem('fh_spacer_on') === 'true');
-        const spacerH = bothOn ? bothH : (spacerInputEl ? (parseFloat(spacerInputEl.value) || 50) : (parseFloat(localStorage.getItem('fh_spacer_height')) || 50));
-        const spacerTopOn = bothOn ? true : (spacerTopToggleEl ? spacerTopToggleEl.checked : localStorage.getItem('fh_spacer_top_on') === 'true');
-        const spacerTopH = bothOn ? bothH : (spacerTopInputEl ? (parseFloat(spacerTopInputEl.value) || 50) : (parseFloat(localStorage.getItem('fh_spacer_top_height')) || 50));
+        const spacerOn = spacerToggleEl ? spacerToggleEl.checked : localStorage.getItem('fh_spacer_on') !== 'false';
+        const spacerH = spacerInputEl ? (parseFloat(spacerInputEl.value) || 50) : (parseFloat(localStorage.getItem('fh_spacer_height')) || 50);
+        const spacerTopOn = spacerTopToggleEl ? spacerTopToggleEl.checked : localStorage.getItem('fh_spacer_top_on') !== 'false';
+        const spacerTopH = spacerTopInputEl ? (parseFloat(spacerTopInputEl.value) || 50) : (parseFloat(localStorage.getItem('fh_spacer_top_height')) || 50);
 
         return {
             landscape: (parseFloat(localStorage.getItem('fh_landscape')) || 100) + 'vh',
@@ -2008,8 +2003,7 @@
                     <button class="btn-hotswap-toggle" title="Edit URL">···</button>
                     <button class="btn-hotswap-star" title="Save to Playlist">☆</button>
                     <button class="btn-hotswap-reload" title="Reload this panel">⟳</button>
-                    <button class="btn-hotswap-shuffle" title="Shuffle — new URL from this panel's assigned folder">🎲</button>
-                    <button class="btn-hotswap-shuffle-all" title="Shuffle All — random URL from any folder">🎲🎲</button>
+                    <button class="btn-hotswap-shuffle">🎲 SHUFFLE</button>
                     <button class="btn-hotswap-delete" title="Delete this URL from its folder and load a replacement">❌</button>
                     <button class="btn-hotswap-kill" title="Remove this panel for this session">☠</button>
                     <button class="btn-purge">🗑️ PURGE</button>
@@ -2027,7 +2021,6 @@
             const starBtn = overlay.querySelector('.btn-hotswap-star');
             const reloadBtn = overlay.querySelector('.btn-hotswap-reload');
             const shuffleBtn = overlay.querySelector('.btn-hotswap-shuffle');
-            const shuffleAllBtn = overlay.querySelector('.btn-hotswap-shuffle-all');
             const deleteBtn = overlay.querySelector('.btn-hotswap-delete');
             const killBtn = overlay.querySelector('.btn-hotswap-kill');
             const purgeBtn = overlay.querySelector('.btn-purge');
@@ -2110,21 +2103,6 @@
                 setIframeUrl(newUrl);
             };
 
-            // 🎲🎲 Shuffle All — picks a random URL from ANY folder in the database
-            shuffleAllBtn.onclick = (e) => {
-                e.stopPropagation();
-                if (!databaseStructure) { alert('No database connected.'); return; }
-                const allFolders = Object.keys(databaseStructure).filter(f =>
-                    databaseStructure[f].some(u => !isBlacklisted(u))
-                );
-                if (allFolders.length === 0) { alert('No available URLs across any folder.'); return; }
-                const randomFolder = allFolders[Math.floor(Math.random() * allFolders.length)];
-                const newUrl = loadReplacement(randomFolder);
-                if (!newUrl) return;
-                iframe.setAttribute('data-source-folder', randomFolder);
-                setIframeUrl(newUrl);
-            };
-
             // Delete — removes this specific URL from its folder, loads a fresh replacement
             // No blacklisting — just "don't want this one right now"
             deleteBtn.onclick = async (e) => {
@@ -2174,46 +2152,6 @@
                     }
                 }
             };
-
-            // JS-driven overlay visibility — mousemove checks if cursor is in top-right 25%
-            // Debounced hide prevents flicker from scroll-induced position shifts
-            let hideTimer = null;
-
-            panel.addEventListener('mousemove', (e) => {
-                const rect = panel.getBoundingClientRect();
-                const inZone = (
-                    e.clientX > rect.right - rect.width * 0.25 &&
-                    e.clientY < rect.top + rect.height * 0.25
-                );
-                if (inZone || overlay.matches(':hover')) {
-                    clearTimeout(hideTimer);
-                    overlay.classList.add('visible');
-                } else {
-                    clearTimeout(hideTimer);
-                    hideTimer = setTimeout(() => {
-                        if (!overlay.matches(':hover')) overlay.classList.remove('visible');
-                    }, 400);
-                }
-            });
-
-            panel.addEventListener('mouseleave', () => {
-                clearTimeout(hideTimer);
-                hideTimer = setTimeout(() => {
-                    overlay.classList.remove('visible');
-                }, 400);
-            });
-
-            overlay.addEventListener('mouseenter', () => {
-                clearTimeout(hideTimer);
-                overlay.classList.add('visible');
-            });
-
-            overlay.addEventListener('mouseleave', () => {
-                clearTimeout(hideTimer);
-                hideTimer = setTimeout(() => {
-                    overlay.classList.remove('visible');
-                }, 400);
-            });
 
             panel.appendChild(iframe);
             panel.appendChild(overlay);
