@@ -260,13 +260,28 @@
             align-items: stretch;
             opacity: 0;
             pointer-events: none;
-            transition: opacity 0.2s ease, transform 0.2s ease;
+            transition: opacity 0.4s ease 0.15s, transform 0.4s ease 0.15s;
             transform: translateY(-5px);
             z-index: 10000;
             backdrop-filter: blur(8px);
             min-width: 42px;
         }
-        .stream-panel:hover .hotswap-overlay { opacity: 1; pointer-events: auto; transform: translateY(0); }
+        /* Hover trigger zone — top-right 25% of panel */
+        .overlay-trigger {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 25%;
+            height: 25%;
+            z-index: 9998;
+        }
+        .overlay-trigger:hover ~ .hotswap-overlay,
+        .hotswap-overlay:hover {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+            transition: opacity 0.2s ease 0s, transform 0.2s ease 0s;
+        }
 
         /* Icon button row — always visible on hover */
         .hotswap-icon-row {
@@ -1262,12 +1277,12 @@
     const fhSpacerBothToggle = document.getElementById('fh-spacer-both-toggle');
     const fhSpacerBothInput = document.getElementById('fh-spacer-both-input');
 
-    // Load saved values — default "both" to ON
+    // Load saved values — all spacers default to ON
     fhSpacerBothToggle.checked = localStorage.getItem('fh_spacer_both_on') !== 'false';
     fhSpacerBothInput.value = localStorage.getItem('fh_spacer_both_height') || '50';
-    fhSpacerToggle.checked = localStorage.getItem('fh_spacer_on') === 'true';
+    fhSpacerToggle.checked = localStorage.getItem('fh_spacer_on') !== 'false';
     fhSpacerInput.value = localStorage.getItem('fh_spacer_height') || '50';
-    fhSpacerTopToggle.checked = localStorage.getItem('fh_spacer_top_on') === 'true';
+    fhSpacerTopToggle.checked = localStorage.getItem('fh_spacer_top_on') !== 'false';
     fhSpacerTopInput.value = localStorage.getItem('fh_spacer_top_height') || '50';
 
     // When "Both" height changes, sync to both individual inputs
@@ -2171,7 +2186,12 @@
                 }
             };
 
+            // Invisible top-right trigger zone — overlay only shows when cursor is here
+            const trigger = document.createElement('div');
+            trigger.className = 'overlay-trigger';
+
             panel.appendChild(iframe);
+            panel.appendChild(trigger);
             panel.appendChild(overlay);
             feedContainer.appendChild(panel);
 
