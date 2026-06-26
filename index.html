@@ -260,27 +260,16 @@
             align-items: stretch;
             opacity: 0;
             pointer-events: none;
-            transition: opacity 0.4s ease 0.15s, transform 0.4s ease 0.15s;
+            transition: opacity 0.25s ease, transform 0.25s ease;
             transform: translateY(-5px);
             z-index: 10000;
             backdrop-filter: blur(8px);
             min-width: 42px;
         }
-        /* Hover trigger zone — top-right 25% of panel */
-        .overlay-trigger {
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 25%;
-            height: 25%;
-            z-index: 9998;
-        }
-        .overlay-trigger:hover ~ .hotswap-overlay,
-        .hotswap-overlay:hover {
+        .hotswap-overlay.visible {
             opacity: 1;
             pointer-events: auto;
             transform: translateY(0);
-            transition: opacity 0.2s ease 0s, transform 0.2s ease 0s;
         }
 
         /* Icon button row — always visible on hover */
@@ -2186,12 +2175,47 @@
                 }
             };
 
-            // Invisible top-right trigger zone — overlay only shows when cursor is here
-            const trigger = document.createElement('div');
-            trigger.className = 'overlay-trigger';
+            // JS-driven overlay visibility — mousemove checks if cursor is in top-right 25%
+            // Debounced hide prevents flicker from scroll-induced position shifts
+            let hideTimer = null;
+
+            panel.addEventListener('mousemove', (e) => {
+                const rect = panel.getBoundingClientRect();
+                const inZone = (
+                    e.clientX > rect.right - rect.width * 0.25 &&
+                    e.clientY < rect.top + rect.height * 0.25
+                );
+                if (inZone || overlay.matches(':hover')) {
+                    clearTimeout(hideTimer);
+                    overlay.classList.add('visible');
+                } else {
+                    clearTimeout(hideTimer);
+                    hideTimer = setTimeout(() => {
+                        if (!overlay.matches(':hover')) overlay.classList.remove('visible');
+                    }, 400);
+                }
+            });
+
+            panel.addEventListener('mouseleave', () => {
+                clearTimeout(hideTimer);
+                hideTimer = setTimeout(() => {
+                    overlay.classList.remove('visible');
+                }, 400);
+            });
+
+            overlay.addEventListener('mouseenter', () => {
+                clearTimeout(hideTimer);
+                overlay.classList.add('visible');
+            });
+
+            overlay.addEventListener('mouseleave', () => {
+                clearTimeout(hideTimer);
+                hideTimer = setTimeout(() => {
+                    overlay.classList.remove('visible');
+                }, 400);
+            });
 
             panel.appendChild(iframe);
-            panel.appendChild(trigger);
             panel.appendChild(overlay);
             feedContainer.appendChild(panel);
 
