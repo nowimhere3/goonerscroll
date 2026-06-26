@@ -229,6 +229,21 @@
             text-align: center;
         }
         .spacer-height-input:focus { border-color: #7c4dff; }
+
+        /* Both spacer master row */
+        .spacer-both-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #1a1030;
+            border: 1px solid #7c4dff44;
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-top: 14px;
+            margin-bottom: 4px;
+        }
+        .spacer-both-row .spacer-toggle-label { color: #c9b8ff; }
+        .spacer-both-row .spacer-toggle-sub { color: #5a4a8a; }
         
         /* Hotswap Floating Bar Configuration */
         .hotswap-overlay {
@@ -287,16 +302,30 @@
             border: 1px solid #3a6b3a;
             color: #4caf50;
             border-radius: 10px;
-            padding: 4px 14px;
-            font-size: 11px;
+            padding: 4px 8px;
+            font-size: 12px;
             font-weight: bold;
             cursor: pointer;
             white-space: nowrap;
-            flex: 3;
+            flex-shrink: 0;
             transition: background 0.15s;
         }
         .btn-hotswap-shuffle:hover { background: #223322; }
-        .btn-hotswap-shuffle:active { transform: rotate(15deg) scale(0.95); }
+
+        .btn-hotswap-shuffle-all {
+            background: #1a2a0a;
+            border: 1px solid #6b8a3a;
+            color: #a0d060;
+            border-radius: 10px;
+            padding: 4px 8px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+            transition: background 0.15s;
+        }
+        .btn-hotswap-shuffle-all:hover { background: #253315; }
 
         /* Purge button — second widest */
         .btn-purge {
@@ -836,6 +865,37 @@
             </div>
             <button class="btn-fh-apply" id="btn-fh-apply">✓ Save Heights</button>
 
+            <!-- Master "Both" spacer control -->
+            <div class="spacer-both-row">
+                <div>
+                    <div class="spacer-toggle-label">Both Spacer Blocks</div>
+                    <div class="spacer-toggle-sub">Controls top &amp; end together — overrides individual toggles when on</div>
+                </div>
+                <div class="spacer-right">
+                    <input type="text" class="spacer-height-input" id="fh-spacer-both-input" placeholder="50">
+                    <span class="frame-height-unit">vh</span>
+                    <label class="switch" style="margin:0;">
+                        <input type="checkbox" id="fh-spacer-both-toggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="spacer-toggle-row">
+                <div>
+                    <div class="spacer-toggle-label">Top Spacer Block</div>
+                    <div class="spacer-toggle-sub">Adds a blank black block before the first stream</div>
+                </div>
+                <div class="spacer-right">
+                    <input type="text" class="spacer-height-input" id="fh-spacer-top-input" placeholder="50">
+                    <span class="frame-height-unit">vh</span>
+                    <label class="switch" style="margin:0;">
+                        <input type="checkbox" id="fh-spacer-top-toggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
             <div class="spacer-toggle-row">
                 <div>
                     <div class="spacer-toggle-label">End Spacer Block</div>
@@ -1197,8 +1257,30 @@
 
     const fhSpacerToggle = document.getElementById('fh-spacer-toggle');
     const fhSpacerInput = document.getElementById('fh-spacer-input');
+    const fhSpacerTopToggle = document.getElementById('fh-spacer-top-toggle');
+    const fhSpacerTopInput = document.getElementById('fh-spacer-top-input');
+    const fhSpacerBothToggle = document.getElementById('fh-spacer-both-toggle');
+    const fhSpacerBothInput = document.getElementById('fh-spacer-both-input');
+
+    // Load saved values — default "both" to ON
+    fhSpacerBothToggle.checked = localStorage.getItem('fh_spacer_both_on') !== 'false';
+    fhSpacerBothInput.value = localStorage.getItem('fh_spacer_both_height') || '50';
     fhSpacerToggle.checked = localStorage.getItem('fh_spacer_on') === 'true';
     fhSpacerInput.value = localStorage.getItem('fh_spacer_height') || '50';
+    fhSpacerTopToggle.checked = localStorage.getItem('fh_spacer_top_on') === 'true';
+    fhSpacerTopInput.value = localStorage.getItem('fh_spacer_top_height') || '50';
+
+    // When "Both" height changes, sync to both individual inputs
+    fhSpacerBothInput.oninput = () => {
+        fhSpacerInput.value = fhSpacerBothInput.value;
+        fhSpacerTopInput.value = fhSpacerBothInput.value;
+    };
+
+    // When "Both" toggle changes, sync both individual toggles
+    fhSpacerBothToggle.onchange = () => {
+        fhSpacerToggle.checked = fhSpacerBothToggle.checked;
+        fhSpacerTopToggle.checked = fhSpacerBothToggle.checked;
+    };
 
     fhDrawerBtn.onclick = () => {
         const isOpen = fhDrawerContent.style.display === 'block';
@@ -1210,30 +1292,48 @@
         const land = parseFloat(fhLandscapeInput.value);
         const port = parseFloat(fhPortraitInput.value);
         const spacerH = parseFloat(fhSpacerInput.value);
+        const spacerTopH = parseFloat(fhSpacerTopInput.value);
         if (isNaN(land) || land < 10 || land > 300) { alert('Landscape height must be between 10 and 300 vh.'); return; }
         if (isNaN(port) || port < 10 || port > 300) { alert('Portrait height must be between 10 and 300 vh.'); return; }
-        if (isNaN(spacerH) || spacerH < 5 || spacerH > 300) { alert('Spacer height must be between 5 and 300 vh.'); return; }
+        if (isNaN(spacerH) || spacerH < 5 || spacerH > 300) { alert('End spacer height must be between 5 and 300 vh.'); return; }
+        if (isNaN(spacerTopH) || spacerTopH < 5 || spacerTopH > 300) { alert('Top spacer height must be between 5 and 300 vh.'); return; }
         localStorage.setItem('fh_landscape', land);
         localStorage.setItem('fh_portrait', port);
         localStorage.setItem('fh_spacer_on', fhSpacerToggle.checked);
         localStorage.setItem('fh_spacer_height', spacerH);
+        localStorage.setItem('fh_spacer_top_on', fhSpacerTopToggle.checked);
+        localStorage.setItem('fh_spacer_top_height', spacerTopH);
+        localStorage.setItem('fh_spacer_both_on', fhSpacerBothToggle.checked);
+        localStorage.setItem('fh_spacer_both_height', parseFloat(fhSpacerBothInput.value) || 50);
         fhDrawerBtn.textContent = '↕ Adjust Heights';
         fhDrawerContent.style.display = 'none';
-        const spacerStatus = fhSpacerToggle.checked ? ` · Spacer: ${spacerH}vh` : ' · Spacer: off';
-        alert(`Saved! Landscape: ${land}vh · Portrait: ${port}vh${spacerStatus}\nTakes effect on next Launch.`);
+        alert(`Saved! Landscape: ${land}vh · Portrait: ${port}vh\nTakes effect on next Launch.`);
     };
 
     function getFrameHeights() {
-        // Read spacer state live from the DOM toggle so it doesn't require hitting Save first
         const spacerToggleEl = document.getElementById('fh-spacer-toggle');
         const spacerInputEl = document.getElementById('fh-spacer-input');
-        const spacerOn = spacerToggleEl ? spacerToggleEl.checked : localStorage.getItem('fh_spacer_on') === 'true';
-        const spacerH = spacerInputEl ? (parseFloat(spacerInputEl.value) || 50) : (parseFloat(localStorage.getItem('fh_spacer_height')) || 50);
+        const spacerTopToggleEl = document.getElementById('fh-spacer-top-toggle');
+        const spacerTopInputEl = document.getElementById('fh-spacer-top-input');
+        const spacerBothToggleEl = document.getElementById('fh-spacer-both-toggle');
+        const spacerBothInputEl = document.getElementById('fh-spacer-both-input');
+
+        const bothOn = spacerBothToggleEl ? spacerBothToggleEl.checked : localStorage.getItem('fh_spacer_both_on') !== 'false';
+        const bothH = spacerBothInputEl ? (parseFloat(spacerBothInputEl.value) || 50) : (parseFloat(localStorage.getItem('fh_spacer_both_height')) || 50);
+
+        // "Both" master overrides individual toggles when on
+        const spacerOn = bothOn ? true : (spacerToggleEl ? spacerToggleEl.checked : localStorage.getItem('fh_spacer_on') === 'true');
+        const spacerH = bothOn ? bothH : (spacerInputEl ? (parseFloat(spacerInputEl.value) || 50) : (parseFloat(localStorage.getItem('fh_spacer_height')) || 50));
+        const spacerTopOn = bothOn ? true : (spacerTopToggleEl ? spacerTopToggleEl.checked : localStorage.getItem('fh_spacer_top_on') === 'true');
+        const spacerTopH = bothOn ? bothH : (spacerTopInputEl ? (parseFloat(spacerTopInputEl.value) || 50) : (parseFloat(localStorage.getItem('fh_spacer_top_height')) || 50));
+
         return {
             landscape: (parseFloat(localStorage.getItem('fh_landscape')) || 100) + 'vh',
             portrait: (parseFloat(localStorage.getItem('fh_portrait')) || 50) + 'vh',
-            spacerOn: spacerOn,
-            spacerHeight: spacerH + 'vh'
+            spacerOn,
+            spacerHeight: spacerH + 'vh',
+            spacerTopOn,
+            spacerTopHeight: spacerTopH + 'vh'
         };
     }
 
@@ -1872,6 +1972,14 @@
         const panelHeight = isPortraitMode ? heights.portrait : heights.landscape;
         const panelClass = isPortraitMode ? 'stream-panel mode-portrait' : 'stream-panel mode-landscape';
         
+        // Prepend top spacer block if enabled
+        if (heights.spacerTopOn) {
+            const topSpacer = document.createElement('div');
+            topSpacer.className = 'spacer-panel';
+            topSpacer.style.height = heights.spacerTopHeight;
+            feedContainer.appendChild(topSpacer);
+        }
+
         urls.forEach((url, index) => {
             const panel = document.createElement('div');
             panel.className = panelClass;
@@ -1896,7 +2004,8 @@
                     <button class="btn-hotswap-toggle" title="Edit URL">···</button>
                     <button class="btn-hotswap-star" title="Save to Playlist">☆</button>
                     <button class="btn-hotswap-reload" title="Reload this panel">⟳</button>
-                    <button class="btn-hotswap-shuffle">🎲 SHUFFLE</button>
+                    <button class="btn-hotswap-shuffle" title="Shuffle — new URL from this panel's assigned folder">🎲</button>
+                    <button class="btn-hotswap-shuffle-all" title="Shuffle All — random URL from any folder">🎲🎲</button>
                     <button class="btn-hotswap-delete" title="Delete this URL from its folder and load a replacement">❌</button>
                     <button class="btn-hotswap-kill" title="Remove this panel for this session">☠</button>
                     <button class="btn-purge">🗑️ PURGE</button>
@@ -1914,6 +2023,7 @@
             const starBtn = overlay.querySelector('.btn-hotswap-star');
             const reloadBtn = overlay.querySelector('.btn-hotswap-reload');
             const shuffleBtn = overlay.querySelector('.btn-hotswap-shuffle');
+            const shuffleAllBtn = overlay.querySelector('.btn-hotswap-shuffle-all');
             const deleteBtn = overlay.querySelector('.btn-hotswap-delete');
             const killBtn = overlay.querySelector('.btn-hotswap-kill');
             const purgeBtn = overlay.querySelector('.btn-purge');
@@ -1986,14 +2096,28 @@
             submitBtn.onclick = (e) => { e.stopPropagation(); processHotswap(); };
             inputField.onkeydown = (e) => { if (e.key === 'Enter') { e.stopPropagation(); processHotswap(); } };
 
-            // Shuffle — pulls from THIS iframe's own source folder (Option A)
-            // Also respects folder lock — folder-locked slots always stay in their folder
+            // 🎲 Shuffle — pulls from THIS iframe's own assigned folder only
             shuffleBtn.onclick = (e) => {
                 e.stopPropagation();
                 const folder = getSourceFolder();
                 if (!folder) { alert('No source folder tracked for this panel. Use ··· to set a URL manually.'); return; }
                 const newUrl = loadReplacement(folder);
                 if (!newUrl) { alert('No available URLs in this folder (empty or all blacklisted).'); return; }
+                setIframeUrl(newUrl);
+            };
+
+            // 🎲🎲 Shuffle All — picks a random URL from ANY folder in the database
+            shuffleAllBtn.onclick = (e) => {
+                e.stopPropagation();
+                if (!databaseStructure) { alert('No database connected.'); return; }
+                const allFolders = Object.keys(databaseStructure).filter(f =>
+                    databaseStructure[f].some(u => !isBlacklisted(u))
+                );
+                if (allFolders.length === 0) { alert('No available URLs across any folder.'); return; }
+                const randomFolder = allFolders[Math.floor(Math.random() * allFolders.length)];
+                const newUrl = loadReplacement(randomFolder);
+                if (!newUrl) return;
+                iframe.setAttribute('data-source-folder', randomFolder);
                 setIframeUrl(newUrl);
             };
 
