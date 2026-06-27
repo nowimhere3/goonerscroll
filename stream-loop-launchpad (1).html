@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Stream Loop Launchpad (Cloud Sync)</title>
+    <!-- Favicon: place favicon files in the same folder as this HTML file -->
+    <!-- The data URI below acts as a fallback so something always shows in the tab -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230095f6'/><text y='72' x='50' text-anchor='middle' font-size='65' font-family='Arial'>🚀</text></svg>">
+    <link rel="icon" type="image/png" href="./favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="shortcut icon" href="./favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png" />
+    <link rel="manifest" href="./site.webmanifest" />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0b0b0b; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; overflow-x: hidden; }
+        
+        /* Setup / Launchpad Layout View */
+        #setup-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+            background: linear-gradient(135deg, #111 0%, #1a1a1a 100%);
+        }
+        .config-card {
+            background: #161616;
+            border: 1px solid #2d2d2d;
+            border-radius: 16px;
+            padding: 30px;
+            width: 100%;
+            max-width: 650px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            margin-bottom: 20px;
+        }
+        h2 { font-size: 24px; margin-bottom: 8px; color: #fff; text-align: center; }
+        .subtitle { font-size: 13px; color: #777; text-align: center; margin-bottom: 24px; }
+        
+        /* Panel Accents */
+        .grid-panel { border-top: 3px solid #0095f6; }
+        .ingest-panel { border-top: 3px solid #ff9800; }
+        .git-panel { border-top: 3px solid #f1502f; }
+
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; font-size: 12px; color: #aaa; margin-bottom: 6px; font-weight: bold; }
+
+        /* Pool Header & Dice Flex */
+        .pool-header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+        .pool-title-area { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: bold; color: #ddd; }
+        .btn-dice { background: #222; border: 1px solid #444; color: #ff9800; cursor: pointer; padding: 4px 10px; border-radius: 6px; font-size: 14px; transition: transform 0.1s; }
+        .btn-dice:active { transform: rotate(20deg) scale(0.95); }
+        .btn-dice-all { background: #1a1200; border: 1px solid #7a5a00; color: #ffd700; cursor: pointer; padding: 4px 12px; border-radius: 6px; font-size: 14px; transition: transform 0.15s; font-weight: bold; }
+        .btn-dice-all:hover { background: #2a1e00; border-color: #ffd700; }
+        .btn-dice-all:active { transform: rotate(20deg) scale(0.95); }
+
+        .directory-select { width: 100%; background: #222; border: 1px solid #333; padding: 12px; color: #fff; border-radius: 8px; font-size: 14px; outline: none; margin-bottom: 15px; }
+
+        /* Dropzone Styling */
+        .dropzone-container {
+            border: 2px dashed #444;
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            background: #1e1e1e;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+            margin-bottom: 15px;
+        }
+        .dropzone-container:hover, .dropzone-container.dragover { border-color: #ff9800; background: #252525; }
+        .dropzone-title { font-size: 14px; font-weight: bold; color: #eee; margin-bottom: 4px; }
+        .dropzone-desc { font-size: 11px; color: #666; }
+
+        .url-row { display: flex; gap: 10px; margin-bottom: 12px; align-items: center; }
+        .url-input {
+            flex: 1;
+            background: #222;
+            border: 1px solid #333;
+            padding: 12px 16px;
+            color: #fff;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .url-input:focus { border-color: #0095f6; }
+        
+        .btn { border: none; padding: 12px 18px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; transition: background 0.2s, transform 0.1s; }
+        .btn:active { transform: scale(0.98); }
+        .btn-add { background: #222; color: #0095f6; border: 1px solid #333; }
+        .btn-add:hover { background: #2a2a2a; }
+        .btn-remove { background: #331417; color: #ed4956; border: 1px solid #4a1a1e; }
+        .btn-remove:hover { background: #441a1f; }
+        .btn-launch { background: #0095f6; color: #fff; width: 100%; margin-top: 15px; font-size: 16px; padding: 14px; }
+        .btn-launch:hover { background: #189ffa; }
+
+        .actions-bar { display: flex; justify-content: space-between; margin-top: 15px; }
+
+        .toggle-container { display: flex; align-items: center; justify-content: space-between; background: #222; border: 1px solid #333; border-radius: 12px; padding: 14px 20px; margin-top: 20px; }
+        .toggle-label { font-size: 14px; font-weight: bold; color: #ddd; }
+        .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #444; transition: .3s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px; background-color: white; transition: .3s; border-radius: 50%; }
+        input:checked + .slider { background-color: #0095f6; }
+        input:checked + .slider:before { transform: translateX(24px); }
+
+        /* Drawer Mechanics */
+        .drawer-toggle-btn { background: transparent; border: none; color: #777; font-size: 12px; cursor: pointer; text-decoration: underline; margin-top: 10px; font-weight: bold; }
+        .drawer-toggle-btn:hover { color: #aaa; }
+        #git-drawer-content { margin-top: 20px; }
+
+        /* Active Viewport Loop Display Canvas */
+        #loop-screen { display: none; }
+        #feed { max-width: 100%; margin: 0 auto; display: flex; flex-direction: column; }
+        
+        .stream-panel { position: relative; width: 100%; background: #000; border-bottom: 2px solid #222; }
+        .mode-landscape { height: 100vh; }
+        .mode-portrait { height: 50vh; }
+
+        .post-iframe { width: 100%; height: 100%; border: none; display: block; }
+
+        /* Frame Height Panel */
+        .frame-height-panel { border-top: 3px solid #7c4dff; }
+        .frame-height-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-top: 4px;
+        }
+        .frame-height-group label {
+            display: block;
+            font-size: 11px;
+            color: #aaa;
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+        .frame-height-group .fh-desc {
+            font-size: 10px;
+            color: #555;
+            margin-bottom: 8px;
+        }
+        .frame-height-input-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .frame-height-input {
+            flex: 1;
+            background: #222;
+            border: 1px solid #5a3aaa;
+            color: #c9b8ff;
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            outline: none;
+            width: 100%;
+        }
+        .frame-height-input:focus { border-color: #7c4dff; }
+        .frame-height-unit {
+            font-size: 12px;
+            color: #555;
+            flex-shrink: 0;
+        }
+        .btn-fh-apply {
+            background: #2a1a5a;
+            border: 1px solid #7c4dff;
+            color: #c9b8ff;
+            border-radius: 8px;
+            padding: 8px 14px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 14px;
+            transition: background 0.15s;
+        }
+        .btn-fh-apply:hover { background: #3a2a7a; }
+
+        /* Spacer block in loop view */
+        .spacer-panel {
+            width: 100%;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        /* Spacer toggle row in settings */
+        .spacer-toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #111;
+            border: 1px solid #2a1a5a;
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-top: 14px;
+        }
+        .spacer-toggle-label {
+            font-size: 13px;
+            color: #c9b8ff;
+            font-weight: bold;
+        }
+        .spacer-toggle-sub {
+            font-size: 10px;
+            color: #555;
+            margin-top: 2px;
+        }
+        .spacer-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .spacer-height-input {
+            background: #222;
+            border: 1px solid #5a3aaa;
+            color: #c9b8ff;
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: bold;
+            outline: none;
+            width: 70px;
+            text-align: center;
+        }
+        .spacer-height-input:focus { border-color: #7c4dff; }
+
+        /* Spacer row lock button */
+        .btn-spacer-lock {
+            background: #0a2a0a;
+            border: 2px solid #4caf50;
+            border-radius: 8px;
+            color: #4caf50;
+            cursor: pointer;
+            font-size: 13px;
+            padding: 4px 8px;
+            flex-shrink: 0;
+            transition: background 0.15s, border-color 0.15s, color 0.15s;
+            line-height: 1;
+            margin-left: 6px;
+        }
+        .btn-spacer-lock.locked {
+            background: #2a0a0a;
+            border-color: #ed4956;
+            color: #ed4956;
+        }
+        .spacer-row-locked .spacer-height-input {
+            opacity: 0.4;
+            pointer-events: none;
+        }
+        .spacer-row-locked .switch {
+            opacity: 0.4;
+            pointer-events: none;
+        }
+        
+        /* Always-visible ··· trigger button — sits top-right of each panel */
+        .hotswap-trigger {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: rgba(0, 0, 0, 0.75);
+            border: 1px solid #555;
+            border-radius: 12px;
+            color: #ccc;
+            font-size: 18px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            cursor: pointer;
+            padding: 8px 18px;
+            z-index: 10001;
+            backdrop-filter: blur(6px);
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
+            user-select: none;
+        }
+        .hotswap-trigger:hover { background: rgba(0,0,0,0.95); color: #fff; border-color: #888; }
+        .hotswap-trigger.open { background: rgba(0,95,200,0.85); border-color: #0095f6; color: #fff; }
+
+        /* Expanded button panel — drops down from trigger */
+        .hotswap-overlay {
+            position: absolute;
+            top: 70px;
+            right: 16px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid #333;
+            border-radius: 16px;
+            padding: 8px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+            align-items: stretch;
+            z-index: 10000;
+            backdrop-filter: blur(10px);
+            min-width: 200px;
+            /* Collapsed state */
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(-12px) scale(0.95);
+            transform-origin: top right;
+            transition: opacity 0.15s ease, transform 0.15s ease;
+        }
+        .hotswap-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0) scale(1);
+        }
+
+        /* Icon button row */
+        .hotswap-icon-row {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        /* 🌐 URL toggle button (was ···) */
+        .btn-hotswap-toggle {
+            background: #222;
+            border: 1px solid #444;
+            color: #aaa;
+            border-radius: 10px;
+            width: 28px;
+            height: 28px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: background 0.15s, color 0.15s;
+        }
+        .btn-hotswap-toggle:hover { background: #333; color: #fff; }
+        .btn-hotswap-toggle.active { background: #0095f6; border-color: #0095f6; color: #fff; }
+
+        /* Shuffle button */
+        .btn-hotswap-shuffle {
+            background: #1a2a1a;
+            border: 1px solid #3a6b3a;
+            color: #4caf50;
+            border-radius: 10px;
+            padding: 4px 10px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            white-space: nowrap;
+            flex: 1;
+            transition: background 0.15s;
+        }
+        .btn-hotswap-shuffle:hover { background: #223322; }
+        .btn-hotswap-shuffle:active { transform: rotate(15deg) scale(0.95); }
+
+        /* Purge button */
+        .btn-purge {
+            background: #331417;
+            color: #ed4956;
+            border: 1px solid #4a1a1e;
+            border-radius: 10px;
+            padding: 4px 10px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            white-space: nowrap;
+            flex: 1;
+        }
+        .btn-purge:hover { background: #ed4956; color: #fff; }
+
+        .btn-hotswap-delete {
+            background: #1a1a1a;
+            border: 1px solid #555;
+            color: #ccc;
+            border-radius: 10px;
+            padding: 4px 8px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+            transition: background 0.15s;
+        }
+        .btn-hotswap-delete:hover { background: #333; color: #fff; }
+
+        /* Kill button */
+        .btn-hotswap-kill {
+            background: #1a0808;
+            border: 1px solid #5a2020;
+            color: #888;
+            border-radius: 10px;
+            width: 28px;
+            height: 28px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: background 0.15s, color 0.15s;
+        }
+        .btn-hotswap-kill:hover { background: #3a0a0a; color: #ed4956; }
+
+        /* Star button */
+        .btn-hotswap-star {
+            background: #1a1a0a;
+            border: 1px solid #5a5a00;
+            color: #f0c040;
+            border-radius: 10px;
+            width: 28px;
+            height: 28px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: background 0.15s, transform 0.15s;
+        }
+        .btn-hotswap-star:hover { background: #2a2a00; transform: scale(1.15); }
+        .btn-hotswap-star.saved { color: #ffd700; background: #2a2200; border-color: #ffd700; }
+
+        /* Reload button */
+        .btn-hotswap-reload {
+            background: #0a1a2a;
+            border: 1px solid #1a5a8a;
+            color: #4a9fd4;
+            border-radius: 10px;
+            width: 28px;
+            height: 28px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: background 0.15s, transform 0.3s;
+        }
+        .btn-hotswap-reload:hover { background: #0d2a3a; }
+        .btn-hotswap-reload.spinning { transform: rotate(360deg); transition: transform 0.4s ease; }
+
+        /* URL input row — hidden until 🌐 clicked */
+        .hotswap-url-row {
+            display: none;
+            gap: 5px;
+            align-items: center;
+        }
+        .hotswap-url-row.open { display: flex; }
+        .hotswap-input { flex: 1; background: #1a1a1a; border: 1px solid #444; border-radius: 14px; padding: 4px 10px; color: #fff; font-size: 11px; outline: none; min-width: 160px; }
+        .hotswap-input:focus { border-color: #0095f6; }
+        .hotswap-submit-btn { background: #0095f6; color: #fff; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 10px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+        #controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.85);
+            padding: 10px 18px;
+            border-radius: 30px;
+            z-index: 2147483647;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            color: white;
+            border: 1px solid #333;
+            backdrop-filter: blur(10px);
+            white-space: nowrap;
+        }
+        #controls button { background: #222; border: 1px solid #444; color: white; padding: 6px 14px; border-radius: 20px; cursor: pointer; font-weight: bold; font-size: 13px; }
+        #controls button#toggle { background: #0095f6; border: none; }
+        #controls button#toggle.pause { background: #ed4956; }
+        #controls button.nav-jump { background: #333; color: #fff; border-color: #555; }
+        #controls button.btn-gear { background: #333; font-size: 14px; padding: 6px 10px; }
+        #controls .info { color: #888; font-size: 13px; font-family: monospace; }
+
+        /* Blacklist Panel */
+        .blacklist-panel { border-top: 3px solid #9c27b0; }
+        .blacklist-display {
+            font-size: 11px;
+            color: #ed4956;
+            background: #111;
+            padding: 10px 12px;
+            border-radius: 8px;
+            max-height: 120px;
+            overflow-y: auto;
+            border: 1px solid #2a0a0e;
+            line-height: 1.8;
+            font-family: monospace;
+            margin-bottom: 12px;
+            min-height: 36px;
+        }
+        .blacklist-display .bl-empty { color: #444; font-style: italic; }
+        .blacklist-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: #1e0a0e;
+            border: 1px solid #4a1a1e;
+            border-radius: 20px;
+            padding: 2px 8px;
+            margin: 2px 3px;
+            font-size: 11px;
+            color: #ed4956;
+        }
+        .bl-remove-btn { background: none; border: none; color: #555; cursor: pointer; font-size: 11px; padding: 0; line-height: 1; }
+        .bl-remove-btn:hover { color: #ed4956; }
+        .blacklist-manual-row { display: flex; gap: 8px; align-items: center; }
+        .btn-bl-clear { background: #1a0a0a; color: #777; border: 1px solid #333; border-radius: 8px; padding: 8px 14px; font-size: 12px; font-weight: bold; cursor: pointer; }
+        .btn-bl-clear:hover { color: #ed4956; border-color: #4a1a1e; }
+
+        /* Star / Bookmark button in overlay */
+        .btn-hotswap-star {
+            background: #1a1a0a;
+            border: 1px solid #5a5a00;
+            color: #f0c040;
+            border-radius: 10px;
+            width: 28px;
+            height: 28px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: background 0.15s, transform 0.15s;
+        }
+        .btn-hotswap-star:hover { background: #2a2a00; transform: scale(1.15); }
+        .btn-hotswap-star.saved { color: #ffd700; background: #2a2200; border-color: #ffd700; }
+
+        /* Reload button */
+        .btn-hotswap-reload {
+            background: #0a1a2a;
+            border: 1px solid #1a5a8a;
+            color: #4a9fd4;
+            border-radius: 10px;
+            width: 28px;
+            height: 28px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: background 0.15s, transform 0.3s;
+        }
+        .btn-hotswap-reload:hover { background: #0d2a3a; }
+        .btn-hotswap-reload.spinning { transform: rotate(360deg); transition: transform 0.4s ease; }
+
+        /* Bookmark modal */
+        #bookmark-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            z-index: 2147483647;
+            background: rgba(0,0,0,0.7);
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+        #bookmark-modal.open { display: flex; }
+        .bookmark-card {
+            background: #161616;
+            border: 1px solid #333;
+            border-top: 3px solid #f0c040;
+            border-radius: 16px;
+            padding: 28px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+        }
+        .bookmark-card h3 { font-size: 16px; color: #f0c040; margin-bottom: 6px; }
+        .bookmark-card .bm-url-preview {
+            font-size: 10px; color: #555; font-family: monospace;
+            word-break: break-all; margin-bottom: 18px;
+            background: #111; padding: 6px 8px; border-radius: 6px;
+        }
+        .bookmark-card label { font-size: 11px; color: #aaa; font-weight: bold; display: block; margin-bottom: 6px; }
+        .bm-folder-select { width: 100%; background: #222; border: 1px solid #444; color: #fff; padding: 10px 12px; border-radius: 8px; font-size: 13px; outline: none; margin-bottom: 12px; }
+        .bm-new-folder-row { display: flex; gap: 8px; align-items: center; margin-bottom: 18px; }
+        .bm-new-folder-input { flex: 1; background: #222; border: 1px solid #333; color: #fff; padding: 10px 12px; border-radius: 8px; font-size: 13px; outline: none; }
+        .bm-new-folder-input:focus { border-color: #f0c040; }
+        .bm-actions { display: flex; gap: 10px; }
+        .btn-bm-save { flex: 1; background: #f0c040; color: #111; border: none; border-radius: 8px; padding: 11px; font-weight: bold; font-size: 14px; cursor: pointer; }
+        .btn-bm-save:hover { background: #ffd700; }
+        .btn-bm-cancel { background: #222; color: #777; border: 1px solid #333; border-radius: 8px; padding: 11px 16px; font-weight: bold; font-size: 14px; cursor: pointer; }
+        .btn-bm-cancel:hover { color: #fff; }
+        /* Folder Manager Panel */
+        .manager-panel { border-top: 3px solid #26a69a; }
+        .folder-manager-list { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+        .folder-manager-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #111;
+            border: 1px solid #2a2a2a;
+            border-radius: 10px;
+            padding: 10px 12px;
+            cursor: default;
+            transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+        }
+        .folder-manager-row.drag-over {
+            border-color: #26a69a;
+            background: #0a1f1e;
+        }
+        .folder-manager-row.dragging {
+            opacity: 0.4;
+        }
+        .drag-handle {
+            color: #444;
+            font-size: 16px;
+            cursor: grab;
+            flex-shrink: 0;
+            padding: 0 2px;
+            user-select: none;
+            line-height: 1;
+        }
+        .drag-handle:hover { color: #26a69a; }
+        .drag-handle:active { cursor: grabbing; }
+        .folder-manager-name {
+            flex: 1;
+            font-size: 13px;
+            color: #ddd;
+            font-weight: bold;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .folder-manager-count {
+            font-size: 11px;
+            color: #555;
+            font-family: monospace;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .btn-fm-export {
+            background: #0a2a1a;
+            border: 1px solid #1a6b3a;
+            color: #4caf50;
+            border-radius: 8px;
+            padding: 5px 10px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .btn-fm-export:hover { background: #0d3a22; }
+        .btn-fm-delete {
+            background: #331417;
+            border: 1px solid #4a1a1e;
+            color: #ed4956;
+            border-radius: 8px;
+            padding: 5px 10px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .btn-fm-delete:hover { background: #ed4956; color: #fff; }
+        .folder-manager-empty { color: #444; font-style: italic; font-size: 13px; text-align: center; padding: 20px 0; }
+
+        /* Curated Mode */
+        .btn-curated {
+            background: #111;
+            border: 1px solid #444;
+            color: #777;
+            cursor: pointer;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: bold;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
+            white-space: nowrap;
+        }
+        .btn-curated:hover { background: #1a1a1a; color: #aaa; }
+        .btn-curated.active {
+            background: #0d2a1a;
+            border-color: #26a69a;
+            color: #26a69a;
+        }
+        .curated-row {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-bottom: 12px;
+            background: #0d1a18;
+            border: 1px solid #1a3a36;
+            border-radius: 10px;
+            padding: 10px 12px;
+        }
+        .curated-row-top {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .curated-folder-select {
+            flex: 1;
+            background: #111;
+            border: 1px solid #26a69a44;
+            color: #26a69a;
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: bold;
+            outline: none;
+            cursor: pointer;
+        }
+        .curated-folder-select:focus { border-color: #26a69a; }
+        .curated-url-preview {
+            font-size: 10px;
+            color: #3a5a56;
+            font-family: monospace;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding: 0 2px;
+        }
+
+        /* URL row drag & lock */
+        .url-row, .curated-row {
+            position: relative;
+        }
+        /* Prevent child elements stealing the drag from the row */
+        .url-row *, .curated-row * {
+            -webkit-user-drag: none;
+        }
+        .url-row.dragging, .curated-row.dragging {
+            opacity: 0.4;
+        }
+        /* Insertion line — shows above or below target row */
+        .url-row.drop-above, .curated-row.drop-above {
+            border-top: 2px solid #0095f6;
+            margin-top: -2px;
+        }
+        .url-row.drop-below, .curated-row.drop-below {
+            border-bottom: 2px solid #0095f6;
+            margin-bottom: -2px;
+        }
+        .row-drag-handle {
+            color: #333;
+            font-size: 16px;
+            cursor: grab;
+            flex-shrink: 0;
+            padding: 0 2px;
+            user-select: none;
+            line-height: 1;
+            transition: color 0.15s;
+        }
+        .row-drag-handle:hover { color: #0095f6; }
+        .row-drag-handle:active { cursor: grabbing; }
+        .btn-lock {
+            background: #0a2a0a;
+            border: 2px solid #4caf50;
+            border-radius: 8px;
+            color: #4caf50;
+            cursor: pointer;
+            font-size: 13px;
+            padding: 4px 7px;
+            flex-shrink: 0;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
+            line-height: 1;
+        }
+        .btn-lock:hover { background: #0d3a0d; }
+        .btn-lock.url-locked {
+            background: #2a0a0a;
+            border-color: #ed4956;
+            color: #ed4956;
+        }
+        .btn-lock.url-locked:hover { background: #3a0a0a; }
+        .btn-lock.folder-locked {
+            background: #2a0a0a;
+            border-color: #ed4956;
+            color: #ed4956;
+        }
+        .btn-lock.folder-locked:hover { background: #3a0a0a; }
+        .url-row.is-url-locked .url-input,
+        .curated-row.is-url-locked .curated-folder-select {
+            opacity: 0.4;
+        }
+        .url-row.is-folder-locked .url-input {
+            opacity: 0.7;
+        }
+        .curated-row.is-folder-locked .curated-folder-select {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+<div id="setup-screen">
+    
+    <div class="config-card grid-panel">
+        <h2>Stream Loop Launchpad</h2>
+        <p class="subtitle">Configure grid targets manually or shuffle from active directory folders.</p>
+        
+        <div class="pool-header-row">
+            <div class="pool-title-area">
+                <span>📁 Active Shuffle Directory Pool</span>
+            </div>
+            <button class="btn-curated" id="btn-curated-toggle" title="Curated Mode — assign a specific folder to each URL slot">🎯 Curated</button>
+            <button class="btn-dice-all" id="dice-shuffle-all-btn" title="Shuffle All Folders — picks a random folder per URL slot">🎲🎲 SHUFFLE ALL</button>
+            <button class="btn-dice" id="dice-shuffle-btn" title="Randomize One Folder & Fill Grid">🎲 SHUFFLE</button>
+        </div>
+        
+        <select class="directory-select" id="directory-dropdown">
+            <option value="manual">Manual Configuration Only (No Sync)</option>
+        </select>
+
+        <div id="url-fields-container"></div>
+
+        <div class="actions-bar">
+            <button class="btn btn-add" id="add-field-btn">+ Add Stream Row</button>
+            <button class="btn btn-remove" id="clear-cache-btn">Reset Grid</button>
+        </div>
+
+        <button class="btn btn-launch" id="launch-btn">🚀 LAUNCH MATRIX</button>
+
+        <div class="toggle-container">
+            <span class="toggle-label">📐 Optimize Layout for Portrait Monitor</span>
+            <label class="switch">
+                <input type="checkbox" id="portrait-mode-toggle">
+                <span class="slider"></span>
+            </label>
+        </div>
+    </div>
+
+    <div class="config-card ingest-panel">
+        <h2>Ingest Extracted Directories</h2>
+        <p class="subtitle">Drag & drop raw file listings to parse URLs automatically into your cloud repository database.</p>
+        
+        <div class="dropzone-container" id="file-dropzone">
+            <div class="dropzone-title">📥 Drop Bookmark .html, .csv, or .txt Files Here</div>
+            <div class="dropzone-desc">Automated system will extract unique destination strings instantly</div>
+            <input type="file" id="manual-file-pick" style="display: none;" accept=".html,.htm,.txt,.csv">
+        </div>
+
+        <div class="input-group">
+            <label>Target Folder in Database</label>
+            <select class="directory-select" id="ingest-folder-select" style="margin-bottom:0;">
+                <option value="">— select existing folder —</option>
+            </select>
+        </div>
+
+        <div class="input-group" style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+            <div style="flex:1; height:1px; background:#333;"></div>
+            <span style="font-size:11px; color:#555; font-weight:bold; white-space:nowrap;">OR CREATE NEW</span>
+            <div style="flex:1; height:1px; background:#333;"></div>
+        </div>
+
+        <div class="input-group">
+            <label>New Folder Name</label>
+            <input type="text" id="target-folder-input" class="url-input" placeholder="e.g., Imported_Leads_Pool">
+        </div>
+    </div>
+
+    <div class="config-card blacklist-panel">
+        <h2>🚫 Domain Blacklist</h2>
+        <p class="subtitle">Blocked domains are automatically skipped during launch and shuffle. PURGE also blacklists the domain.</p>
+        <div class="blacklist-display" id="blacklist-display">
+            <span class="bl-empty">No domains blacklisted yet.</span>
+        </div>
+        <div class="blacklist-manual-row">
+            <input type="text" id="blacklist-manual-input" class="url-input" placeholder="e.g. deadsite.com">
+            <button class="btn btn-add" id="btn-bl-add" style="white-space:nowrap;">+ Block</button>
+            <button class="btn-bl-clear" id="btn-bl-clear">Clear All</button>
+        </div>
+    </div>
+
+    <div class="config-card git-panel" style="padding: 20px 30px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="font-size: 15px; color: #eee; font-weight: bold;">GitHub Cloud Sync Pipeline</h3>
+            <button class="drawer-toggle-btn" id="btn-toggle-git-drawer">⚙️ Show Connection Settings</button>
+        </div>
+        
+        <div id="git-drawer-content" style="display:none;">
+            <p class="subtitle" style="text-align: left; margin-bottom: 15px;">Connect your remote database to synchronize directory pools and file purges.</p>
+            <div class="input-group">
+                <label>GitHub Personal Access Token (PAT)</label>
+                <input type="password" id="git-token" class="url-input" placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxx">
+            </div>
+            <div class="input-group">
+                <label>Repository Target (Username/RepoName)</label>
+                <input type="text" id="git-repo" class="url-input" placeholder="YourUsername/stream-matrix">
+            </div>
+            <button class="btn btn-add" style="width:100%; color: #f1502f; border-color: #f1502f;" id="btn-connect-git">⚡ Connect & Fetch Database</button>
+        </div>
+    </div>
+    <div class="config-card manager-panel" style="padding: 20px 30px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="font-size: 15px; color: #eee; font-weight: bold;">📂 Folder Manager</h3>
+            <button class="drawer-toggle-btn" id="btn-toggle-fm-drawer">📋 Show Folders</button>
+        </div>
+        <div id="fm-drawer-content" style="display:none; margin-top: 20px;">
+            <p class="subtitle" style="text-align:left; margin-bottom: 16px;">Export a folder's URLs as a .txt file, or permanently delete a folder and all its links from the database.</p>
+            <div class="folder-manager-list" id="folder-manager-list">
+                <div class="folder-manager-empty">Connect your GitHub database to manage folders.</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="config-card frame-height-panel" style="padding: 20px 30px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="font-size: 15px; color: #eee; font-weight: bold;">📐 Frame Height Settings</h3>
+            <button class="drawer-toggle-btn" id="btn-toggle-fh-drawer">↕ Adjust Heights</button>
+        </div>
+        <div id="fh-drawer-content" style="display:none; margin-top: 20px;">
+            <p class="subtitle" style="text-align:left; margin-bottom:16px;">Set the height of each iframe panel before launching. Changes apply on next launch.</p>
+            <div class="frame-height-grid">
+                <div class="frame-height-group">
+                    <label>🖥 Landscape Mode Height</label>
+                    <div class="fh-desc">Suggested: 100vh (full screen). Try 80vh–120vh.</div>
+                    <div class="frame-height-input-row">
+                        <input type="text" class="frame-height-input" id="fh-landscape-input" placeholder="100">
+                        <span class="frame-height-unit">vh</span>
+                    </div>
+                </div>
+                <div class="frame-height-group">
+                    <label>📱 Portrait Mode Height</label>
+                    <div class="fh-desc">Suggested: 50vh (half screen). Try 40vh–70vh.</div>
+                    <div class="frame-height-input-row">
+                        <input type="text" class="frame-height-input" id="fh-portrait-input" placeholder="50">
+                        <span class="frame-height-unit">vh</span>
+                    </div>
+                </div>
+            </div>
+            <button class="btn-fh-apply" id="btn-fh-apply">✓ Save Heights</button>
+
+            <div class="spacer-toggle-row" id="fh-spacer-top-row">
+                <div>
+                    <div class="spacer-toggle-label">Top Spacer Block</div>
+                    <div class="spacer-toggle-sub">Adds a blank black block before the first stream</div>
+                </div>
+                <div class="spacer-right">
+                    <input type="text" class="spacer-height-input" id="fh-spacer-top-input" placeholder="50">
+                    <span class="frame-height-unit">vh</span>
+                    <label class="switch" style="margin:0;">
+                        <input type="checkbox" id="fh-spacer-top-toggle">
+                        <span class="slider"></span>
+                    </label>
+                    <button class="btn-spacer-lock" id="btn-lock-spacer-top" title="Lock — prevents Save Heights from changing this row">🔓</button>
+                </div>
+            </div>
+
+            <div class="spacer-toggle-row" id="fh-spacer-end-row">
+                <div>
+                    <div class="spacer-toggle-label">End Spacer Block</div>
+                    <div class="spacer-toggle-sub">Adds a blank black block after the last stream so it can scroll fully into view</div>
+                </div>
+                <div class="spacer-right">
+                    <input type="text" class="spacer-height-input" id="fh-spacer-input" placeholder="50">
+                    <span class="frame-height-unit">vh</span>
+                    <label class="switch" style="margin:0;">
+                        <input type="checkbox" id="fh-spacer-toggle">
+                        <span class="slider"></span>
+                    </label>
+                    <button class="btn-spacer-lock" id="btn-lock-spacer-end" title="Lock — prevents Save Heights from changing this row">🔓</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Bookmark / Playlist Modal -->
+<div id="bookmark-modal">
+    <div class="bookmark-card">
+        <h3>⭐ Save to Playlist</h3>
+        <div class="bm-url-preview" id="bm-url-preview"></div>
+
+        <label>Choose existing folder</label>
+        <select class="bm-folder-select" id="bm-folder-select">
+            <option value="">— select a folder —</option>
+        </select>
+
+        <label>Or create a new folder</label>
+        <div class="bm-new-folder-row">
+            <input type="text" class="bm-new-folder-input" id="bm-new-folder-input" placeholder="New playlist name...">
+        </div>
+
+        <div class="bm-actions">
+            <button class="btn-bm-cancel" id="btn-bm-cancel">Cancel</button>
+            <button class="btn-bm-save" id="btn-bm-save">⭐ Save</button>
+        </div>
+    </div>
+</div>
+
+<div id="loop-screen">
+    <div id="feed"></div>
+    <div id="controls">
+        <button id="toggle">▶ PLAY</button>
+        <button id="prev-page-btn" class="nav-jump">▲ UP</button>
+        <button id="next-page-btn" class="nav-jump">▼ DN</button>
+        <span class="info" id="status">0 streams</span>
+        <span class="info">|</span>
+        <button id="faster">+</button>
+        <span class="info" id="speed-label">Speed: 1.00x</span>
+        <button id="slower">-</button>
+        <span class="info">|</span>
+        <button class="btn-gear" id="edit-config-btn">⚙️</button>
+    </div>
+</div>
+
+<script type="module" src="./js/app.js"></script>
+</body>
+</html>
