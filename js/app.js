@@ -19,7 +19,11 @@
  */
 
 import { Store } from './storage.js';
-import { State, setTargetUrls, setUrlFolderMap, setRowLockState } from './state.js';
+import {
+    State,
+    setTargetUrls, setUrlFolderMap, setRowLockState,
+    getDatabaseStructure, setDatabaseStructure,
+} from './state.js';
 
 import { initBlacklist, initBlacklistUI, renderBlacklistDisplay } from './blacklist.js';
 import {
@@ -33,7 +37,6 @@ import { initDropzone } from './parser.js';
 import { initGrid, renderInputRows, saveInputsToState } from './grid.js';
 import { initScrollEngine, stopScrolling, updateSpeedLabel } from './scroll.js';
 import { launchMatrix } from './launch.js';
-import { getDatabaseStructure, setDatabaseStructure } from './state.js';
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 
