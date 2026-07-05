@@ -23,7 +23,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["../js/*.js"],
+      "resources": ["../js/*.js", "js/*.js", "*.js"],
       "matches": ["<all_urls>"]
     }
   ]
