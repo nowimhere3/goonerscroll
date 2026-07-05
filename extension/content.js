@@ -78,7 +78,7 @@ async function inject() {
   wrap.innerHTML = getHtmlTemplate();
   shadow.appendChild(wrap);
 
-  const mod = await import(chrome.runtime.getURL('../js/single-mode.js'));
+  const mod = await import(chrome.runtime.getURL('js/single-mode.js'));
   mod.bootstrapSingleMode(shadow);
 }
 
