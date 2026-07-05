@@ -326,6 +326,7 @@
             background: #222;
             border: 1px solid #333;
             flex-shrink: 0;
+            order: 2;
         }
 
         .back-link:hover {
@@ -339,8 +340,8 @@
             color: #666;
             padding: 8px 12px;
             margin-left: 0;
-            margin-right: auto;
-            order: 1;
+            margin-right: 0;
+            order: -1;
         }
 
         /* Folder selector relative container */
@@ -352,6 +353,9 @@
 <body>
     <div id="solo-container">
         <div id="control-bar">
+            <!-- Status message -->
+            <span id="status-message">Loading...</span>
+
             <!-- Back button -->
             <a class="back-link" id="back-link" href="index.html" title="Back to Multi">⚙</a>
 
@@ -381,9 +385,6 @@
 
             <!-- Shuffle All button -->
             <button class="solo-btn shuffle-btn" id="btn-shuffle-all" title="Load random URL from any folder">🎲 Shuffle All</button>
-
-            <!-- Status message -->
-            <span id="status-message">Loading...</span>
         </div>
 
         <!-- Main iframe -->
