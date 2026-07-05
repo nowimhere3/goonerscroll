@@ -63,6 +63,11 @@ export const KEYS = Object.freeze({
     spacerTopOn:        'fh_spacer_top_on',
     spacerTopHeight:    'fh_spacer_top_height',
     spacerTopLocked:    'fh_lock_spacer_top',
+
+    // Single mode
+    singleModeUrl:      'solo_current_url',
+    singleModeFolder:   'solo_current_folder',
+    singleModeAutoplay: 'solo_autoplay_enabled',
 });
 
 // ── Defaults ────────────────────────────────────────────────────────────────
@@ -85,6 +90,9 @@ const DEFAULTS = {
     [KEYS.spacerTopOn]:     true,   // defaults ON
     [KEYS.spacerTopHeight]: 50,
     [KEYS.spacerTopLocked]: false,
+    [KEYS.singleModeUrl]:   '',
+    [KEYS.singleModeFolder]: '',
+    [KEYS.singleModeAutoplay]: false,
 };
 
 // ── Type map ─────────────────────────────────────────────────────────────────
