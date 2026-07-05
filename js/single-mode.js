@@ -18,7 +18,6 @@ import { State, getDatabaseStructure, setDatabaseStructure } from './state.js';
 import { initBlacklist, initBlacklistUI } from './blacklist.js';
 import { fetchDatabaseSilently } from './sync.js';
 import { launchSingleMode, getCurrentUrl, getCurrentFolder, loadRandom, loadRandomFromAll, deleteAndReplace } from './single-launch.js';
-import { getDatabaseStructure as getDatabaseStructureState, setDatabaseStructure as setDatabaseStructureState } from './state.js';
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 
@@ -45,10 +44,10 @@ async function boot() {
     initBlacklistUI();
 
     // ── Fetch database ─────────────────────────────────────────────────────────
-    let db = getDatabaseStructureState();
+    let db = getDatabaseStructure();
     if (!db) {
         await fetchDatabaseSilently(() => {
-            db = getDatabaseStructureState();
+            db = getDatabaseStructure();
         });
     }
 
@@ -119,7 +118,7 @@ async function boot() {
 
         if (!db[folder].includes(targetUrl)) {
             db[folder].push(targetUrl);
-            setDatabaseStructureState(db);
+            setDatabaseStructure(db);
             
             // Try to push to remote
             const { pushDatabaseToRemote } = await import('./sync.js');
