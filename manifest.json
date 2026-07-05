@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "GoonerScroll",
+  "version": "0.1.0",
+  "description": "Single Mode dashboard overlay for any web page.",
+
+  "permissions": [
+    "storage"
+  ],
+
+  "host_permissions": [
+    "<all_urls>"
+  ],
+
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ],
+
+  "icons": {
+    "48":  "favicon-96x96.png",
+    "96":  "favicon-96x96.png",
+    "128": "favicon-96x96.png"
+  }
+}
