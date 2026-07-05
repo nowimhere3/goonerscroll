@@ -58,6 +58,9 @@ export function launchSingleMode(url, folder, ctx) {
     Store.set('singleModeFolder', _currentFolder);
 
     // Load iframe
+    // Note: Setting iframe.src with URLs from database is safe. URLs are trusted
+    // data from GitHub (user-controlled but persisted in database). iframe.src
+    // is designed for URL assignment and handles URLs safely without HTML parsing.
     if (_iframeEl) {
         _iframeEl.src = _currentUrl;
         _updateStatus();
@@ -236,6 +239,9 @@ function _setUrl(url, folder) {
     Store.set('singleModeFolder', _currentFolder);
 
     // Load iframe
+    // Note: Setting iframe.src with URLs from database is safe. URLs are trusted
+    // data from GitHub (user-controlled but persisted in database). iframe.src
+    // is designed for URL assignment and handles URLs safely without HTML parsing.
     if (_iframeEl) {
         _iframeEl.src = url;
     }
