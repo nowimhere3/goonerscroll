@@ -1,4 +1,4 @@
-import { bootstrapSingleMode } from './single-mode.js';
+import { bootstrapSingleMode } from '../js/single-mode.js';
 
 const STORAGE_KEY = 'goonerscroll_enabled';
 const HOST_ID = 'goonerscroll-shadow-host';
