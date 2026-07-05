@@ -88,5 +88,16 @@ function remove() {
 
 async function applyEnabled() {
   const res = await chrome.storage.local.get(STORAGE_KEY);
-  const enabled = !!res*`
-
+  const enabled = !!res[STORAGE_KEY];
+  if (enabled) inject();
+  else remove();
+}
+
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg?.type === 'GOONERSCROLL_TOGGLE') {
+    if (msg.enabled) inject();
+    else remove();
+  }
+});
+
+applyEnabled();
