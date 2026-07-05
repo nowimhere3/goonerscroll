@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "GoonerScroll Overlay",
+  "version": "1.0.0",
+  "description": "Single-mode overlay frontend for goonerscroll",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "GoonerScroll"
+  },
+  "permissions": ["storage", "tabs"],
+  "host_permissions": ["<all_urls>", "https://api.github.com/*"],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "type": "module",
+      "run_at": "document_idle"
+    }
+  ]
+}
