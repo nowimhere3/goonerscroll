@@ -1,5 +1,3 @@
-import { bootstrapSingleMode } from '../js/single-mode.js';
-
 const STORAGE_KEY = 'goonerscroll_enabled';
 const HOST_ID = 'goonerscroll-shadow-host';
 
@@ -68,8 +66,9 @@ function getHtmlTemplate() {
   `;
 }
 
-function inject() {
+async function inject() {
   if (document.getElementById(HOST_ID)) return;
+
   const host = document.createElement('div');
   host.id = HOST_ID;
   document.documentElement.appendChild(host);
@@ -79,7 +78,8 @@ function inject() {
   wrap.innerHTML = getHtmlTemplate();
   shadow.appendChild(wrap);
 
-  bootstrapSingleMode(shadow);
+  const mod = await import(chrome.runtime.getURL('../js/single-mode.js'));
+  mod.bootstrapSingleMode(shadow);
 }
 
 function remove() {
@@ -89,7 +89,7 @@ function remove() {
 async function applyEnabled() {
   const res = await chrome.storage.local.get(STORAGE_KEY);
   const enabled = !!res[STORAGE_KEY];
-  if (enabled) inject();
+  if (enabled) await inject();
   else remove();
 }
 
