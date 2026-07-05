@@ -53,6 +53,10 @@ const _state = {
     // ── Bookmark modal ─────────────────────────────────────────────────────
     bookmarkTargetUrl: null,  // URL currently being saved to a playlist
     bookmarkStarBtn:   null,  // DOM reference to the ☆ button that triggered the modal
+
+    // ── Single mode ────────────────────────────────────────────────────────
+    singleModeUrl:     null,  // currently loaded URL in single mode
+    singleModeFolder:  null,  // current folder being used in single mode
 };
 
 // ── Public API ────────────────────────────────────────────────────────────────
@@ -140,6 +144,8 @@ const _initialValues = {
     databaseSha:       null,
     bookmarkTargetUrl: null,
     bookmarkStarBtn:   null,
+    singleModeUrl:     null,
+    singleModeFolder:  null,
 };
 
 // ── Named convenience exports ─────────────────────────────────────────────────
@@ -184,3 +190,9 @@ export const getBookmarkTargetUrl = () => _state.bookmarkTargetUrl;
 export const setBookmarkTargetUrl = (v) => { _state.bookmarkTargetUrl = v; };
 export const getBookmarkStarBtn   = () => _state.bookmarkStarBtn;
 export const setBookmarkStarBtn   = (v) => { _state.bookmarkStarBtn = v; };
+
+// Single mode
+export const getSingleModeUrl    = () => _state.singleModeUrl;
+export const setSingleModeUrl    = (v) => { _state.singleModeUrl = v; };
+export const getSingleModeFolder = () => _state.singleModeFolder;
+export const setSingleModeFolder = (v) => { _state.singleModeFolder = v; };

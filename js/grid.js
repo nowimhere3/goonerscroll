@@ -426,6 +426,15 @@ export function initGrid({ containerEl, dirDropdown, portraitToggle, launchCallb
         if (typeof _launchCallback === 'function') _launchCallback(active);
     });
 
+    // Solo mode button — navigate to index2.html with first URL
+    document.getElementById('btn-solo-mode')?.addEventListener('click', () => {
+        saveInputsToState();
+        const active = getTargetUrls().filter(u => u.length > 0);
+        const firstUrl = active.length > 0 ? active[0] : '';
+        const param = firstUrl ? `?startUrl=${encodeURIComponent(firstUrl)}` : '';
+        window.location.href = `index2.html${param}`;
+    });
+
     // Main folder dropdown — fill slots from selected folder
     dirDropdown?.addEventListener('change', () => {
         const selected = dirDropdown.value;
