@@ -122,7 +122,7 @@ async function boot() {
             
             // Try to push to remote
             const { pushDatabaseToRemote } = await import('./sync.js');
-            pushDatabaseToRemote();
+            pushDatabaseToRemote(`Bookmarked 1 link into playlist: ${folder}`);
         }
 
         closeBookmarkModal();
