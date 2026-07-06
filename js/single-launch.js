@@ -186,7 +186,7 @@ export function purgeAndLoadNext() {
 
     // Persist
     setDatabaseStructure(db);
-    pushDatabaseToRemote();
+    pushDatabaseToRemote('Purged dead link via Solo Mode');
 
     // Load next
     loadRandom(_currentFolder);
@@ -215,7 +215,7 @@ export function deleteAndReplace(newFolder) {
 
     // Persist
     setDatabaseStructure(db);
-    pushDatabaseToRemote();
+    pushDatabaseToRemote(`Deleted URL from folder: ${_currentFolder}`);
 
     // Load from new folder
     loadRandom(newFolder);
