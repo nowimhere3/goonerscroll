@@ -7,13 +7,14 @@ import { Store } from './storage.js';
 import {
     State,
     setTargetUrls, setUrlFolderMap, setRowLockState,
-    getDatabaseStructure, setDatabaseStructure,
+    getDatabaseStructure, setDatabaseStructure, setDatabaseSha,
 } from './state.js';
 import { initBlacklist, initBlacklistUI, renderBlacklistDisplay } from './blacklist.js';
 import {
     updateDirectoryDropdown,
     initFolderManagerDrawer,
     populateBookmarkFolderSelect,
+    renderFolderManager,
 } from './folders.js';
 import { fetchDatabaseSilently, fetchDatabaseWithUI, pushDatabaseToRemote } from './sync.js';
 import { initDropzone } from './parser.js';
@@ -123,6 +124,44 @@ async function boot() {
         updateDirectoryDropdown(dirDropdownEl, () => renderInputRows(), fmOpen);
     }
 
+    function _restoreGitInputsFromStorage(refreshFromDisk = false) {
+        if (refreshFromDisk) {
+            Store.invalidate('gitToken');
+            Store.invalidate('gitRepo');
+        }
+
+        const token = Store.get('gitToken') || '';
+        const repo  = Store.get('gitRepo')  || '';
+        document.getElementById('git-token').value = token;
+        document.getElementById('git-repo').value  = repo;
+        return { token, repo };
+    }
+
+    function _showDisconnectedGitState() {
+        setDatabaseStructure(null);
+        setDatabaseSha(null);
+        dirDropdownEl.innerHTML = '<option value="manual">Manual Configuration Only (No Sync)</option>';
+        dirDropdownEl.value = 'manual';
+        const ingestSelect = document.getElementById('ingest-folder-select');
+        if (ingestSelect) ingestSelect.innerHTML = '<option value="">— select existing folder —</option>';
+        renderInputRows();
+        renderFolderManager(dirDropdownEl, () => renderInputRows());
+    }
+
+    async function _restoreGitSyncState(refreshFromDisk = false) {
+        const { token, repo } = _restoreGitInputsFromStorage(refreshFromDisk);
+        if (!token || !repo) {
+            _showDisconnectedGitState();
+            return;
+        }
+
+        setDatabaseStructure(null);
+        setDatabaseSha(null);
+        await fetchDatabaseSilently(_refreshDropdowns);
+
+        if (!getDatabaseStructure()) _showDisconnectedGitState();
+    }
+
     // ── Folder manager ───────────────────────────────────────────────────────
     initFolderManagerDrawer(dirDropdownEl, () => renderInputRows());
 
@@ -198,10 +237,12 @@ async function boot() {
 
     // ── Initial render ────────────────────────────────────────────────────────
     _initLaunchpad();
+    await _restoreGitSyncState();
 
-    if (Store.get('gitToken') && Store.get('gitRepo')) {
-        await fetchDatabaseSilently(_refreshDropdowns);
-    }
+    window.addEventListener('pageshow', async (event) => {
+        if (!event.persisted) return;
+        await _restoreGitSyncState(true);
+    });
 }
 
 // ── Setup screen helpers ──────────────────────────────────────────────────────
