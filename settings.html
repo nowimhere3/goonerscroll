@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings — Stream Loop Launchpad</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230095f6'/><text y='72' x='50' text-anchor='middle' font-size='60' font-weight='bold' fill='%23fff'>G</text></svg>">
+    <link rel="icon" type="image/png" href="./favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="shortcut icon" href="./favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png" />
+    <link rel="manifest" href="./site.webmanifest" />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0b0b0b; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; overflow-x: hidden; }
+
+        #settings-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            padding: 20px;
+            background: linear-gradient(135deg, #111 0%, #1a1a1a 100%);
+        }
+
+        .settings-header {
+            width: 100%;
+            max-width: 650px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+
+        .btn-back {
+            background: #222;
+            border: 1px solid #333;
+            color: #aaa;
+            border-radius: 8px;
+            padding: 8px 14px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.15s, color 0.15s;
+        }
+        .btn-back:hover { background: #2a2a2a; color: #fff; }
+
+        .settings-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .config-card {
+            background: #161616;
+            border: 1px solid #2d2d2d;
+            border-radius: 16px;
+            padding: 20px 30px;
+            width: 100%;
+            max-width: 650px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            margin-bottom: 20px;
+        }
+
+        .section-header {
+            margin-bottom: 16px;
+        }
+        .section-header h3 {
+            font-size: 15px;
+            color: #eee;
+            font-weight: bold;
+        }
+
+        h2 { font-size: 24px; margin-bottom: 8px; color: #fff; text-align: center; }
+        .subtitle { font-size: 13px; color: #777; margin-bottom: 20px; }
+
+        /* Panel Accents */
+        .git-panel    { border-top: 3px solid #f1502f; }
+        .manager-panel { border-top: 3px solid #26a69a; }
+        .frame-height-panel { border-top: 3px solid #7c4dff; }
+
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; font-size: 12px; color: #aaa; margin-bottom: 6px; font-weight: bold; }
+
+        .url-input {
+            width: 100%;
+            background: #222;
+            border: 1px solid #333;
+            padding: 12px 16px;
+            color: #fff;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .url-input:focus { border-color: #0095f6; }
+
+        .btn { border: none; padding: 12px 18px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; transition: background 0.2s, transform 0.1s; }
+        .btn:active { transform: scale(0.98); }
+        .btn-add { background: #222; color: #0095f6; border: 1px solid #333; }
+        .btn-add:hover { background: #2a2a2a; }
+
+        /* Frame Height Panel */
+        .frame-height-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-top: 4px;
+        }
+        .frame-height-group label {
+            display: block;
+            font-size: 11px;
+            color: #aaa;
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+        .frame-height-group .fh-desc {
+            font-size: 10px;
+            color: #555;
+            margin-bottom: 8px;
+        }
+        .frame-height-input-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .frame-height-input {
+            flex: 1;
+            background: #222;
+            border: 1px solid #5a3aaa;
+            color: #c9b8ff;
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            outline: none;
+            width: 100%;
+        }
+        .frame-height-input:focus { border-color: #7c4dff; }
+        .frame-height-unit {
+            font-size: 12px;
+            color: #555;
+            flex-shrink: 0;
+        }
+        .btn-fh-apply {
+            background: #2a1a5a;
+            border: 1px solid #7c4dff;
+            color: #c9b8ff;
+            border-radius: 8px;
+            padding: 8px 14px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 14px;
+            transition: background 0.15s;
+        }
+        .btn-fh-apply:hover { background: #3a2a7a; }
+
+        /* Spacer toggle row */
+        .spacer-toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #111;
+            border: 1px solid #2a1a5a;
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-top: 14px;
+        }
+        .spacer-toggle-label {
+            font-size: 13px;
+            color: #c9b8ff;
+            font-weight: bold;
+        }
+        .spacer-toggle-sub {
+            font-size: 10px;
+            color: #555;
+            margin-top: 2px;
+        }
+        .spacer-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .spacer-height-input {
+            background: #222;
+            border: 1px solid #5a3aaa;
+            color: #c9b8ff;
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: bold;
+            outline: none;
+            width: 70px;
+            text-align: center;
+        }
+        .spacer-height-input:focus { border-color: #7c4dff; }
+
+        /* Spacer row lock button */
+        .btn-spacer-lock {
+            background: #0a2a0a;
+            border: 2px solid #4caf50;
+            border-radius: 8px;
+            color: #4caf50;
+            cursor: pointer;
+            font-size: 13px;
+            padding: 4px 8px;
+            flex-shrink: 0;
+            transition: background 0.15s, border-color 0.15s, color 0.15s;
+            line-height: 1;
+            margin-left: 6px;
+        }
+        .btn-spacer-lock.locked {
+            background: #2a0a0a;
+            border-color: #ed4956;
+            color: #ed4956;
+        }
+        .spacer-row-locked .spacer-height-input {
+            opacity: 0.4;
+            pointer-events: none;
+        }
+        .spacer-row-locked .switch {
+            opacity: 0.4;
+            pointer-events: none;
+        }
+
+        /* Toggle switch */
+        .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #444; transition: .3s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px; background-color: white; transition: .3s; border-radius: 50%; }
+        input:checked + .slider { background-color: #0095f6; }
+        input:checked + .slider:before { transform: translateX(24px); }
+
+        /* Folder Manager */
+        .folder-manager-list { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+        .folder-manager-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #111;
+            border: 1px solid #2a2a2a;
+            border-radius: 10px;
+            padding: 10px 12px;
+            cursor: default;
+            transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+        }
+        .folder-manager-row.drag-over {
+            border-color: #26a69a;
+            background: #0a1f1e;
+        }
+        .folder-manager-row.dragging {
+            opacity: 0.4;
+        }
+        .drag-handle {
+            color: #444;
+            font-size: 16px;
+            cursor: grab;
+            flex-shrink: 0;
+            padding: 0 2px;
+            user-select: none;
+            line-height: 1;
+        }
+        .drag-handle:hover { color: #26a69a; }
+        .drag-handle:active { cursor: grabbing; }
+        .folder-manager-name {
+            flex: 1;
+            font-size: 13px;
+            color: #ddd;
+            font-weight: bold;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .folder-manager-count {
+            font-size: 11px;
+            color: #555;
+            font-family: monospace;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .btn-fm-export {
+            background: #0a2a1a;
+            border: 1px solid #1a6b3a;
+            color: #4caf50;
+            border-radius: 8px;
+            padding: 5px 10px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .btn-fm-export:hover { background: #0d3a22; }
+        .btn-fm-delete {
+            background: #331417;
+            border: 1px solid #4a1a1e;
+            color: #ed4956;
+            border-radius: 8px;
+            padding: 5px 10px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .btn-fm-delete:hover { background: #ed4956; color: #fff; }
+        .folder-manager-empty { color: #444; font-style: italic; font-size: 13px; text-align: center; padding: 20px 0; }
+    </style>
+</head>
+<body>
+
+<div id="settings-screen">
+
+    <div class="settings-header">
+        <a href="index.html" class="btn-back">← Back</a>
+        <span class="settings-title">⚙ Settings</span>
+    </div>
+
+    <!-- GitHub Cloud Sync Pipeline -->
+    <div class="config-card git-panel">
+        <div class="section-header">
+            <h3>GitHub Cloud Sync Pipeline</h3>
+        </div>
+        <p class="subtitle">Connect your remote database to synchronize directory pools and file purges.</p>
+        <div class="input-group">
+            <label>GitHub Personal Access Token (PAT)</label>
+            <input type="password" id="git-token" class="url-input" placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxx">
+        </div>
+        <div class="input-group">
+            <label>Repository Target (Username/RepoName)</label>
+            <input type="text" id="git-repo" class="url-input" placeholder="YourUsername/stream-matrix">
+        </div>
+        <button class="btn btn-add" style="width:100%; color: #f1502f; border-color: #f1502f;" id="btn-connect-git">⚡ Connect &amp; Fetch Database</button>
+    </div>
+
+    <!-- Folder Manager -->
+    <div class="config-card manager-panel">
+        <div class="section-header">
+            <h3>📂 Folder Manager</h3>
+        </div>
+        <p class="subtitle">Export a folder's URLs as a .txt file, or permanently delete a folder and all its links from the database.</p>
+        <div class="folder-manager-list" id="folder-manager-list">
+            <div class="folder-manager-empty">Connect your GitHub database to manage folders.</div>
+        </div>
+    </div>
+
+    <!-- Frame Height Settings -->
+    <div class="config-card frame-height-panel">
+        <div class="section-header">
+            <h3>📐 Frame Height Settings</h3>
+        </div>
+        <p class="subtitle">Set the height of each iframe panel before launching. Changes apply on next launch.</p>
+        <div class="frame-height-grid">
+            <div class="frame-height-group">
+                <label>🖥 Landscape Mode Height</label>
+                <div class="fh-desc">Suggested: 100vh (full screen). Try 80vh–120vh.</div>
+                <div class="frame-height-input-row">
+                    <input type="text" class="frame-height-input" id="fh-landscape-input" placeholder="100">
+                    <span class="frame-height-unit">vh</span>
+                </div>
+            </div>
+            <div class="frame-height-group">
+                <label>📱 Portrait Mode Height</label>
+                <div class="fh-desc">Suggested: 50vh (half screen). Try 40vh–70vh.</div>
+                <div class="frame-height-input-row">
+                    <input type="text" class="frame-height-input" id="fh-portrait-input" placeholder="50">
+                    <span class="frame-height-unit">vh</span>
+                </div>
+            </div>
+        </div>
+        <button class="btn-fh-apply" id="btn-fh-apply">✓ Save Heights</button>
+
+        <div class="spacer-toggle-row" id="fh-spacer-top-row">
+            <div>
+                <div class="spacer-toggle-label">Top Spacer Block</div>
+                <div class="spacer-toggle-sub">Adds a blank black block before the first stream</div>
+            </div>
+            <div class="spacer-right">
+                <input type="text" class="spacer-height-input" id="fh-spacer-top-input" placeholder="50">
+                <span class="frame-height-unit">vh</span>
+                <label class="switch" style="margin:0;">
+                    <input type="checkbox" id="fh-spacer-top-toggle">
+                    <span class="slider"></span>
+                </label>
+                <button class="btn-spacer-lock" id="btn-lock-spacer-top" title="Lock — prevents Save Heights from changing this row">🔓</button>
+            </div>
+        </div>
+
+        <div class="spacer-toggle-row" id="fh-spacer-end-row">
+            <div>
+                <div class="spacer-toggle-label">End Spacer Block</div>
+                <div class="spacer-toggle-sub">Adds a blank black block after the last stream so it can scroll fully into view</div>
+            </div>
+            <div class="spacer-right">
+                <input type="text" class="spacer-height-input" id="fh-spacer-input" placeholder="50">
+                <span class="frame-height-unit">vh</span>
+                <label class="switch" style="margin:0;">
+                    <input type="checkbox" id="fh-spacer-toggle">
+                    <span class="slider"></span>
+                </label>
+                <button class="btn-spacer-lock" id="btn-lock-spacer-end" title="Lock — prevents Save Heights from changing this row">🔓</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script type="module" src="./js/settings.js"></script>
+</body>
+</html>
