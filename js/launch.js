@@ -288,6 +288,14 @@ function _buildPanel(url, index, panelClass, panelHeight, ctx) {
     return panel;
 }
 
+/**
+ * Reusable stream panel factory for alternative layouts (e.g. index3.html).
+ * Wraps the internal panel builder so behavior stays identical.
+ */
+export function buildStreamPanel(url, index, panelClass, panelHeight, ctx) {
+    return _buildPanel(url, index, panelClass, panelHeight, ctx);
+}
+
 // ── Main export ───────────────────────────────────────────────────────────────
 
 /**
