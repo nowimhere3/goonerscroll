@@ -84,10 +84,27 @@
             letter-spacing: 0.5px;
         }
 
-        .stream-panel { position: relative; width: 100%; height: 100%; background: #000; }
+        .stream-panel {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            overflow: hidden;
+        }
+
         .triple-fill { height: 100% !important; }
+
+        /* Iframe zoom wrapper — sits between panel and iframe */
+        .iframe-zoom-wrapper {
+            width: 100%;
+            height: 100%;
+            transform-origin: center center;
+            transition: transform 0.2s ease;
+        }
+
         .post-iframe { width: 100%; height: 100%; border: none; display: block; }
 
+        /* Hotswap trigger button — always visible at top-right */
         .hotswap-trigger {
             position: absolute;
             top: 16px;
@@ -109,6 +126,7 @@
         .hotswap-trigger:hover { background: rgba(0,0,0,0.95); color: #fff; border-color: #888; }
         .hotswap-trigger.open { background: rgba(0,95,200,0.85); border-color: #0095f6; color: #fff; }
 
+        /* Expanded hotswap overlay — drops down from trigger */
         .hotswap-overlay {
             position: absolute;
             top: 70px;
@@ -116,14 +134,15 @@
             background: rgba(0, 0, 0, 0.9);
             border: 1px solid #333;
             border-radius: 16px;
-            padding: 8px 10px;
+            padding: 10px;
             display: flex;
             flex-direction: column;
-            gap: 7px;
+            gap: 8px;
             align-items: stretch;
             z-index: 10000;
             backdrop-filter: blur(10px);
-            min-width: 200px;
+            min-width: 220px;
+            max-width: 280px;
             opacity: 0;
             pointer-events: none;
             transform: translateY(-12px) scale(0.95);
@@ -136,6 +155,43 @@
             transform: translateY(0) scale(1);
         }
 
+        /* Zoom controls row inside overlay */
+        .zoom-control-row {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            justify-content: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #2a2a2a;
+        }
+
+        .btn-zoom {
+            background: #1a1a2a;
+            border: 1px solid #3a3a6a;
+            color: #aac;
+            border-radius: 8px;
+            width: 26px;
+            height: 26px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: background 0.15s;
+        }
+        .btn-zoom:hover { background: #2a2a4a; color: #fff; }
+
+        .zoom-label {
+            font-size: 10px;
+            color: #666;
+            font-family: monospace;
+            min-width: 36px;
+            text-align: center;
+        }
+
+        /* Icon button row */
         .hotswap-icon-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 
         .btn-hotswap-toggle,
@@ -168,6 +224,7 @@
             cursor: pointer;
             white-space: nowrap;
             flex: 1;
+            transition: background 0.15s;
         }
         .btn-hotswap-shuffle:hover { background: #223322; }
 
@@ -182,6 +239,7 @@
             cursor: pointer;
             white-space: nowrap;
             flex-shrink: 0;
+            transition: background 0.15s;
         }
         .btn-hotswap-shuffle-all:hover { background: #24364a; }
 
@@ -196,6 +254,7 @@
             cursor: pointer;
             white-space: nowrap;
             flex: 1;
+            transition: background 0.15s;
         }
         .btn-purge:hover { background: #ed4956; color: #fff; }
 
@@ -210,13 +269,14 @@
             cursor: pointer;
             white-space: nowrap;
             flex-shrink: 0;
+            transition: background 0.15s;
         }
         .btn-hotswap-delete:hover { background: #333; color: #fff; }
 
         .btn-hotswap-kill { background: #1a0808; border: 1px solid #5a2020; color: #888; }
         .btn-hotswap-kill:hover { background: #3a0a0a; color: #ed4956; }
 
-        .btn-hotswap-star { background: #1a1a0a; border: 1px solid #5a5a00; color: #f0c040; }
+        .btn-hotswap-star { background: #1a1a0a; border: 1px solid #5a5a00; color: #f0c040; transition: background 0.15s, transform 0.15s; }
         .btn-hotswap-star:hover { background: #2a2a00; transform: scale(1.15); }
         .btn-hotswap-star.saved { color: #ffd700; background: #2a2200; border-color: #ffd700; }
 
@@ -224,18 +284,18 @@
         .btn-hotswap-reload:hover { background: #0d2a3a; }
         .btn-hotswap-reload.spinning { transform: rotate(360deg); transition: transform 0.4s ease; }
 
-        .hotswap-url-row { display: none; gap: 5px; align-items: center; }
+        .hotswap-url-row { display: none; gap: 5px; align-items: center; padding-top: 4px; }
         .hotswap-url-row.open { display: flex; }
         .hotswap-input {
             flex: 1;
             background: #1a1a1a;
             border: 1px solid #444;
             border-radius: 14px;
-            padding: 4px 10px;
+            padding: 6px 10px;
             color: #fff;
             font-size: 11px;
             outline: none;
-            min-width: 160px;
+            min-width: 140px;
         }
         .hotswap-input:focus { border-color: #0095f6; }
         .hotswap-submit-btn {
@@ -243,12 +303,16 @@
             color: #fff;
             border: none;
             border-radius: 50%;
-            width: 22px;
-            height: 22px;
+            width: 24px;
+            height: 24px;
             font-size: 10px;
             font-weight: bold;
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
+        .hotswap-submit-btn:hover { background: #19a4f9; }
 
         #bookmark-modal {
             display: none;
@@ -303,6 +367,11 @@
             border-radius: 8px;
             font-size: 13px;
             margin-bottom: 12px;
+            outline: none;
+        }
+        .bm-folder-select:focus,
+        .bm-new-folder-input:focus {
+            border-color: #0095f6;
         }
         .bm-actions { display: flex; gap: 10px; margin-top: 20px; }
         .bm-actions button {
@@ -313,9 +382,12 @@
             font-weight: bold;
             cursor: pointer;
             font-size: 13px;
+            transition: background 0.2s;
         }
         .btn-bm-cancel { background: #2a2a2a; color: #aaa; }
+        .btn-bm-cancel:hover { background: #3a3a3a; }
         .btn-bm-save { background: #7c4dff; color: #fff; }
+        .btn-bm-save:hover { background: #9d6dff; }
 
         @media (max-width: 900px) {
             body { overflow: auto; }
