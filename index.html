@@ -6,7 +6,7 @@
     <title>Multi-Stream Loop Launchpad (Cloud Sync)</title>
     <!-- Favicon: place favicon files in the same folder as this HTML file -->
     <!-- The data URI below acts as a fallback so something always shows in the tab -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230095f6'/><text y='72' x='50' text-anchor='middle' font-size='65' font-family='Arial'>🚀</text></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230095f6'/><text y='72' x='50' text-anchor='middle' font-size='60' font-weight='bold' fill='%23fff'>G</text></svg>">
     <link rel="icon" type="image/png" href="./favicon-96x96.png" sizes="96x96" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <link rel="shortcut icon" href="./favicon.ico" />
@@ -52,7 +52,7 @@
         .pool-title-area { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: bold; color: #ddd; }
         .btn-dice { background: #222; border: 1px solid #444; color: #ff9800; cursor: pointer; padding: 4px 10px; border-radius: 6px; font-size: 14px; transition: transform 0.1s; }
         .btn-dice:active { transform: rotate(20deg) scale(0.95); }
-        .btn-dice-all { background: #1a1200; border: 1px solid #7a5a00; color: #ffd700; cursor: pointer; padding: 4px 12px; border-radius: 6px; font-size: 14px; transition: transform 0.15s; font-weight: bold; margin-right: 12px; }
+        .btn-dice-all { background: #1a1200; border: 1px solid #7a5a00; color: #ffd700; cursor: pointer; padding: 4px 12px; border-radius: 6px; font-size: 14px; transition: transform 0.15s; font-weight: bold; }
         .btn-dice-all:hover { background: #2a1e00; border-color: #ffd700; }
         .btn-dice-all:active { transform: rotate(20deg) scale(0.95); }
 
@@ -449,7 +449,7 @@
         .hotswap-url-row.open { display: flex; }
         .hotswap-input { flex: 1; background: #1a1a1a; border: 1px solid #444; border-radius: 14px; padding: 4px 10px; color: #fff; font-size: 11px; outline: none; min-width: 160px; }
         .hotswap-input:focus { border-color: #0095f6; }
-        .hotswap-submit-btn { background: #0095f6; color: #fff; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 10px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .hotswap-submit-btn { background: #0095f6; color: #fff; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 10px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
         #controls {
             position: fixed;
@@ -788,6 +788,35 @@
             opacity: 0.7;
             pointer-events: none;
         }
+
+        /* Mode buttons row — split into left and right */
+        .mode-buttons-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 15px;
+        }
+        .mode-buttons-row .btn {
+            flex: 1;
+            margin-top: 0;
+        }
+        .btn-solo-left {
+            background: #1a3a2a;
+            border: 1px solid #4caf50;
+            color: #4caf50;
+        }
+        .btn-solo-left:hover {
+            background: #244a39;
+            border-color: #66bb6a;
+        }
+        .btn-triple {
+            background: #1a2a3a;
+            border: 1px solid #0095f6;
+            color: #0095f6;
+        }
+        .btn-triple:hover {
+            background: #243a4a;
+            border-color: #19a4f9;
+        }
     </style>
 </head>
 <body>
@@ -828,7 +857,10 @@
             </label>
         </div>
 
-        <button class="btn btn-launch" id="btn-solo-mode" style="margin-top: 15px; background: #1a3a2a; border: 1px solid #4caf50; color: #4caf50;">🎬 Single "SOLO" Page Version</button>
+        <div class="mode-buttons-row">
+            <a href="index2.html" class="btn btn-launch btn-solo-left">🎬 Single "SOLO" Page Version</a>
+            <a href="index3.html" class="btn btn-launch btn-triple">🎨 3 Page Layout</a>
+        </div>
     </div>
 
     <div class="config-card ingest-panel">
@@ -1000,13 +1032,12 @@
         <span class="info" id="status">0 streams</span>
         <span class="info">|</span>
         <button id="faster">+</button>
-        <span class="info" id="speed-label">Speed: 1.00x</span>
-        <button id="slower">-</button>
-        <span class="info">|</span>
-        <button class="btn-gear" id="edit-config-btn">⚙️</button>
+        <button id="slower">−</button>
+        <button id="mode-toggle" class="nav-jump" title="Toggle between landscape and portrait">📐</button>
+        <button id="settings-btn" class="btn-gear">⚙</button>
     </div>
 </div>
 
-<script type="module" src="./js/app.js"></script>
+<script type="module" src="./js/index.js"></script>
 </body>
 </html>
