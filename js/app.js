@@ -39,6 +39,10 @@ async function boot() {
     const statusEl         = document.getElementById('status');
     const gitDrawerContent = document.getElementById('git-drawer-content');
     const gitDrawerBtn     = document.getElementById('btn-toggle-git-drawer');
+    const fmDrawerContent  = document.getElementById('fm-drawer-content');
+    const fmDrawerBtn      = document.getElementById('btn-toggle-fm-drawer');
+    const fhDrawerContent  = document.getElementById('fh-drawer-content');
+    const fhDrawerBtn      = document.getElementById('btn-toggle-fh-drawer');
     const dropzoneEl       = document.getElementById('file-dropzone');
     const fileInputEl      = document.getElementById('manual-file-pick');
     const bookmarkModalEl  = document.getElementById('bookmark-modal');
@@ -79,7 +83,7 @@ async function boot() {
         };
     }
 
-    // ── Bookmark modal ────────────────────────────────────────────────────────
+    // ── Bookmark modal ───────────────────────────────────────────────────────
     function openBookmarkModal(url, starBtn) {
         const db = getDatabaseStructure();
         if (!db) { alert('Connect your GitHub database first to use the playlist feature.'); return; }
@@ -115,11 +119,11 @@ async function boot() {
 
     // ── Shared dropdown refresh ───────────────────────────────────────────────
     function _refreshDropdowns() {
-        const fmOpen = document.getElementById('fm-drawer-content')?.style.display === 'block';
+        const fmOpen = fmDrawerContent?.style.display === 'block';
         updateDirectoryDropdown(dirDropdownEl, () => renderInputRows(), fmOpen);
     }
 
-    // ── Folder manager ────────────────────────────────────────────────────────
+    // ── Folder manager ───────────────────────────────────────────────────────
     initFolderManagerDrawer(dirDropdownEl, () => renderInputRows());
 
     // ── Parser / dropzone ─────────────────────────────────────────────────────
@@ -153,11 +157,13 @@ async function boot() {
     });
 
     // ── Git drawer ────────────────────────────────────────────────────────────
-    gitDrawerBtn.onclick = () => {
-        const isOpen = gitDrawerContent.style.display === 'block';
-        gitDrawerContent.style.display = isOpen ? 'none' : 'block';
-        gitDrawerBtn.textContent = isOpen ? '⚙️ Show Connection Settings' : '✕ Hide Settings';
-    };
+    if (gitDrawerBtn) {
+        gitDrawerBtn.onclick = () => {
+            const isOpen = gitDrawerContent.style.display === 'block';
+            gitDrawerContent.style.display = isOpen ? 'none' : 'block';
+            gitDrawerBtn.textContent = isOpen ? '⚙️ Show Connection Settings' : '✕ Hide Settings';
+        };
+    }
 
     document.getElementById('btn-connect-git').onclick = async () => {
         saveInputsToState();
@@ -170,10 +176,19 @@ async function boot() {
         }
     };
 
-    // ── Frame height settings ─────────────────────────────────────────────────
+    // ── Folder Manager drawer ──────────────────────────────────────────────────
+    if (fmDrawerBtn) {
+        fmDrawerBtn.onclick = () => {
+            const isOpen = fmDrawerContent.style.display === 'block';
+            fmDrawerContent.style.display = isOpen ? 'none' : 'block';
+            fmDrawerBtn.textContent = isOpen ? '📋 Show Folders' : '✕ Hide Folders';
+        };
+    }
+
+    // ── Frame height settings ──────────────────────────────────────────────────
     _initFrameHeightSettings();
 
-    // ── Gear button ───────────────────────────────────────────────────────────
+    // ── Gear button ────────────────────────────────────────────────────────────
     document.getElementById('edit-config-btn').onclick = () => {
         stopScrolling();
         loopScreenEl.style.display  = 'none';
