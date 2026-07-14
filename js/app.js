@@ -22,6 +22,8 @@ import { initGrid, renderInputRows, saveInputsToState } from './grid.js';
 import { initScrollEngine, stopScrolling, updateSpeedLabel } from './scroll.js';
 import { launchMatrix } from './launch.js';
 
+const MANUAL_DIRECTORY_OPTION = '<option value="manual">Manual Configuration Only (No Sync)</option>';
+
 // ── Boot ──────────────────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -140,7 +142,7 @@ async function boot() {
     function _showDisconnectedGitState() {
         setDatabaseStructure(null);
         setDatabaseSha(null);
-        dirDropdownEl.innerHTML = '<option value="manual">Manual Configuration Only (No Sync)</option>';
+        dirDropdownEl.innerHTML = MANUAL_DIRECTORY_OPTION;
         dirDropdownEl.value = 'manual';
         const ingestSelect = document.getElementById('ingest-folder-select');
         if (ingestSelect) ingestSelect.innerHTML = '<option value="">— select existing folder —</option>';
@@ -155,11 +157,8 @@ async function boot() {
             return;
         }
 
-        setDatabaseStructure(null);
-        setDatabaseSha(null);
-        await fetchDatabaseSilently(_refreshDropdowns);
-
-        if (!getDatabaseStructure()) _showDisconnectedGitState();
+        const success = await fetchDatabaseSilently(_refreshDropdowns);
+        if (!success || !getDatabaseStructure()) _showDisconnectedGitState();
     }
 
     // ── Folder manager ───────────────────────────────────────────────────────

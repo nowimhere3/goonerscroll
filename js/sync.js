@@ -95,7 +95,7 @@ export async function pushDatabaseToRemote(commitMessage, silent = false) {
 export async function fetchDatabaseSilently(updateDropdownFn) {
     const token = Store.get('gitToken');
     const repo  = Store.get('gitRepo');
-    if (!token || !repo) return;
+    if (!token || !repo) return false;
 
     try {
         const res = await fetch(_apiUrl(), { headers: _headers() });
@@ -104,8 +104,11 @@ export async function fetchDatabaseSilently(updateDropdownFn) {
             setDatabaseSha(data.sha);
             setDatabaseStructure(_decodeDatabase(data.content));
             if (typeof updateDropdownFn === 'function') updateDropdownFn();
+            return true;
         }
     } catch (e) { /* silent */ }
+
+    return false;
 }
 
 /**
