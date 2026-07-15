@@ -7,7 +7,7 @@ import {
     setUrlFolderMap,
 } from './state.js';
 import { initBlacklist } from './blacklist.js';
-import { fetchDatabaseSilently, fetchDatabaseWithUI, pushDatabaseToRemote } from './sync.js';
+import { fetchDatabaseSilently, pushDatabaseToRemote } from './sync.js';
 import { populateBookmarkFolderSelect } from './folders.js';
 import { buildStreamPanel } from './launch.js';
 
@@ -69,25 +69,6 @@ function _buildTripleSet(db, preferredFolder = '') {
     }
 
     return { urls, map };
-}
-
-function _refreshFolderSelect(folderSelectEl) {
-    const db = getDatabaseStructure();
-    folderSelectEl.innerHTML = '<option value="">Any Folder (global random)</option>';
-
-    if (!db) return;
-
-    Object.keys(db).forEach((folderName) => {
-        const count = db[folderName].length;
-        const opt = document.createElement('option');
-        opt.value = folderName;
-        opt.textContent = `${folderName} (${count})`;
-        folderSelectEl.appendChild(opt);
-    });
-
-    if (_activeFolder && db[_activeFolder]) {
-        folderSelectEl.value = _activeFolder;
-    }
 }
 
 function _bindBookmarkModal() {
@@ -180,58 +161,122 @@ function _renderPanels(urls, map, ctx) {
     ctx.statusEl.textContent = `${active} streams`;
 }
 
+/** Build the 🌐 Folder dropup list (matches .dropup-item / .dropup-count CSS in index3.html) */
+function _renderFolderDropup(folderDropupEl, ctx) {
+    const db = getDatabaseStructure();
+    folderDropupEl.innerHTML = '';
+
+    const anyItem = document.createElement('div');
+    anyItem.className = 'dropup-item' + (_activeFolder ? '' : ' selected');
+    anyItem.textContent = 'Any Folder (global random)';
+    anyItem.onclick = () => {
+        _activeFolder = '';
+        folderDropupEl.classList.remove('open');
+        const set = _buildTripleSet(getDatabaseStructure(), '');
+        _renderPanels(set.urls, set.map, ctx);
+    };
+    folderDropupEl.appendChild(anyItem);
+
+    if (!db) return;
+
+    Object.keys(db).forEach((folderName) => {
+        const item = document.createElement('div');
+        item.className = 'dropup-item' + (_activeFolder === folderName ? ' selected' : '');
+        const label = document.createElement('span');
+        label.textContent = folderName;
+        const count = document.createElement('span');
+        count.className = 'dropup-count';
+        count.textContent = db[folderName].length;
+        item.append(label, count);
+        item.onclick = () => {
+            _activeFolder = folderName;
+            folderDropupEl.classList.remove('open');
+            const set = _buildTripleSet(getDatabaseStructure(), _activeFolder);
+            _renderPanels(set.urls, set.map, ctx);
+        };
+        folderDropupEl.appendChild(item);
+    });
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     Store.warmCache();
     initBlacklist();
 
-    const tokenInput = document.getElementById('git-token');
-    const repoInput = document.getElementById('git-repo');
-    const connectBtn = document.getElementById('btn-connect-git');
-    const folderSelectEl = document.getElementById('triple-folder-select');
-    const loadBtn = document.getElementById('btn-load-triple');
-    const shuffleAllBtn = document.getElementById('btn-shuffle-triple-all');
-    const statusEl = document.getElementById('status');
-
-    tokenInput.value = Store.get('gitToken') || '';
-    repoInput.value = Store.get('gitRepo') || '';
+    // NOTE: this page's master-bar markup has no git-token / git-repo / connect
+    // inputs — those live on index.html. Credentials are already in Store by
+    // the time this page loads, so we just read the database directly.
+    const statusEl        = document.getElementById('master-status');
+    const toggleMasterBtn = document.getElementById('btn-toggle-master');
+    const masterBarEl     = document.getElementById('master-bar');
+    const closeMasterBtn  = document.getElementById('btn-master-close');
+    const folderBtn       = document.getElementById('btn-master-folder');
+    const folderDropupEl  = document.getElementById('master-folder-dropup');
+    const shuffleBtn      = document.getElementById('btn-master-shuffle');
+    const shuffleAllBtn   = document.getElementById('btn-master-shuffle-all');
 
     _bindBookmarkModal();
 
-    await fetchDatabaseSilently(() => _refreshFolderSelect(folderSelectEl));
-    _refreshFolderSelect(folderSelectEl);
-
     const ctx = {
         feedContainerEl: document.getElementById('triple-layout'),
-        dirDropdownEl: folderSelectEl,
+        dirDropdownEl: null,
         statusEl,
         openBookmarkModal: _openBookmarkModal,
     };
+
+    // 🎬 toggle open/close for the master control bar
+    const closeMasterBar = () => {
+        masterBarEl.classList.remove('open');
+        toggleMasterBtn.classList.remove('active');
+        folderDropupEl.classList.remove('open');
+    };
+    toggleMasterBtn.onclick = () => {
+        if (masterBarEl.classList.contains('open')) {
+            closeMasterBar();
+        } else {
+            masterBarEl.classList.add('open');
+            toggleMasterBtn.classList.add('active');
+        }
+    };
+    closeMasterBtn.onclick = closeMasterBar;
+
+    // 🌐 Folder dropup
+    folderBtn.onclick = () => {
+        const willOpen = !folderDropupEl.classList.contains('open');
+        if (willOpen) _renderFolderDropup(folderDropupEl, ctx);
+        folderDropupEl.classList.toggle('open', willOpen);
+    };
+    document.addEventListener('click', (e) => {
+        if (folderDropupEl.classList.contains('open')
+            && !folderDropupEl.contains(e.target)
+            && e.target !== folderBtn) {
+            folderDropupEl.classList.remove('open');
+        }
+    });
+
+    if (statusEl) statusEl.textContent = 'Loading database…';
+    await fetchDatabaseSilently(() => {
+        if (!statusEl) return;
+        const db = getDatabaseStructure();
+        statusEl.textContent = db
+            ? `Connected — ${Object.keys(db).length} folders`
+            : 'Not connected';
+    });
 
     const initialDb = getDatabaseStructure();
     const initialSet = _buildTripleSet(initialDb, _activeFolder);
     _renderPanels(initialSet.urls, initialSet.map, ctx);
 
-    connectBtn.onclick = async () => {
-        Store.set('gitToken', tokenInput.value.trim());
-        Store.set('gitRepo', repoInput.value.trim());
-        const ok = await fetchDatabaseWithUI(() => _refreshFolderSelect(folderSelectEl));
-        if (!ok) return;
+    // 🎲 Shuffle — reshuffle within the currently selected folder (or global if none)
+    shuffleBtn.onclick = () => {
         const db = getDatabaseStructure();
         const set = _buildTripleSet(db, _activeFolder);
         _renderPanels(set.urls, set.map, ctx);
     };
 
-    loadBtn.onclick = () => {
-        const db = getDatabaseStructure();
-        _activeFolder = folderSelectEl.value || '';
-        const set = _buildTripleSet(db, _activeFolder);
-        _renderPanels(set.urls, set.map, ctx);
-    };
-
+    // 🎲🎲 Shuffle All — ignore the active folder, pull from anywhere
     shuffleAllBtn.onclick = () => {
         const db = getDatabaseStructure();
         _activeFolder = '';
-        folderSelectEl.value = '';
         const set = _buildTripleSet(db, '');
         _renderPanels(set.urls, set.map, ctx);
     };
