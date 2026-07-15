@@ -157,12 +157,14 @@ function _openBookmarkModal(url, starBtn) {
 function _renderPanels(urls, map, ctx) {
     SLOT_IDS.forEach((id, index) => {
         const slot = document.getElementById(id);
-        slot.querySelector('.stream-panel')?.remove();
+        // Clean existing content but keep label
+        const existing = slot.querySelector('.stream-panel');
+        if (existing) existing.remove();
 
         const panel = buildStreamPanel(
             urls[index] || 'https://example.com',
             index,
-            'stream-panel mode-landscape triple-fill',
+            'stream-panel triple-fill', // Using your specific CSS class from index3.html
             '100%',
             ctx
         );
