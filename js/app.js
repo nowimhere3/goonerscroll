@@ -26,12 +26,24 @@ const MANUAL_DIRECTORY_OPTION = '<option value="manual">Manual Configuration Onl
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 
-document.addEventListener('DOMContentLoaded', () => {
+function _start() {
     Store.warmCache();
     boot().catch(err => {
         console.error('[app] boot() THREW — this is why nothing initialized:', err);
     });
-});
+}
+
+// IMPORTANT: this module is loaded via a dynamic import() in index.js, which is
+// fire-and-forget and can resolve AFTER 'DOMContentLoaded' has already fired on
+// the page (this module + its 9 static imports take real time to fetch/parse).
+// A plain `document.addEventListener('DOMContentLoaded', ...)` would then never
+// fire, since that event only fires once — silently killing boot() every time.
+// Checking readyState first makes this safe regardless of load timing.
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _start);
+} else {
+    _start();
+}
 
 async function boot() {
     console.log('[app] boot: start');
