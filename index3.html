@@ -13,10 +13,15 @@
         #triple-layout {
             width: 100vw; height: 100vh;
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            grid-template-rows: 1fr 1fr;
-            grid-template-areas: "screen1 screen2" "screen1 screen3";
         }
+        /* Layout variants — toggled via JS by swapping the class on #triple-layout.
+           Screen area names (screen1/screen2/screen3) are fixed to the slot divs
+           below, so switching layouts never touches the panels/iframes themselves. */
+        #triple-layout.layout-top2      { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; grid-template-areas: "screen1 screen2" "screen3 screen3"; }
+        #triple-layout.layout-bottom2   { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; grid-template-areas: "screen1 screen1" "screen2 screen3"; }
+        #triple-layout.layout-3col      { grid-template-columns: 1fr 1fr 1fr; grid-template-rows: 1fr; grid-template-areas: "screen1 screen2 screen3"; }
+        #triple-layout.layout-lefttall  { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; grid-template-areas: "screen1 screen2" "screen1 screen3"; }
+        #triple-layout.layout-righttall { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; grid-template-areas: "screen2 screen1" "screen3 screen1"; }
         .stream-slot { position: relative; border: 1px solid #1d1d1d; overflow: hidden; background: #000; }
         #screen-1-slot { grid-area: screen1; }
         #screen-2-slot { grid-area: screen2; }
@@ -41,7 +46,25 @@
         .master-btn.shuffall-btn{ background: #0e1828; border-color: #2d5073; color: #6eb4f1; }
         .master-btn.close-btn   { background: #1a1a2a; border-color: #0095f6; color: #0095f6; }
         .master-btn.back-btn    { background: #1a1a1a; border-color: #555; color: #999; }
+        .master-btn.layout-btn  { padding: 8px 11px; }
+        .master-btn.layout-btn.active { background: #0e1e2e; border-color: #0095f6; }
         #master-status { font-size: 11px; color: #555; font-family: monospace; margin-left: auto; flex-shrink: 0; }
+
+        /* Mini layout-preview icons for the layout-switcher buttons.
+           These are temporary CSS-drawn placeholders — swap in your 56px
+           custom emoji images here whenever you have them (e.g. replace the
+           <span class="layout-icon ..."> block with an <img>). */
+        .layout-icon { display: grid; width: 26px; height: 20px; gap: 2px; flex-shrink: 0; }
+        .layout-icon i { background: #8ab4d8; display: block; border-radius: 1px; font-style: normal; }
+        .master-btn.layout-btn.active .layout-icon i { background: #4ab0f5; }
+        .layout-icon i:nth-child(1) { grid-area: a; }
+        .layout-icon i:nth-child(2) { grid-area: b; }
+        .layout-icon i:nth-child(3) { grid-area: c; }
+        .li-top2      { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; grid-template-areas: "a b" "c c"; }
+        .li-bottom2   { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; grid-template-areas: "a a" "b c"; }
+        .li-3col      { grid-template-columns: 1fr 1fr 1fr; grid-template-rows: 1fr; grid-template-areas: "a b c"; }
+        .li-lefttall  { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; grid-template-areas: "a b" "a c"; }
+        .li-righttall { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; grid-template-areas: "b a" "c a"; }
 
         /* Folder drop-up */
         #master-folder-dropup { position: fixed; bottom: 80px; left: 20px; background: #141414; border: 1px solid #333; border-radius: 10px; box-shadow: 0 -8px 24px rgba(0,0,0,0.7); max-height: 320px; overflow-y: auto; z-index: 30001; min-width: 220px; display: none; }
@@ -105,13 +128,13 @@
 
         @media (max-width: 900px) {
             body { overflow: auto; }
-            #triple-layout { height:auto; min-height:100vh; grid-template-columns:1fr; grid-template-rows:minmax(40vh,1fr) minmax(30vh,1fr) minmax(30vh,1fr); grid-template-areas:"screen1" "screen2" "screen3"; }
+            #triple-layout { height: auto !important; min-height: 100vh !important; grid-template-columns: 1fr !important; grid-template-rows: minmax(40vh,1fr) minmax(30vh,1fr) minmax(30vh,1fr) !important; grid-template-areas: "screen1" "screen2" "screen3" !important; }
         }
     </style>
 </head>
 <body>
 
-    <div id="triple-layout">
+    <div id="triple-layout" class="layout-lefttall">
         <div id="screen-1-slot" class="stream-slot"><span class="slot-label">Screen 1</span></div>
         <div id="screen-2-slot" class="stream-slot"><span class="slot-label">Screen 2</span></div>
         <div id="screen-3-slot" class="stream-slot"><span class="slot-label">Screen 3</span></div>
@@ -129,6 +152,21 @@
             <button class="master-btn folder-btn" id="btn-master-folder">🌐 Folder ▲</button>
             <div id="master-folder-dropup"></div>
         </div>
+        <button class="master-btn layout-btn" id="btn-layout-top2" data-layout="top2" title="2 Top + 1 Bottom Wide">
+            <span class="layout-icon li-top2"><i></i><i></i><i></i></span>
+        </button>
+        <button class="master-btn layout-btn" id="btn-layout-bottom2" data-layout="bottom2" title="1 Top Wide + 2 Bottom">
+            <span class="layout-icon li-bottom2"><i></i><i></i><i></i></span>
+        </button>
+        <button class="master-btn layout-btn" id="btn-layout-3col" data-layout="3col" title="3 Equal Columns">
+            <span class="layout-icon li-3col"><i></i><i></i><i></i></span>
+        </button>
+        <button class="master-btn layout-btn" id="btn-layout-lefttall" data-layout="lefttall" title="1 Left Tall + 2 Right Stacked">
+            <span class="layout-icon li-lefttall"><i></i><i></i><i></i></span>
+        </button>
+        <button class="master-btn layout-btn" id="btn-layout-righttall" data-layout="righttall" title="1 Right Tall + 2 Left Stacked">
+            <span class="layout-icon li-righttall"><i></i><i></i><i></i></span>
+        </button>
         <button class="master-btn shuffle-btn"   id="btn-master-shuffle">🎲 Shuffle</button>
         <button class="master-btn shuffall-btn"  id="btn-master-shuffle-all">🎲🎲 Shuffle All</button>
         <span id="master-status">Not connected</span>
