@@ -5,6 +5,7 @@ import {
     setDatabaseStructure,
     setTargetUrls,
     setUrlFolderMap,
+    getUrlFolderMap,
 } from './state.js';
 import { initBlacklist } from './blacklist.js';
 import { fetchDatabaseSilently, pushDatabaseToRemote } from './sync.js';
@@ -68,6 +69,51 @@ function _buildTripleSet(db, preferredFolder = '') {
             const inferred = _inferFolderForUrl(db, urls[i]);
             if (inferred) map[i] = inferred;
         }
+    }
+
+    return { urls, map };
+}
+
+/**
+ * 🎲 Shuffle — reshuffle every slot independently, each pulling a fresh random
+ * URL from the folder it's CURRENTLY assigned to (per getUrlFolderMap()), same
+ * as index.html's per-row assignment. A slot with no assigned folder falls
+ * back to a random pick so it never dead-ends.
+ */
+function _reshuffleOwnFolders(db) {
+    const currentMap = getUrlFolderMap();
+    const urls = [];
+    const map = {};
+
+    for (let i = 0; i < 3; i += 1) {
+        const folder = currentMap[i];
+        const pickedUrl = folder ? _pickFromFolder(db, folder) : null;
+
+        if (pickedUrl) {
+            urls[i] = pickedUrl;
+            map[i] = folder;
+        } else {
+            const pick = _pickFromAnyFolder(db);
+            urls[i] = pick.url || 'https://example.com';
+            if (pick.folder) map[i] = pick.folder;
+        }
+    }
+
+    return { urls, map };
+}
+
+/**
+ * 🎲🎲 Shuffle All — ignore each slot's assigned folder entirely; every slot
+ * gets a brand new random folder + link, independently of the others.
+ */
+function _reshuffleRandomFolders(db) {
+    const urls = [];
+    const map = {};
+
+    for (let i = 0; i < 3; i += 1) {
+        const pick = _pickFromAnyFolder(db);
+        urls[i] = pick.url || 'https://example.com';
+        if (pick.folder) map[i] = pick.folder;
     }
 
     return { urls, map };
@@ -193,7 +239,7 @@ function _renderFolderDropup(folderDropupEl, ctx) {
     anyItem.onclick = () => {
         _activeFolder = '';
         folderDropupEl.classList.remove('open');
-        const set = _buildTripleSet(getDatabaseStructure(), '');
+        const set = _reshuffleRandomFolders(getDatabaseStructure());
         _renderPanels(set.urls, set.map, ctx);
     };
     folderDropupEl.appendChild(anyItem);
@@ -301,18 +347,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     const initialSet = _buildTripleSet(initialDb, _activeFolder);
     _renderPanels(initialSet.urls, initialSet.map, ctx);
 
-    // 🎲 Shuffle — reshuffle within the currently selected folder (or global if none)
+    // 🎲 Shuffle — reshuffle every panel independently, each from its OWN
+    // currently-assigned folder (same folder it was launched with from index.html)
     shuffleBtn.onclick = () => {
         const db = getDatabaseStructure();
-        const set = _buildTripleSet(db, _activeFolder);
+        const set = _reshuffleOwnFolders(db);
         _renderPanels(set.urls, set.map, ctx);
     };
 
-    // 🎲🎲 Shuffle All — ignore the active folder, pull from anywhere
+    // 🎲🎲 Shuffle All — ignore every slot's assigned folder, pick a brand new
+    // random folder + link for each one independently
     shuffleAllBtn.onclick = () => {
         const db = getDatabaseStructure();
         _activeFolder = '';
-        const set = _buildTripleSet(db, '');
+        const set = _reshuffleRandomFolders(db);
         _renderPanels(set.urls, set.map, ctx);
     };
 });
