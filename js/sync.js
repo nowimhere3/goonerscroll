@@ -106,7 +106,10 @@ export async function fetchDatabaseSilently(updateDropdownFn) {
             if (typeof updateDropdownFn === 'function') updateDropdownFn();
             return true;
         }
-    } catch (e) { /* silent */ }
+        console.error('[sync] fetchDatabaseSilently: non-OK response', res.status, res.statusText);
+    } catch (e) {
+        console.error('[sync] fetchDatabaseSilently failed:', e);
+    }
 
     return false;
 }
