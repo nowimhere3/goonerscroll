@@ -12,6 +12,8 @@ import { populateBookmarkFolderSelect } from './folders.js';
 import { buildStreamPanel } from './launch.js';
 
 const SLOT_IDS = ['screen-1-slot', 'screen-2-slot', 'screen-3-slot'];
+const LAYOUT_IDS = ['top2', 'bottom2', '3col', 'lefttall', 'righttall'];
+const DEFAULT_LAYOUT = 'lefttall';
 
 let _activeFolder = '';
 
@@ -135,6 +137,25 @@ function _openBookmarkModal(url, starBtn) {
     document.getElementById('bm-new-folder-input').focus();
 }
 
+/**
+ * Switch the visual arrangement of the 3 screen slots. This only ever touches
+ * the CSS class on #triple-layout — the panels/iframes themselves are never
+ * rebuilt or moved, since each slot's grid-area (screen1/screen2/screen3) is
+ * fixed in CSS regardless of which layout is active.
+ */
+function _applyLayout(layoutName, tripleLayoutEl, layoutBtns) {
+    const safeName = LAYOUT_IDS.includes(layoutName) ? layoutName : DEFAULT_LAYOUT;
+
+    LAYOUT_IDS.forEach((name) => tripleLayoutEl.classList.remove(`layout-${name}`));
+    tripleLayoutEl.classList.add(`layout-${safeName}`);
+
+    Object.entries(layoutBtns).forEach(([name, btn]) => {
+        btn.classList.toggle('active', name === safeName);
+    });
+
+    Store.set('tripleLayout', safeName);
+}
+
 function _renderPanels(urls, map, ctx) {
     SLOT_IDS.forEach((id, index) => {
         const slot = document.getElementById(id);
@@ -213,6 +234,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     const folderDropupEl  = document.getElementById('master-folder-dropup');
     const shuffleBtn      = document.getElementById('btn-master-shuffle');
     const shuffleAllBtn   = document.getElementById('btn-master-shuffle-all');
+    const tripleLayoutEl  = document.getElementById('triple-layout');
+    const layoutBtns = {
+        top2:      document.getElementById('btn-layout-top2'),
+        bottom2:   document.getElementById('btn-layout-bottom2'),
+        '3col':    document.getElementById('btn-layout-3col'),
+        lefttall:  document.getElementById('btn-layout-lefttall'),
+        righttall: document.getElementById('btn-layout-righttall'),
+    };
 
     _bindBookmarkModal();
 
@@ -238,6 +267,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
     closeMasterBtn.onclick = closeMasterBar;
+
+    // 🖥 Layout switcher — restore persisted layout, then wire each button
+    _applyLayout(Store.get('tripleLayout') || DEFAULT_LAYOUT, tripleLayoutEl, layoutBtns);
+    Object.entries(layoutBtns).forEach(([name, btn]) => {
+        btn.onclick = () => _applyLayout(name, tripleLayoutEl, layoutBtns);
+    });
 
     // 🌐 Folder dropup
     folderBtn.onclick = () => {
