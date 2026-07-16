@@ -151,7 +151,10 @@ async function boot() {
         }
 
         const success = await fetchDatabaseSilently(_refreshDropdowns);
-        if (!success || !getDatabaseStructure()) _showDisconnectedGitState();
+        if (!success || !getDatabaseStructure()) {
+            console.error('[app] _restoreGitSyncState: showing disconnected state — success:', success, 'getDatabaseStructure():', getDatabaseStructure());
+            _showDisconnectedGitState();
+        }
     }
 
     // ── Folder manager ───────────────────────────────────────────────────────
