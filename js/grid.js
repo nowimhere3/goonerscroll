@@ -45,7 +45,12 @@ let _launchCallback = null;  // called with filtered URLs when Launch is clicked
 
 /**
  * Read all .url-grid-field inputs from the DOM and write back to state + Store.
- * Also saves portraitMode, gitToken, gitRepo, lockState, folderMap.
+ * Also saves portraitMode, lockState, folderMap.
+ * NOTE: does NOT touch gitToken/gitRepo — those are owned solely by
+ * settings.html/settings.js now. This function used to also overwrite
+ * them from #git-token/#git-repo inputs, but those inputs no longer
+ * exist on index.html, so every call here was silently wiping the
+ * saved credentials back to empty strings.
  */
 export function saveInputsToState() {
     const inputs  = document.querySelectorAll('.url-grid-field');
@@ -55,8 +60,6 @@ export function saveInputsToState() {
     setTargetUrls(urls);
     Store.set('matrixUrls', urls);
     Store.set('portraitMode', _portraitToggle?.checked ?? false);
-    Store.set('gitToken', document.getElementById('git-token')?.value.trim() || '');
-    Store.set('gitRepo',  document.getElementById('git-repo')?.value.trim()  || '');
     Store.set('lockState', getRowLockState());
     Store.set('folderMap', getUrlFolderMap());
 }
