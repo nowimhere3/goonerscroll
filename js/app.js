@@ -28,10 +28,13 @@ const MANUAL_DIRECTORY_OPTION = '<option value="manual">Manual Configuration Onl
 
 document.addEventListener('DOMContentLoaded', () => {
     Store.warmCache();
-    boot();
+    boot().catch(err => {
+        console.error('[app] boot() THREW — this is why nothing initialized:', err);
+    });
 });
 
 async function boot() {
+    console.log('[app] boot: start');
 
     const setupScreenEl    = document.getElementById('setup-screen');
     const loopScreenEl     = document.getElementById('loop-screen');
@@ -43,6 +46,7 @@ async function boot() {
     const dropzoneEl       = document.getElementById('file-dropzone');
     const fileInputEl      = document.getElementById('manual-file-pick');
     const bookmarkModalEl  = document.getElementById('bookmark-modal');
+    console.log('[app] boot: checkpoint 1 — grabbed DOM refs', { setupScreenEl, loopScreenEl, feedContainerEl, containerEl, portraitToggle, dirDropdownEl, statusEl, dropzoneEl, fileInputEl, bookmarkModalEl });
 
     // ── Restore persisted state ───────────────────────────────────────────────
     const cachedUrls = Store.get('matrixUrls');
@@ -54,6 +58,7 @@ async function boot() {
     setUrlFolderMap(Object.fromEntries(Object.entries(rawMap).map(([k, v])  => [parseInt(k), v])));
 
     portraitToggle.checked = Store.get('portraitMode') === true;
+    console.log('[app] boot: checkpoint 2 — restored persisted state');
 
     // ── Init modules ──────────────────────────────────────────────────────────
     initBlacklist();
@@ -61,6 +66,7 @@ async function boot() {
     renderBlacklistDisplay();
     initScrollEngine({ loopScreenEl });
     updateSpeedLabel();
+    console.log('[app] boot: checkpoint 3 — init modules done');
 
     // ── Frame height helper ───────────────────────────────────────────────────
     function getFrameHeights() {
@@ -113,6 +119,7 @@ async function boot() {
         if (starBtn) { starBtn.classList.add('saved'); starBtn.textContent = '★'; }
         await pushDatabaseToRemote(`Bookmarked 1 link into playlist: ${targetFolder}`);
     };
+    console.log('[app] boot: checkpoint 4 — bookmark modal wired');
 
     // ── Shared dropdown refresh ───────────────────────────────────────────────
     function _refreshDropdowns() {
@@ -145,7 +152,9 @@ async function boot() {
 
     async function _restoreGitSyncState(refreshFromDisk = false) {
         const { token, repo } = _restoreGitInputsFromStorage(refreshFromDisk);
+        console.log('[app] _restoreGitSyncState: token present?', !!token, 'repo present?', !!repo, 'repo value:', repo);
         if (!token || !repo) {
+            console.error('[app] _restoreGitSyncState: showing disconnected state — Store.get returned empty token/repo despite localStorage check. token:', token, 'repo:', repo);
             _showDisconnectedGitState();
             return;
         }
@@ -159,6 +168,7 @@ async function boot() {
 
     // ── Folder manager ───────────────────────────────────────────────────────
     initFolderManagerDrawer(dirDropdownEl, () => renderInputRows());
+    console.log('[app] boot: checkpoint 5 — folder manager drawer init');
 
     // ── Parser / dropzone ─────────────────────────────────────────────────────
     initDropzone(dropzoneEl, fileInputEl, {
@@ -168,8 +178,7 @@ async function boot() {
         updateDirectoryDropdown: _refreshDropdowns,
         dirDropdown: dirDropdownEl,
     });
-
-    // ── Grid ──────────────────────────────────────────────────────────────────
+    console.log('[app] boot: checkpoint 6 — dropzone init');
     initGrid({
         containerEl:    containerEl,
         dirDropdown:    dirDropdownEl,
@@ -189,6 +198,7 @@ async function boot() {
             });
         },
     });
+    console.log('[app] boot: checkpoint 7 — grid init');
 
     // ── Gear button (⚙ settings-btn, loop-screen controls) ─────────────────────
     // GitHub sync / Folder Manager / Frame Height settings now live only on
@@ -204,8 +214,11 @@ async function boot() {
     }
 
     // ── Initial render ────────────────────────────────────────────────────────
+    console.log('[app] boot: checkpoint 8 — settings-btn wired, about to init launchpad');
     _initLaunchpad();
+    console.log('[app] boot: checkpoint 9 — launchpad initialized, about to restore git sync state');
     await _restoreGitSyncState();
+    console.log('[app] boot: checkpoint 10 — git sync state restored, boot complete');
 
     window.addEventListener('pageshow', async (event) => {
         if (!event.persisted) return;
