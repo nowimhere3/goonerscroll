@@ -98,7 +98,7 @@ export async function fetchDatabaseSilently(updateDropdownFn) {
     if (!token || !repo) return false;
 
     try {
-        const res = await fetch(_apiUrl(), { headers: _headers() });
+        const res = await fetch(_apiUrl(), { headers: _headers(), cache: 'no-store' });
         if (res.ok) {
             const data = await res.json();
             setDatabaseSha(data.sha);
@@ -127,7 +127,7 @@ export async function fetchDatabaseWithUI(updateDropdownFn) {
     }
 
     try {
-        const res = await fetch(_apiUrl(), { headers: _headers() });
+        const res = await fetch(_apiUrl(), { headers: _headers(), cache: 'no-store' });
         if (!res.ok) throw new Error('Could not find or access links.json in root repository area.');
 
         const data = await res.json();
