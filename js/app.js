@@ -16,9 +16,9 @@ import {
     populateBookmarkFolderSelect,
     renderFolderManager,
 } from './folders.js';
-import { fetchDatabaseSilently, fetchDatabaseWithUI, pushDatabaseToRemote } from './sync.js';
+import { fetchDatabaseSilently, pushDatabaseToRemote } from './sync.js';
 import { initDropzone } from './parser.js';
-import { initGrid, renderInputRows, saveInputsToState } from './grid.js';
+import { initGrid, renderInputRows } from './grid.js';
 import { initScrollEngine, stopScrolling, updateSpeedLabel } from './scroll.js';
 import { launchMatrix } from './launch.js';
 
@@ -40,12 +40,6 @@ async function boot() {
     const portraitToggle   = document.getElementById('portrait-mode-toggle');
     const dirDropdownEl    = document.getElementById('directory-dropdown');
     const statusEl         = document.getElementById('status');
-    const gitDrawerContent = document.getElementById('git-drawer-content');
-    const gitDrawerBtn     = document.getElementById('btn-toggle-git-drawer');
-    const fmDrawerContent  = document.getElementById('fm-drawer-content');
-    const fmDrawerBtn      = document.getElementById('btn-toggle-fm-drawer');
-    const fhDrawerContent  = document.getElementById('fh-drawer-content');
-    const fhDrawerBtn      = document.getElementById('btn-toggle-fh-drawer');
     const dropzoneEl       = document.getElementById('file-dropzone');
     const fileInputEl      = document.getElementById('manual-file-pick');
     const bookmarkModalEl  = document.getElementById('bookmark-modal');
@@ -122,8 +116,8 @@ async function boot() {
 
     // ── Shared dropdown refresh ───────────────────────────────────────────────
     function _refreshDropdowns() {
-        const fmOpen = fmDrawerContent?.style.display === 'block';
-        updateDirectoryDropdown(dirDropdownEl, () => renderInputRows(), fmOpen);
+        // Folder Manager UI now lives on settings.html, so it's never "open" here.
+        updateDirectoryDropdown(dirDropdownEl, () => renderInputRows(), false);
     }
 
     function _restoreGitInputsFromStorage(refreshFromDisk = false) {
@@ -132,10 +126,9 @@ async function boot() {
             Store.invalidate('gitRepo');
         }
 
+        // Git token/repo inputs now live only on settings.html — just read Store.
         const token = Store.get('gitToken') || '';
         const repo  = Store.get('gitRepo')  || '';
-        document.getElementById('git-token').value = token;
-        document.getElementById('git-repo').value  = repo;
         return { token, repo };
     }
 
@@ -194,45 +187,18 @@ async function boot() {
         },
     });
 
-    // ── Git drawer ────────────────────────────────────────────────────────────
-    if (gitDrawerBtn) {
-        gitDrawerBtn.onclick = () => {
-            const isOpen = gitDrawerContent.style.display === 'block';
-            gitDrawerContent.style.display = isOpen ? 'none' : 'block';
-            gitDrawerBtn.textContent = isOpen ? '⚙️ Show Connection Settings' : '✕ Hide Settings';
+    // ── Gear button (⚙ settings-btn, loop-screen controls) ─────────────────────
+    // GitHub sync / Folder Manager / Frame Height settings now live only on
+    // settings.html. This button just returns to the index.html setup screen.
+    const settingsBtn = document.getElementById('settings-btn');
+    if (settingsBtn) {
+        settingsBtn.onclick = () => {
+            stopScrolling();
+            loopScreenEl.style.display  = 'none';
+            setupScreenEl.style.display = 'flex';
+            _initLaunchpad();
         };
     }
-
-    document.getElementById('btn-connect-git').onclick = async () => {
-        saveInputsToState();
-        Store.set('gitToken', document.getElementById('git-token').value.trim());
-        Store.set('gitRepo',  document.getElementById('git-repo').value.trim());
-        const success = await fetchDatabaseWithUI(_refreshDropdowns);
-        if (success) {
-            gitDrawerContent.style.display = 'none';
-            gitDrawerBtn.textContent = '⚙️ Show Connection Settings';
-        }
-    };
-
-    // ── Folder Manager drawer ──────────────────────────────────────────────────
-    if (fmDrawerBtn) {
-        fmDrawerBtn.onclick = () => {
-            const isOpen = fmDrawerContent.style.display === 'block';
-            fmDrawerContent.style.display = isOpen ? 'none' : 'block';
-            fmDrawerBtn.textContent = isOpen ? '📋 Show Folders' : '✕ Hide Folders';
-        };
-    }
-
-    // ── Frame height settings ──────────────────────────────────────────────────
-    _initFrameHeightSettings();
-
-    // ── Gear button ────────────────────────────────────────────────────────────
-    document.getElementById('edit-config-btn').onclick = () => {
-        stopScrolling();
-        loopScreenEl.style.display  = 'none';
-        setupScreenEl.style.display = 'flex';
-        _initLaunchpad();
-    };
 
     // ── Initial render ────────────────────────────────────────────────────────
     _initLaunchpad();
@@ -247,90 +213,9 @@ async function boot() {
 // ── Setup screen helpers ──────────────────────────────────────────────────────
 
 function _initLaunchpad() {
-    document.getElementById('git-token').value = Store.get('gitToken') || '';
-    document.getElementById('git-repo').value  = Store.get('gitRepo')  || '';
+    // Git token/repo inputs, and Frame Height settings, now live only on
+    // settings.html — nothing to restore into this page's DOM for them.
     renderInputRows();
     renderBlacklistDisplay();
     initBlacklistUI();
-    _initFrameHeightSettings();
-}
-
-function _initFrameHeightSettings() {
-    const fhDrawerBtn      = document.getElementById('btn-toggle-fh-drawer');
-    const fhDrawerContent  = document.getElementById('fh-drawer-content');
-    const fhLandscapeInput = document.getElementById('fh-landscape-input');
-    const fhPortraitInput  = document.getElementById('fh-portrait-input');
-    const fhSpacerToggle   = document.getElementById('fh-spacer-toggle');
-    const fhSpacerInput    = document.getElementById('fh-spacer-input');
-    const fhSpacerTopToggle = document.getElementById('fh-spacer-top-toggle');
-    const fhSpacerTopInput  = document.getElementById('fh-spacer-top-input');
-
-    if (!fhDrawerBtn) return;
-
-    if (fhLandscapeInput)   fhLandscapeInput.value    = Store.get('fhLandscape');
-    if (fhPortraitInput)    fhPortraitInput.value     = Store.get('fhPortrait');
-    if (fhSpacerToggle)     fhSpacerToggle.checked    = Store.get('spacerEndOn');
-    if (fhSpacerInput)      fhSpacerInput.value       = Store.get('spacerEndHeight');
-    if (fhSpacerTopToggle)  fhSpacerTopToggle.checked = Store.get('spacerTopOn');
-    if (fhSpacerTopInput)   fhSpacerTopInput.value    = Store.get('spacerTopHeight');
-
-    fhDrawerBtn.onclick = () => {
-        const isOpen = fhDrawerContent.style.display === 'block';
-        fhDrawerContent.style.display = isOpen ? 'none' : 'block';
-        fhDrawerBtn.textContent = isOpen ? '↕ Adjust Heights' : '✕ Hide';
-    };
-
-    document.getElementById('btn-fh-apply').onclick = () => {
-        const land      = parseFloat(fhLandscapeInput?.value);
-        const port      = parseFloat(fhPortraitInput?.value);
-        const spacerH   = parseFloat(fhSpacerInput?.value);
-        const spacerTopH = parseFloat(fhSpacerTopInput?.value);
-
-        if (isNaN(land)      || land < 10      || land > 300)      { alert('Landscape height must be 10–300 vh.'); return; }
-        if (isNaN(port)      || port < 10      || port > 300)      { alert('Portrait height must be 10–300 vh.');  return; }
-        if (isNaN(spacerH)   || spacerH < 5   || spacerH > 300)   { alert('End spacer must be 5–300 vh.');        return; }
-        if (isNaN(spacerTopH)|| spacerTopH < 5|| spacerTopH > 300) { alert('Top spacer must be 5–300 vh.');       return; }
-
-        Store.set('fhLandscape', land);
-        Store.set('fhPortrait',  port);
-
-        if (!Store.get('spacerEndLocked')) {
-            Store.set('spacerEndOn',     fhSpacerToggle?.checked ?? true);
-            Store.set('spacerEndHeight', spacerH);
-        }
-        if (!Store.get('spacerTopLocked')) {
-            Store.set('spacerTopOn',     fhSpacerTopToggle?.checked ?? true);
-            Store.set('spacerTopHeight', spacerTopH);
-        }
-
-        fhDrawerBtn.textContent = '↕ Adjust Heights';
-        fhDrawerContent.style.display = 'none';
-        alert(`Saved! Landscape: ${land}vh · Portrait: ${port}vh\nTakes effect on next Launch.`);
-    };
-
-    _wireSpacerLock('top', fhSpacerTopToggle, fhSpacerTopInput);
-    _wireSpacerLock('end', fhSpacerToggle,    fhSpacerInput);
-}
-
-function _wireSpacerLock(which, toggleEl, inputEl) {
-    const friendlyKey = which === 'top' ? 'spacerTopLocked' : 'spacerEndLocked';
-    const btn   = document.getElementById(which === 'top' ? 'btn-lock-spacer-top' : 'btn-lock-spacer-end');
-    const rowEl = document.getElementById(which === 'top' ? 'fh-spacer-top-row'  : 'fh-spacer-end-row');
-    if (!btn) return;
-
-    const applyLockUI = (locked) => {
-        rowEl?.classList.toggle('spacer-row-locked', locked);
-        btn.classList.toggle('locked', locked);
-        btn.textContent = locked ? '🔒' : '🔓';
-        btn.title = locked ? 'Locked — click to unlock' : 'Lock — prevents Save Heights from changing this row';
-        if (toggleEl) toggleEl.style.pointerEvents = locked ? 'none' : '';
-        if (inputEl)  inputEl.style.pointerEvents  = locked ? 'none' : '';
-    };
-
-    applyLockUI(Store.get(friendlyKey));
-    btn.onclick = () => {
-        const nowLocked = !Store.get(friendlyKey);
-        Store.set(friendlyKey, nowLocked);
-        applyLockUI(nowLocked);
-    };
 }
