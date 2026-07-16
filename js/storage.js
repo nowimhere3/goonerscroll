@@ -68,6 +68,9 @@ export const KEYS = Object.freeze({
     singleModeUrl:      'solo_current_url',
     singleModeFolder:   'solo_current_folder',
     singleModeAutoplay: 'solo_autoplay_enabled',
+
+    // Triple mode
+    tripleLayout:       'triple_screen_layout',
 });
 
 // ── Defaults ────────────────────────────────────────────────────────────────
@@ -93,6 +96,7 @@ const DEFAULTS = {
     [KEYS.singleModeUrl]:   '',
     [KEYS.singleModeFolder]: '',
     [KEYS.singleModeAutoplay]: false,
+    [KEYS.tripleLayout]:    'lefttall',
 };
 
 // ── Type map ─────────────────────────────────────────────────────────────────
@@ -114,6 +118,7 @@ const TYPES = {
     [KEYS.spacerTopOn]:     'boolean_default_true',
     [KEYS.spacerTopHeight]: 'number',
     [KEYS.spacerTopLocked]: 'boolean',
+    [KEYS.tripleLayout]:    'string',
 };
 
 // ── In-memory cache ──────────────────────────────────────────────────────────
