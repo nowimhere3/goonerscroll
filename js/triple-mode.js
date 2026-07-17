@@ -383,6 +383,10 @@ function _applyLayout(layoutName, tripleLayoutEl, layoutBtns) {
 }
 
 function _renderPanels(urls, map, ctx) {
+    Store.set('matrixUrls', urls);
+    setTargetUrls(urls);
+    setUrlFolderMap(map);
+
     SLOT_IDS.forEach((id, index) => {
         const slot = document.getElementById(id);
         // Clean existing content but keep label
@@ -399,10 +403,6 @@ function _renderPanels(urls, map, ctx) {
 
         slot.appendChild(panel);
     });
-
-    Store.set('matrixUrls', urls);
-    setTargetUrls(urls);
-    setUrlFolderMap(map);
 
     const active = urls.filter(Boolean).length;
     ctx.statusEl.textContent = `${active} streams`;
