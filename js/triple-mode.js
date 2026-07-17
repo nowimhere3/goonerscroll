@@ -39,6 +39,17 @@ const LAYOUT_GRID_CONFIG = {
 
 const MIN_TRACK_SIZE = 80; // px-equivalent floor so a dragged panel can't collapse to nothing
 
+// Clockwise visual order of slot-indices (0=screen1, 1=screen2, 2=screen3) for
+// each layout, always starting from the top-left-most panel. Drives the 🖥
+// position-swap dropdown in each panel's hotswap overlay.
+const LAYOUT_POSITION_ORDER = {
+    top2:      [0, 1, 2],
+    bottom2:   [0, 2, 1],
+    '3col':    [0, 1, 2],
+    lefttall:  [0, 1, 2],
+    righttall: [1, 0, 2],
+};
+
 // Session-only memory of custom drag positions, keyed by layout name. Never
 // written to Store — a fresh visit to this page (including navigating back to
 // index.html and returning) starts with none of this, by design.
@@ -296,6 +307,45 @@ function _injectResizers(layoutName, tripleLayoutEl) {
 }
 
 /**
+ * Swap what's showing in two screen slots — driven by the 🖥 button in each
+ * panel's hotswap overlay. Operates directly on the DOM (each slot's iframe +
+ * its own overlay's URL input) rather than rebuilding panels, so nothing about
+ * the panels themselves needs to know this happened. Also swaps the two
+ * slots' entries in the in-memory folder map, so a subsequent master-overlay
+ * "own folder" Shuffle stays consistent with what's now actually showing.
+ * Session-only — never written to Store, same as the border-drag sizing.
+ */
+function _swapSlotContents(slotIndexA, slotIndexB) {
+    const slotAEl = document.getElementById(SLOT_IDS[slotIndexA]);
+    const slotBEl = document.getElementById(SLOT_IDS[slotIndexB]);
+    const iframeA = slotAEl?.querySelector('.post-iframe');
+    const iframeB = slotBEl?.querySelector('.post-iframe');
+    if (!iframeA || !iframeB) return;
+
+    const applyToIframe = (iframeEl, src, folder) => {
+        iframeEl.src = src;
+        iframeEl.setAttribute('data-last-src', src);
+        iframeEl.setAttribute('data-source-folder', folder);
+        const input = iframeEl.closest('.stream-panel')?.querySelector('.hotswap-input');
+        if (input) input.value = src;
+    };
+
+    const srcA    = iframeA.getAttribute('data-last-src') || iframeA.src;
+    const srcB    = iframeB.getAttribute('data-last-src') || iframeB.src;
+    const folderA = iframeA.getAttribute('data-source-folder') || '';
+    const folderB = iframeB.getAttribute('data-source-folder') || '';
+
+    applyToIframe(iframeA, srcB, folderB);
+    applyToIframe(iframeB, srcA, folderA);
+
+    const map = { ...getUrlFolderMap() };
+    const tmp = map[slotIndexA];
+    map[slotIndexA] = map[slotIndexB];
+    map[slotIndexB] = tmp;
+    setUrlFolderMap(map);
+}
+
+/**
  * Switch the visual arrangement of the 3 screen slots. This only ever touches
  * the CSS class on #triple-layout — the panels/iframes themselves are never
  * rebuilt or moved, since each slot's grid-area (screen1/screen2/screen3) is
@@ -417,6 +467,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         dirDropdownEl: null,
         statusEl,
         openBookmarkModal: _openBookmarkModal,
+        getPositionOrder: () => LAYOUT_POSITION_ORDER[_currentLayout] || [0, 1, 2],
+        swapWithSlot: (slotIndexA, slotIndexB) => _swapSlotContents(slotIndexA, slotIndexB),
     };
 
     // 🎬 toggle open/close for the master control bar
