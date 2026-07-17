@@ -308,35 +308,26 @@ function _injectResizers(layoutName, tripleLayoutEl) {
 
 /**
  * Swap what's showing in two screen slots — driven by the 🖥 button in each
- * panel's hotswap overlay. Operates directly on the DOM (each slot's iframe +
- * its own overlay's URL input) rather than rebuilding panels, so nothing about
- * the panels themselves needs to know this happened. Also swaps the two
- * slots' entries in the in-memory folder map, so a subsequent master-overlay
- * "own folder" Shuffle stays consistent with what's now actually showing.
- * Session-only — never written to Store, same as the border-drag sizing.
+ * panel's hotswap overlay. This physically moves the actual panel elements
+ * (iframe included) between the two slot containers, rather than touching any
+ * iframe's src — so whatever is playing live inside (video, slideshow, etc.)
+ * just keeps running uninterrupted; only its on-screen position changes.
+ * Also swaps the two slots' entries in the in-memory folder map, so a
+ * subsequent master-overlay "own folder" Shuffle stays consistent with what's
+ * now actually showing. Session-only — never written to Store, same as the
+ * border-drag sizing.
  */
 function _swapSlotContents(slotIndexA, slotIndexB) {
     const slotAEl = document.getElementById(SLOT_IDS[slotIndexA]);
     const slotBEl = document.getElementById(SLOT_IDS[slotIndexB]);
-    const iframeA = slotAEl?.querySelector('.post-iframe');
-    const iframeB = slotBEl?.querySelector('.post-iframe');
-    if (!iframeA || !iframeB) return;
+    const panelA = slotAEl?.querySelector('.stream-panel');
+    const panelB = slotBEl?.querySelector('.stream-panel');
+    if (!panelA || !panelB) return;
 
-    const applyToIframe = (iframeEl, src, folder) => {
-        iframeEl.src = src;
-        iframeEl.setAttribute('data-last-src', src);
-        iframeEl.setAttribute('data-source-folder', folder);
-        const input = iframeEl.closest('.stream-panel')?.querySelector('.hotswap-input');
-        if (input) input.value = src;
-    };
-
-    const srcA    = iframeA.getAttribute('data-last-src') || iframeA.src;
-    const srcB    = iframeB.getAttribute('data-last-src') || iframeB.src;
-    const folderA = iframeA.getAttribute('data-source-folder') || '';
-    const folderB = iframeB.getAttribute('data-source-folder') || '';
-
-    applyToIframe(iframeA, srcB, folderB);
-    applyToIframe(iframeB, srcA, folderA);
+    // Moving an already-in-document node via appendChild relocates it without
+    // touching its content — the iframe's live document/media state survives.
+    slotAEl.appendChild(panelB);
+    slotBEl.appendChild(panelA);
 
     const map = { ...getUrlFolderMap() };
     const tmp = map[slotIndexA];
