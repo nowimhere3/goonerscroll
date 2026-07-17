@@ -44,10 +44,26 @@
             grid-template-rows: 1fr 6px 1fr;
             grid-template-areas: "screen2 vres screen1" "hres vres screen1" "screen3 vres screen1";
         }
+        #triple-layout.layout-vsplit {
+            grid-template-columns: 1fr 6px 1fr;
+            grid-template-rows: 1fr;
+            grid-template-areas: "screen1 vres screen2";
+        }
+        #triple-layout.layout-hsplit {
+            grid-template-columns: 1fr;
+            grid-template-rows: 1fr 6px 1fr;
+            grid-template-areas: "screen1" "hres" "screen2";
+        }
+        #triple-layout.layout-4grid {
+            grid-template-columns: 1fr 6px 1fr;
+            grid-template-rows: 1fr 6px 1fr;
+            grid-template-areas: "screen1 vres screen2" "hresL vres hresR" "screen3 vres screen4";
+        }
         .stream-slot { position: relative; border: 1px solid #1d1d1d; overflow: hidden; background: #000; }
         #screen-1-slot { grid-area: screen1; }
         #screen-2-slot { grid-area: screen2; }
         #screen-3-slot { grid-area: screen3; }
+        #screen-4-slot { grid-area: screen4; }
         .slot-label { position: absolute; left: 8px; top: 8px; z-index: 9998; background: rgba(0,0,0,0.6); border: 1px solid #333; color: #555; border-radius: 8px; font-size: 11px; padding: 3px 8px; }
         .stream-panel { position: relative; width: 100%; height: 100%; background: #000; overflow: hidden; }
         .post-iframe  { width: 100%; height: 100%; border: none; display: block; }
@@ -95,11 +111,15 @@
         .layout-icon i:nth-child(1) { grid-area: a; }
         .layout-icon i:nth-child(2) { grid-area: b; }
         .layout-icon i:nth-child(3) { grid-area: c; }
+        .layout-icon i:nth-child(4) { grid-area: d; }
         .li-top2      { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; grid-template-areas: "a b" "c c"; }
         .li-bottom2   { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; grid-template-areas: "a a" "b c"; }
         .li-3col      { grid-template-columns: 1fr 1fr 1fr; grid-template-rows: 1fr; grid-template-areas: "a b c"; }
         .li-lefttall  { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; grid-template-areas: "a b" "a c"; }
         .li-righttall { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; grid-template-areas: "b a" "c a"; }
+        .li-vsplit    { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr; grid-template-areas: "a b"; }
+        .li-hsplit    { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; grid-template-areas: "a" "b"; }
+        .li-4grid     { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; grid-template-areas: "a b" "c d"; }
 
         /* Folder drop-up */
         #master-folder-dropup { position: fixed; bottom: 80px; left: 20px; background: #141414; border: 1px solid #333; border-radius: 10px; box-shadow: 0 -8px 24px rgba(0,0,0,0.7); max-height: 320px; overflow-y: auto; z-index: 30001; min-width: 220px; display: none; }
@@ -208,7 +228,16 @@
 
         @media (max-width: 900px) {
             body { overflow: auto; }
-            #triple-layout { height: auto !important; min-height: 100vh !important; grid-template-columns: 1fr !important; grid-template-rows: minmax(40vh,1fr) minmax(30vh,1fr) minmax(30vh,1fr) !important; grid-template-areas: "screen1" "screen2" "screen3" !important; }
+            #triple-layout {
+                height: auto !important;
+                min-height: 100vh !important;
+                grid-template-columns: 1fr !important;
+                grid-template-rows: none !important;
+                grid-template-areas: none !important;
+                grid-auto-flow: row !important;
+                grid-auto-rows: minmax(40vh, auto) !important;
+            }
+            .stream-slot { grid-area: auto !important; }
             .resizer { display: none !important; }
         }
     </style>
@@ -219,6 +248,7 @@
         <div id="screen-1-slot" class="stream-slot"><span class="slot-label">Screen 1</span></div>
         <div id="screen-2-slot" class="stream-slot"><span class="slot-label">Screen 2</span></div>
         <div id="screen-3-slot" class="stream-slot"><span class="slot-label">Screen 3</span></div>
+        <div id="screen-4-slot" class="stream-slot"><span class="slot-label">Screen 4</span></div>
     </div>
 
     <!-- Always-visible floating buttons -->
@@ -247,6 +277,15 @@
         </button>
         <button class="master-btn layout-btn" id="btn-layout-righttall" data-layout="righttall" title="1 Right Tall + 2 Left Stacked">
             <span class="layout-icon li-righttall"><i></i><i></i><i></i></span>
+        </button>
+        <button class="master-btn layout-btn" id="btn-layout-vsplit" data-layout="vsplit" title="Vertical 50/50 Split">
+            <span class="layout-icon li-vsplit"><i></i><i></i></span>
+        </button>
+        <button class="master-btn layout-btn" id="btn-layout-hsplit" data-layout="hsplit" title="Horizontal 50/50 Split">
+            <span class="layout-icon li-hsplit"><i></i><i></i></span>
+        </button>
+        <button class="master-btn layout-btn" id="btn-layout-4grid" data-layout="4grid" title="4 Screen Grid">
+            <span class="layout-icon li-4grid"><i></i><i></i><i></i><i></i></span>
         </button>
         <button class="master-btn shuffle-btn"   id="btn-master-shuffle">🎲 Shuffle</button>
         <button class="master-btn shuffall-btn"  id="btn-master-shuffle-all">🎲🎲 Shuffle All</button>
