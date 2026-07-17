@@ -16,12 +16,34 @@
         }
         /* Layout variants — toggled via JS by swapping the class on #triple-layout.
            Screen area names (screen1/screen2/screen3) are fixed to the slot divs
-           below, so switching layouts never touches the panels/iframes themselves. */
-        #triple-layout.layout-top2      { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; grid-template-areas: "screen1 screen2" "screen3 screen3"; }
-        #triple-layout.layout-bottom2   { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; grid-template-areas: "screen1 screen1" "screen2 screen3"; }
-        #triple-layout.layout-3col      { grid-template-columns: 1fr 1fr 1fr; grid-template-rows: 1fr; grid-template-areas: "screen1 screen2 screen3"; }
-        #triple-layout.layout-lefttall  { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; grid-template-areas: "screen1 screen2" "screen1 screen3"; }
-        #triple-layout.layout-righttall { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; grid-template-areas: "screen2 screen1" "screen3 screen1"; }
+           below, so switching layouts never touches the panels/iframes themselves.
+           Each layout reserves a thin 6px track (named vres/hres/vres1/vres2) between
+           adjacent panels — that's where the draggable resizer handles live. */
+        #triple-layout.layout-top2 {
+            grid-template-columns: 1fr 6px 1fr;
+            grid-template-rows: 1fr 6px 1fr;
+            grid-template-areas: "screen1 vres screen2" "hres hres hres" "screen3 screen3 screen3";
+        }
+        #triple-layout.layout-bottom2 {
+            grid-template-columns: 1fr 6px 1fr;
+            grid-template-rows: 1fr 6px 1fr;
+            grid-template-areas: "screen1 screen1 screen1" "hres hres hres" "screen2 vres screen3";
+        }
+        #triple-layout.layout-3col {
+            grid-template-columns: 1fr 6px 1fr 6px 1fr;
+            grid-template-rows: 1fr;
+            grid-template-areas: "screen1 vres1 screen2 vres2 screen3";
+        }
+        #triple-layout.layout-lefttall {
+            grid-template-columns: 1fr 6px 1fr;
+            grid-template-rows: 1fr 6px 1fr;
+            grid-template-areas: "screen1 vres screen2" "screen1 vres hres" "screen1 vres screen3";
+        }
+        #triple-layout.layout-righttall {
+            grid-template-columns: 1fr 6px 1fr;
+            grid-template-rows: 1fr 6px 1fr;
+            grid-template-areas: "screen2 vres screen1" "hres vres screen1" "screen3 vres screen1";
+        }
         .stream-slot { position: relative; border: 1px solid #1d1d1d; overflow: hidden; background: #000; }
         #screen-1-slot { grid-area: screen1; }
         #screen-2-slot { grid-area: screen2; }
@@ -29,6 +51,19 @@
         .slot-label { position: absolute; left: 8px; top: 8px; z-index: 9998; background: rgba(0,0,0,0.6); border: 1px solid #333; color: #555; border-radius: 8px; font-size: 11px; padding: 3px 8px; }
         .stream-panel { position: relative; width: 100%; height: 100%; background: #000; overflow: hidden; }
         .post-iframe  { width: 100%; height: 100%; border: none; display: block; }
+
+        /* Draggable border resizers — injected/positioned via JS per layout */
+        .resizer { background: #1d1d1d; position: relative; z-index: 50; transition: background 0.15s; }
+        .resizer:hover, .resizer.active { background: #0095f6; }
+        .resizer-v { cursor: col-resize; }
+        .resizer-h { cursor: row-resize; }
+        .resizer-v::after { content: ''; position: absolute; top: 0; bottom: 0; left: -4px; right: -4px; }
+        .resizer-h::after { content: ''; position: absolute; left: 0; right: 0; top: -4px; bottom: -4px; }
+
+        /* Full-viewport overlay shown only while actively dragging — prevents
+           iframes from swallowing mousemove/mouseup events mid-drag. */
+        #resizer-drag-overlay { display: none; position: fixed; inset: 0; z-index: 40000; }
+        #resizer-drag-overlay.active { display: block; }
 
         /* Always-visible floating buttons bottom-right */
         #floating-btns { position: fixed; bottom: 18px; right: 18px; z-index: 30000; display: flex; align-items: center; gap: 8px; }
@@ -129,6 +164,7 @@
         @media (max-width: 900px) {
             body { overflow: auto; }
             #triple-layout { height: auto !important; min-height: 100vh !important; grid-template-columns: 1fr !important; grid-template-rows: minmax(40vh,1fr) minmax(30vh,1fr) minmax(30vh,1fr) !important; grid-template-areas: "screen1" "screen2" "screen3" !important; }
+            .resizer { display: none !important; }
         }
     </style>
 </head>
