@@ -306,12 +306,21 @@ function _injectResizers(layoutName, tripleLayoutEl) {
     });
 }
 
+// Tracks which named grid-area (screen1/screen2/screen3) each slot-index is
+// CURRENTLY rendering as. Starts as the identity mapping and only ever
+// changes via swaps — reset back to identity whenever the orientation
+// changes (see _applyLayout).
+let _slotAreaAssignment = ['screen1', 'screen2', 'screen3'];
+
 /**
  * Swap what's showing in two screen slots — driven by the 🖥 button in each
- * panel's hotswap overlay. This physically moves the actual panel elements
- * (iframe included) between the two slot containers, rather than touching any
- * iframe's src — so whatever is playing live inside (video, slideshow, etc.)
- * just keeps running uninterrupted; only its on-screen position changes.
+ * panel's hotswap overlay. This NEVER touches the panel/iframe DOM or its
+ * src — it only swaps which grid-area name the two slot *containers*
+ * currently render as (via inline style, overriding their default CSS). The
+ * panel stays in its original, untouched parent the whole time, so whatever
+ * is playing live inside (video, slideshow, etc.) keeps running exactly like
+ * it does when switching orientations — because this is the same kind of
+ * change: pure CSS, zero DOM manipulation of the iframe itself.
  * Also swaps the two slots' entries in the in-memory folder map, so a
  * subsequent master-overlay "own folder" Shuffle stays consistent with what's
  * now actually showing. Session-only — never written to Store, same as the
@@ -320,19 +329,19 @@ function _injectResizers(layoutName, tripleLayoutEl) {
 function _swapSlotContents(slotIndexA, slotIndexB) {
     const slotAEl = document.getElementById(SLOT_IDS[slotIndexA]);
     const slotBEl = document.getElementById(SLOT_IDS[slotIndexB]);
-    const panelA = slotAEl?.querySelector('.stream-panel');
-    const panelB = slotBEl?.querySelector('.stream-panel');
-    if (!panelA || !panelB) return;
+    if (!slotAEl || !slotBEl) return;
 
-    // Moving an already-in-document node via appendChild relocates it without
-    // touching its content — the iframe's live document/media state survives.
-    slotAEl.appendChild(panelB);
-    slotBEl.appendChild(panelA);
+    const tmpArea = _slotAreaAssignment[slotIndexA];
+    _slotAreaAssignment[slotIndexA] = _slotAreaAssignment[slotIndexB];
+    _slotAreaAssignment[slotIndexB] = tmpArea;
+
+    slotAEl.style.gridArea = _slotAreaAssignment[slotIndexA];
+    slotBEl.style.gridArea = _slotAreaAssignment[slotIndexB];
 
     const map = { ...getUrlFolderMap() };
-    const tmp = map[slotIndexA];
+    const tmpFolder = map[slotIndexA];
     map[slotIndexA] = map[slotIndexB];
-    map[slotIndexB] = tmp;
+    map[slotIndexB] = tmpFolder;
     setUrlFolderMap(map);
 }
 
@@ -356,6 +365,15 @@ function _applyLayout(layoutName, tripleLayoutEl, layoutBtns) {
     tripleLayoutEl.style.gridTemplateRows    = saved?.gridTemplateRows    || '';
 
     _injectResizers(safeName, tripleLayoutEl);
+
+    // A swap made via 🖥 was specific to the previous arrangement — reset back
+    // to identity on any orientation change so slots don't carry a stale swap
+    // into a layout it was never set up for.
+    _slotAreaAssignment = ['screen1', 'screen2', 'screen3'];
+    SLOT_IDS.forEach((id) => {
+        const slotEl = document.getElementById(id);
+        if (slotEl) slotEl.style.gridArea = '';
+    });
 
     Object.entries(layoutBtns).forEach(([name, btn]) => {
         btn.classList.toggle('active', name === safeName);
