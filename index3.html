@@ -120,32 +120,77 @@
         .hotswap-overlay.open { opacity: 1; pointer-events: auto; transform: translateY(0) scale(1); }
         .hotswap-icon-row { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
 
-        .btn-hs { border-radius: 9px; font-size: 11px; font-weight: bold; cursor: pointer; padding: 4px 8px; white-space: nowrap; flex-shrink: 0; transition: background 0.12s; border: 1px solid #444; }
-        .btn-globe  { background:#222; border:1px solid #444; color:#aaa; width:26px; height:26px; display:flex; align-items:center; justify-content:center; border-radius:9px; cursor:pointer; font-size:13px; flex-shrink:0; }
-        .btn-globe:hover { background:#333; color:#fff; }
-        .btn-globe.active { background:#0095f6; border-color:#0095f6; color:#fff; }
-        .btn-star  { background:#1a1a0a; border:1px solid #5a5a00; color:#f0c040; width:26px; height:26px; display:flex; align-items:center; justify-content:center; border-radius:9px; cursor:pointer; font-size:13px; flex-shrink:0; }
-        .btn-star:hover { background:#2a2a00; }
-        .btn-star.saved { color:#ffd700; background:#2a2200; border-color:#ffd700; }
-        .btn-reload { background:#0a1a2a; border:1px solid #1a5a8a; color:#4a9fd4; width:26px; height:26px; display:flex; align-items:center; justify-content:center; border-radius:9px; cursor:pointer; font-size:13px; flex-shrink:0; transition:transform 0.3s; }
-        .btn-reload:hover { background:#0d2a3a; }
-        .btn-reload.spinning { transform:rotate(360deg); transition:transform 0.4s ease; }
-        .btn-shuffle { background:#1a2a1a; border:1px solid #3a6b3a; color:#4caf50; flex:1; }
-        .btn-shuffle:hover { background:#223322; }
-        .btn-sall   { background:#1a2634; border:1px solid #2d4f73; color:#6eb4f1; }
-        .btn-sall:hover { background:#24364a; }
-        .btn-delete { background:#1a1a1a; border:1px solid #555; color:#ccc; }
-        .btn-delete:hover { background:#333; color:#fff; }
-        .btn-kill   { background:#1a0808; border:1px solid #5a2020; color:#888; width:26px; height:26px; display:flex; align-items:center; justify-content:center; border-radius:9px; cursor:pointer; font-size:13px; flex-shrink:0; }
-        .btn-kill:hover { background:#3a0a0a; color:#ed4956; }
-        .btn-purge  { background:#331417; border:1px solid #4a1a1e; color:#ed4956; flex:1; }
-        .btn-purge:hover { background:#ed4956; color:#fff; }
+        /* Small square icon buttons */
+        .btn-hotswap-toggle, .btn-hotswap-star, .btn-hotswap-reload, .btn-hotswap-kill,
+        .btn-purge, .btn-hotswap-position, .btn-hotswap-folder {
+            border-radius: 10px;
+            width: 28px;
+            height: 28px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: background 0.15s, color 0.15s, transform 0.15s;
+        }
+
+        /* 🌐 URL toggle button */
+        .btn-hotswap-toggle { background: #222; border: 1px solid #444; color: #aaa; font-weight: bold; }
+        .btn-hotswap-toggle:hover { background: #333; color: #fff; }
+        .btn-hotswap-toggle.active { background: #0095f6; border-color: #0095f6; color: #fff; }
+
+        /* 🖥 Position-swap button */
+        .btn-hotswap-position { background: #0a1a1a; border: 1px solid #1a6a5a; color: #4ad4c4; }
+        .btn-hotswap-position:hover { background: #0d2a28; }
+        .btn-hotswap-position.active { background: #0f9080; border-color: #0f9080; color: #fff; }
+
+        /* 📁 Folder-assign button */
+        .btn-hotswap-folder { background: #241a0a; border: 1px solid #6a4a1a; color: #d4a94a; }
+        .btn-hotswap-folder:hover { background: #2e2210; }
+        .btn-hotswap-folder.active { background: #a67a1f; border-color: #a67a1f; color: #fff; }
+
+        /* Shuffle / Shuffle All / Delete pill buttons */
+        .btn-hotswap-shuffle { background: #1a2a1a; border: 1px solid #3a6b3a; color: #4caf50; border-radius: 10px; padding: 4px 10px; font-size: 11px; font-weight: bold; cursor: pointer; white-space: nowrap; flex: 1; transition: background 0.15s; }
+        .btn-hotswap-shuffle:hover { background: #223322; }
+        .btn-hotswap-shuffle:active { transform: rotate(15deg) scale(0.95); }
+
+        .btn-hotswap-shuffle-all { background: #0d2038; border: 1px solid #2f6fb3; color: #6db8ff; border-radius: 10px; padding: 4px 10px; font-size: 11px; font-weight: bold; cursor: pointer; white-space: nowrap; flex: 1; transition: background 0.15s; }
+        .btn-hotswap-shuffle-all:hover { background: #123058; }
+
+        /* Purge button (icon-only) */
+        .btn-purge { background: #331417; color: #ed4956; border: 1px solid #4a1a1e; }
+        .btn-purge:hover { background: #ed4956; color: #fff; }
+
+        .btn-hotswap-delete { background: #1a1a1a; border: 1px solid #555; color: #ccc; border-radius: 10px; padding: 4px 8px; font-size: 12px; font-weight: bold; cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: background 0.15s; }
+        .btn-hotswap-delete:hover { background: #333; color: #fff; }
+
+        /* Kill button */
+        .btn-hotswap-kill { background: #1a0808; border: 1px solid #5a2020; color: #888; }
+        .btn-hotswap-kill:hover { background: #3a0a0a; color: #ed4956; }
+
+        /* Star button */
+        .btn-hotswap-star { background: #1a1a0a; border: 1px solid #5a5a00; color: #f0c040; }
+        .btn-hotswap-star:hover { background: #2a2a00; transform: scale(1.15); }
+        .btn-hotswap-star.saved { color: #ffd700; background: #2a2200; border-color: #ffd700; }
+
+        /* Reload button */
+        .btn-hotswap-reload { background: #0a1a2a; border: 1px solid #1a5a8a; color: #4a9fd4; }
+        .btn-hotswap-reload:hover { background: #0d2a3a; }
+        .btn-hotswap-reload.spinning { transform: rotate(360deg); transition: transform 0.4s ease; }
 
         .hotswap-url-row { display:none; gap:4px; align-items:center; }
         .hotswap-url-row.open { display:flex; }
         .hotswap-input { flex:1; background:#1a1a1a; border:1px solid #444; border-radius:12px; padding:4px 9px; color:#fff; font-size:11px; outline:none; min-width:140px; }
         .hotswap-input:focus { border-color:#0095f6; }
-        .hotswap-submit { background:#0095f6; color:#fff; border:none; border-radius:50%; width:20px; height:20px; font-size:10px; font-weight:bold; cursor:pointer; flex-shrink:0; }
+        .hotswap-submit-btn { background:#0095f6; color:#fff; border:none; border-radius:50%; width:20px; height:20px; font-size:10px; font-weight:bold; cursor:pointer; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+
+        /* 📁 Folder-picker and 🖥 Position-picker expandable lists */
+        .hotswap-folder-row, .hotswap-position-row { display: none; flex-direction: column; gap: 4px; max-height: 160px; overflow-y: auto; }
+        .hotswap-folder-row.open, .hotswap-position-row.open { display: flex; }
+        .hotswap-folder-item, .hotswap-position-item { background: #181818; border: 1px solid #333; border-radius: 8px; padding: 6px 10px; font-size: 12px; color: #ccc; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.12s; }
+        .hotswap-folder-item:hover, .hotswap-position-item:hover { background: #242424; color: #fff; }
+        .hotswap-folder-count { color: #666; font-size: 11px; }
 
         /* Bookmark modal */
         #bookmark-modal { display:none; position:fixed; inset:0; z-index:2147483647; background:rgba(0,0,0,0.75); align-items:center; justify-content:center; }
