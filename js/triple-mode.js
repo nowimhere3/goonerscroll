@@ -12,13 +12,13 @@ import { fetchDatabaseSilently, pushDatabaseToRemote } from './sync.js';
 import { populateBookmarkFolderSelect } from './folders.js';
 import { buildStreamPanel } from './launch.js';
 
-const SLOT_IDS = ['screen-1-slot', 'screen-2-slot', 'screen-3-slot'];
-const LAYOUT_IDS = ['top2', 'bottom2', '3col', 'lefttall', 'righttall'];
+const SLOT_IDS = ['screen-1-slot', 'screen-2-slot', 'screen-3-slot', 'screen-4-slot'];
+const LAYOUT_IDS = ['top2', 'bottom2', '3col', 'lefttall', 'righttall', 'vsplit', 'hsplit', '4grid'];
 const DEFAULT_LAYOUT = 'lefttall';
 
 // Describes each layout's grid tracks (content vs resizer) and where its
 // draggable handle(s) sit. Shared by the resizer-injection and drag-math code
-// below so there's one definition per layout instead of five separate cases.
+// below so there's one definition per layout instead of separate cases.
 const LAYOUT_GRID_CONFIG = {
     top2:      { columns: ['content', 'resizer', 'content'], rows: ['content', 'resizer', 'content'],
                  resizers: [{ area: 'vres', axis: 'col', beforeIdx: 0, afterIdx: 2 },
@@ -35,19 +35,36 @@ const LAYOUT_GRID_CONFIG = {
     righttall: { columns: ['content', 'resizer', 'content'], rows: ['content', 'resizer', 'content'],
                  resizers: [{ area: 'vres', axis: 'col', beforeIdx: 0, afterIdx: 2 },
                             { area: 'hres', axis: 'row', beforeIdx: 0, afterIdx: 2 }] },
+    vsplit:    { columns: ['content', 'resizer', 'content'], rows: ['content'],
+                 resizers: [{ area: 'vres', axis: 'col', beforeIdx: 0, afterIdx: 2 }] },
+    hsplit:    { columns: ['content'], rows: ['content', 'resizer', 'content'],
+                 resizers: [{ area: 'hres', axis: 'row', beforeIdx: 0, afterIdx: 2 }] },
+    // 4-way grid needs TWO row-resizer handles (left half / right half of the
+    // horizontal divider) since the vertical divider splits it in two, but
+    // both reference the same row tracks — so dragging either one moves the
+    // whole horizontal line, same as a single continuous "+" divider.
+    '4grid':   { columns: ['content', 'resizer', 'content'], rows: ['content', 'resizer', 'content'],
+                 resizers: [{ area: 'vres',  axis: 'col', beforeIdx: 0, afterIdx: 2 },
+                            { area: 'hresL', axis: 'row', beforeIdx: 0, afterIdx: 2 },
+                            { area: 'hresR', axis: 'row', beforeIdx: 0, afterIdx: 2 }] },
 };
 
 const MIN_TRACK_SIZE = 80; // px-equivalent floor so a dragged panel can't collapse to nothing
 
-// Clockwise visual order of slot-indices (0=screen1, 1=screen2, 2=screen3) for
-// each layout, always starting from the top-left-most panel. Drives the 🖥
-// position-swap dropdown in each panel's hotswap overlay.
+// Clockwise visual order of slot-indices (0=screen1, 1=screen2, 2=screen3,
+// 3=screen4) for each layout, always starting from the top-left-most panel.
+// Drives the 🖥 position-swap dropdown in each panel's hotswap overlay, and
+// — since it only ever lists the slots a layout actually uses — also defines
+// which slots are visible for that layout.
 const LAYOUT_POSITION_ORDER = {
     top2:      [0, 1, 2],
     bottom2:   [0, 2, 1],
     '3col':    [0, 1, 2],
     lefttall:  [0, 1, 2],
     righttall: [1, 0, 2],
+    vsplit:    [0, 1],
+    hsplit:    [0, 1],
+    '4grid':   [0, 1, 3, 2], // TL, TR, BR, BL
 };
 
 // Session-only memory of custom drag positions, keyed by layout name. Never
@@ -85,27 +102,27 @@ function _inferFolderForUrl(db, url) {
 
 function _buildTripleSet(db, preferredFolder = '') {
     const stored = Store.get('matrixUrls');
-    const urls = Array.isArray(stored) ? stored.slice(0, 3) : [];
+    const urls = Array.isArray(stored) ? stored.slice(0, SLOT_IDS.length) : [];
     const map = {};
 
-    while (urls.length < 3) urls.push('');
+    while (urls.length < SLOT_IDS.length) urls.push('');
 
     if (db && preferredFolder && db[preferredFolder]?.length) {
-        for (let i = 0; i < 3; i += 1) {
+        for (let i = 0; i < SLOT_IDS.length; i += 1) {
             urls[i] = _pickFromFolder(db, preferredFolder) || urls[i] || 'https://example.com';
             map[i] = preferredFolder;
         }
         return { urls, map };
     }
 
-    for (let i = 0; i < 3; i += 1) {
+    for (let i = 0; i < SLOT_IDS.length; i += 1) {
         if (urls[i]) continue;
         const pick = _pickFromAnyFolder(db);
         urls[i] = pick.url || 'https://example.com';
         if (pick.folder) map[i] = pick.folder;
     }
 
-    for (let i = 0; i < 3; i += 1) {
+    for (let i = 0; i < SLOT_IDS.length; i += 1) {
         if (!map[i]) {
             const inferred = _inferFolderForUrl(db, urls[i]);
             if (inferred) map[i] = inferred;
@@ -126,7 +143,7 @@ function _reshuffleOwnFolders(db) {
     const urls = [];
     const map = {};
 
-    for (let i = 0; i < 3; i += 1) {
+    for (let i = 0; i < SLOT_IDS.length; i += 1) {
         const folder = currentMap[i];
         const pickedUrl = folder ? _pickFromFolder(db, folder) : null;
 
@@ -151,7 +168,7 @@ function _reshuffleRandomFolders(db) {
     const urls = [];
     const map = {};
 
-    for (let i = 0; i < 3; i += 1) {
+    for (let i = 0; i < SLOT_IDS.length; i += 1) {
         const pick = _pickFromAnyFolder(db);
         urls[i] = pick.url || 'https://example.com';
         if (pick.folder) map[i] = pick.folder;
@@ -310,7 +327,7 @@ function _injectResizers(layoutName, tripleLayoutEl) {
 // CURRENTLY rendering as. Starts as the identity mapping and only ever
 // changes via swaps — reset back to identity whenever the orientation
 // changes (see _applyLayout).
-let _slotAreaAssignment = ['screen1', 'screen2', 'screen3'];
+let _slotAreaAssignment = ['screen1', 'screen2', 'screen3', 'screen4'];
 
 /**
  * Swap what's showing in two screen slots — driven by the 🖥 button in each
@@ -369,10 +386,16 @@ function _applyLayout(layoutName, tripleLayoutEl, layoutBtns) {
     // A swap made via 🖥 was specific to the previous arrangement — reset back
     // to identity on any orientation change so slots don't carry a stale swap
     // into a layout it was never set up for.
-    _slotAreaAssignment = ['screen1', 'screen2', 'screen3'];
-    SLOT_IDS.forEach((id) => {
+    _slotAreaAssignment = ['screen1', 'screen2', 'screen3', 'screen4'];
+
+    // Show only the slots this layout actually uses (2-screen splits only use
+    // 2 of the 4 slots, 3-screen layouts use 3, only the 4-way grid uses all 4).
+    const activeSlots = LAYOUT_POSITION_ORDER[safeName] || [0, 1, 2];
+    SLOT_IDS.forEach((id, i) => {
         const slotEl = document.getElementById(id);
-        if (slotEl) slotEl.style.gridArea = '';
+        if (!slotEl) return;
+        slotEl.style.gridArea = '';
+        slotEl.style.display = activeSlots.includes(i) ? '' : 'none';
     });
 
     Object.entries(layoutBtns).forEach(([name, btn]) => {
@@ -404,7 +427,8 @@ function _renderPanels(urls, map, ctx) {
         slot.appendChild(panel);
     });
 
-    const active = urls.filter(Boolean).length;
+    const visibleSlots = (LAYOUT_POSITION_ORDER[_currentLayout] || [0, 1, 2]).length;
+    const active = urls.slice(0, visibleSlots).filter(Boolean).length;
     ctx.statusEl.textContent = `${active} streams`;
 }
 
@@ -467,6 +491,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         '3col':    document.getElementById('btn-layout-3col'),
         lefttall:  document.getElementById('btn-layout-lefttall'),
         righttall: document.getElementById('btn-layout-righttall'),
+        vsplit:    document.getElementById('btn-layout-vsplit'),
+        hsplit:    document.getElementById('btn-layout-hsplit'),
+        '4grid':   document.getElementById('btn-layout-4grid'),
     };
 
     _bindBookmarkModal();
