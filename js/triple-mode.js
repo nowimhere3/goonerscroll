@@ -16,6 +16,36 @@ const SLOT_IDS = ['screen-1-slot', 'screen-2-slot', 'screen-3-slot'];
 const LAYOUT_IDS = ['top2', 'bottom2', '3col', 'lefttall', 'righttall'];
 const DEFAULT_LAYOUT = 'lefttall';
 
+// Describes each layout's grid tracks (content vs resizer) and where its
+// draggable handle(s) sit. Shared by the resizer-injection and drag-math code
+// below so there's one definition per layout instead of five separate cases.
+const LAYOUT_GRID_CONFIG = {
+    top2:      { columns: ['content', 'resizer', 'content'], rows: ['content', 'resizer', 'content'],
+                 resizers: [{ area: 'vres', axis: 'col', beforeIdx: 0, afterIdx: 2 },
+                            { area: 'hres', axis: 'row', beforeIdx: 0, afterIdx: 2 }] },
+    bottom2:   { columns: ['content', 'resizer', 'content'], rows: ['content', 'resizer', 'content'],
+                 resizers: [{ area: 'vres', axis: 'col', beforeIdx: 0, afterIdx: 2 },
+                            { area: 'hres', axis: 'row', beforeIdx: 0, afterIdx: 2 }] },
+    '3col':    { columns: ['content', 'resizer', 'content', 'resizer', 'content'], rows: ['content'],
+                 resizers: [{ area: 'vres1', axis: 'col', beforeIdx: 0, afterIdx: 2 },
+                            { area: 'vres2', axis: 'col', beforeIdx: 2, afterIdx: 4 }] },
+    lefttall:  { columns: ['content', 'resizer', 'content'], rows: ['content', 'resizer', 'content'],
+                 resizers: [{ area: 'vres', axis: 'col', beforeIdx: 0, afterIdx: 2 },
+                            { area: 'hres', axis: 'row', beforeIdx: 0, afterIdx: 2 }] },
+    righttall: { columns: ['content', 'resizer', 'content'], rows: ['content', 'resizer', 'content'],
+                 resizers: [{ area: 'vres', axis: 'col', beforeIdx: 0, afterIdx: 2 },
+                            { area: 'hres', axis: 'row', beforeIdx: 0, afterIdx: 2 }] },
+};
+
+const MIN_TRACK_SIZE = 80; // px-equivalent floor so a dragged panel can't collapse to nothing
+
+// Session-only memory of custom drag positions, keyed by layout name. Never
+// written to Store — a fresh visit to this page (including navigating back to
+// index.html and returning) starts with none of this, by design.
+const _customLayoutSizes = {};
+let _currentLayout = DEFAULT_LAYOUT;
+let _dragOverlayEl = null;
+
 let _activeFolder = '';
 
 function _pickRandom(arr) {
@@ -183,17 +213,108 @@ function _openBookmarkModal(url, starBtn) {
     document.getElementById('bm-new-folder-input').focus();
 }
 
+function _ensureDragOverlay() {
+    if (_dragOverlayEl) return _dragOverlayEl;
+    _dragOverlayEl = document.createElement('div');
+    _dragOverlayEl.id = 'resizer-drag-overlay';
+    document.body.appendChild(_dragOverlayEl);
+    return _dragOverlayEl;
+}
+
+function _clearResizers(tripleLayoutEl) {
+    tripleLayoutEl.querySelectorAll('.resizer').forEach((el) => el.remove());
+}
+
+/**
+ * Handles a single drag gesture on one resizer handle. Reads the CURRENT
+ * computed track sizes (so it naturally picks up wherever a previous drag —
+ * or the layout's default — left things), adjusts only the two tracks
+ * adjacent to this handle, and writes the result back as an inline style
+ * override (never to Store). On release, saves the result into the
+ * in-memory per-layout cache so switching orientations and back restores it.
+ */
+function _startResizeDrag(e, resizerEl, axis, beforeIdx, afterIdx, trackTypes, tripleLayoutEl) {
+    e.preventDefault();
+    const propName = axis === 'col' ? 'gridTemplateColumns' : 'gridTemplateRows';
+    const computed = getComputedStyle(tripleLayoutEl)[propName].split(' ').map(parseFloat);
+    const startBefore = computed[beforeIdx];
+    const startAfter  = computed[afterIdx];
+    const startPos = axis === 'col' ? e.clientX : e.clientY;
+
+    const overlay = _ensureDragOverlay();
+    overlay.style.cursor = axis === 'col' ? 'col-resize' : 'row-resize';
+    overlay.classList.add('active');
+    resizerEl.classList.add('active');
+
+    const onMove = (moveEvt) => {
+        const pos = axis === 'col' ? moveEvt.clientX : moveEvt.clientY;
+        const delta = pos - startPos;
+        let newBefore = startBefore + delta;
+        let newAfter  = startAfter - delta;
+
+        if (newBefore < MIN_TRACK_SIZE) { newAfter -= (MIN_TRACK_SIZE - newBefore); newBefore = MIN_TRACK_SIZE; }
+        if (newAfter  < MIN_TRACK_SIZE) { newBefore -= (MIN_TRACK_SIZE - newAfter); newAfter = MIN_TRACK_SIZE; }
+        newBefore = Math.max(newBefore, 1);
+        newAfter  = Math.max(newAfter, 1);
+
+        computed[beforeIdx] = newBefore;
+        computed[afterIdx]  = newAfter;
+
+        const rebuilt = computed.map((val, i) => (trackTypes[i] === 'resizer' ? '6px' : `${val}fr`));
+        tripleLayoutEl.style[propName] = rebuilt.join(' ');
+    };
+
+    const onUp = () => {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        overlay.classList.remove('active');
+        resizerEl.classList.remove('active');
+
+        // Remember this layout's custom sizing for the rest of the session
+        if (!_customLayoutSizes[_currentLayout]) _customLayoutSizes[_currentLayout] = {};
+        _customLayoutSizes[_currentLayout][propName] = tripleLayoutEl.style[propName];
+    };
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+}
+
+/** Build the draggable handle(s) for whichever layout is currently active. */
+function _injectResizers(layoutName, tripleLayoutEl) {
+    _clearResizers(tripleLayoutEl);
+    const config = LAYOUT_GRID_CONFIG[layoutName];
+    if (!config) return;
+
+    config.resizers.forEach(({ area, axis, beforeIdx, afterIdx }) => {
+        const trackTypes = axis === 'col' ? config.columns : config.rows;
+        const el = document.createElement('div');
+        el.className = `resizer resizer-${axis === 'col' ? 'v' : 'h'}`;
+        el.style.gridArea = area;
+        el.addEventListener('mousedown', (e) => _startResizeDrag(e, el, axis, beforeIdx, afterIdx, trackTypes, tripleLayoutEl));
+        tripleLayoutEl.appendChild(el);
+    });
+}
+
 /**
  * Switch the visual arrangement of the 3 screen slots. This only ever touches
  * the CSS class on #triple-layout — the panels/iframes themselves are never
  * rebuilt or moved, since each slot's grid-area (screen1/screen2/screen3) is
- * fixed in CSS regardless of which layout is active.
+ * fixed in CSS regardless of which layout is active. Also restores any custom
+ * border-drag sizing this layout had earlier in the session, or falls back to
+ * the layout's clean default if it hasn't been customized yet.
  */
 function _applyLayout(layoutName, tripleLayoutEl, layoutBtns) {
     const safeName = LAYOUT_IDS.includes(layoutName) ? layoutName : DEFAULT_LAYOUT;
+    _currentLayout = safeName;
 
     LAYOUT_IDS.forEach((name) => tripleLayoutEl.classList.remove(`layout-${name}`));
     tripleLayoutEl.classList.add(`layout-${safeName}`);
+
+    const saved = _customLayoutSizes[safeName];
+    tripleLayoutEl.style.gridTemplateColumns = saved?.gridTemplateColumns || '';
+    tripleLayoutEl.style.gridTemplateRows    = saved?.gridTemplateRows    || '';
+
+    _injectResizers(safeName, tripleLayoutEl);
 
     Object.entries(layoutBtns).forEach(([name, btn]) => {
         btn.classList.toggle('active', name === safeName);
