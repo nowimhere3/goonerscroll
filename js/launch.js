@@ -22,14 +22,15 @@
  *
  * Each iframe panel contains:
  *   - The iframe itself
- *   - A hotswap overlay with: 🌐 URL edit, ☆ star, ⟳ reload,
- *     🎲 shuffle, ❌ delete, ☠ kill, 🗑️ purge
+ *   - A hotswap overlay with: 🖥 position swap, 📁 folder assign, ☆ star,
+ *     🌐 URL edit, ⟳ reload, 🎲 shuffle, 🎲🎲 shuffle all, ❌ delete,
+ *     ☠ kill, 🗑️ purge
  *   - An IntersectionObserver for postMessage play/pause
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
 import { Store } from './storage.js';
-import { getDatabaseStructure, setDatabaseStructure, getDatabaseSha, setDatabaseSha, getUrlFolderMap } from './state.js';
+import { getDatabaseStructure, setDatabaseStructure, getDatabaseSha, setDatabaseSha, getUrlFolderMap, setUrlFolderMap } from './state.js';
 import { isBlacklisted, addToBlacklist } from './blacklist.js';
 import { pushDatabaseToRemote } from './sync.js';
 
@@ -85,32 +86,40 @@ function _buildPanel(url, index, panelClass, panelHeight, ctx) {
     overlay.className = 'hotswap-overlay';
     overlay.innerHTML = `
         <div class="hotswap-icon-row">
-            <button class="btn-hotswap-toggle" title="Edit URL">🌐</button>
+            <button class="btn-hotswap-position" title="Swap position with another screen">🖥</button>
+            <button class="btn-hotswap-folder" title="Assign a folder for this panel">📁</button>
             <button class="btn-hotswap-star" title="Save to Playlist">☆</button>
+            <button class="btn-hotswap-toggle" title="Edit URL">🌐</button>
             <button class="btn-hotswap-reload" title="Reload this panel">⟳</button>
             <button class="btn-hotswap-shuffle" title="Shuffle from this panel's assigned folder">🎲</button>
             <button class="btn-hotswap-shuffle-all" title="Shuffle All — random URL from any folder">🎲🎲</button>
             <button class="btn-hotswap-delete" title="Delete this URL from its folder and load a replacement">❌</button>
             <button class="btn-hotswap-kill" title="Remove this panel for this session">☠</button>
-            <button class="btn-purge">🗑️ PURGE</button>
+            <button class="btn-purge" title="Purge — blacklist domain and remove from all folders">🗑️</button>
         </div>
+        <div class="hotswap-position-row"></div>
+        <div class="hotswap-folder-row"></div>
         <div class="hotswap-url-row">
             <input type="text" class="hotswap-input" value="${url}" placeholder="https://...">
             <button class="hotswap-submit-btn">✓</button>
         </div>
     `;
 
-    const toggleBtn     = overlay.querySelector('.btn-hotswap-toggle');
-    const urlRow        = overlay.querySelector('.hotswap-url-row');
-    const inputField    = overlay.querySelector('.hotswap-input');
-    const submitBtn     = overlay.querySelector('.hotswap-submit-btn');
-    const starBtn       = overlay.querySelector('.btn-hotswap-star');
-    const reloadBtn     = overlay.querySelector('.btn-hotswap-reload');
-    const shuffleBtn    = overlay.querySelector('.btn-hotswap-shuffle');
-    const shuffleAllBtn = overlay.querySelector('.btn-hotswap-shuffle-all');
-    const deleteBtn     = overlay.querySelector('.btn-hotswap-delete');
-    const killBtn       = overlay.querySelector('.btn-hotswap-kill');
-    const purgeBtn      = overlay.querySelector('.btn-purge');
+    const toggleBtn      = overlay.querySelector('.btn-hotswap-toggle');
+    const urlRow         = overlay.querySelector('.hotswap-url-row');
+    const inputField     = overlay.querySelector('.hotswap-input');
+    const submitBtn      = overlay.querySelector('.hotswap-submit-btn');
+    const starBtn        = overlay.querySelector('.btn-hotswap-star');
+    const reloadBtn      = overlay.querySelector('.btn-hotswap-reload');
+    const shuffleBtn     = overlay.querySelector('.btn-hotswap-shuffle');
+    const shuffleAllBtn  = overlay.querySelector('.btn-hotswap-shuffle-all');
+    const deleteBtn      = overlay.querySelector('.btn-hotswap-delete');
+    const killBtn        = overlay.querySelector('.btn-hotswap-kill');
+    const purgeBtn       = overlay.querySelector('.btn-purge');
+    const positionBtn    = overlay.querySelector('.btn-hotswap-position');
+    const positionRow    = overlay.querySelector('.hotswap-position-row');
+    const folderBtn      = overlay.querySelector('.btn-hotswap-folder');
+    const folderRow      = overlay.querySelector('.hotswap-folder-row');
 
     // ── Overlay trigger (always-visible ··· button) ──────────────────────────
     const triggerBtn = document.createElement('button');
@@ -126,6 +135,71 @@ function _buildPanel(url, index, panelClass, panelHeight, ctx) {
     };
 
     // ── Button handlers ───────────────────────────────────────────────────────
+
+    // 🖥 Position swap — only meaningful in contexts that provide these (e.g.
+    // index3.html's triple-mode, where slots have a fixed clockwise ordering).
+    // On index.html's free-form grid, ctx won't provide these, so the button
+    // just hides itself.
+    if (typeof ctx.getPositionOrder === 'function' && typeof ctx.swapWithSlot === 'function') {
+        positionBtn.onclick = (e) => {
+            e.stopPropagation();
+            const isOpen = positionRow.classList.toggle('open');
+            positionBtn.classList.toggle('active', isOpen);
+            if (!isOpen) return;
+
+            positionRow.innerHTML = '';
+            const order = ctx.getPositionOrder(); // slot-indices in clockwise order
+            order.forEach((slotIdx, i) => {
+                if (slotIdx === index) return; // skip this panel's own position
+                const positionNumber = i + 1;
+                const item = document.createElement('div');
+                item.className = 'hotswap-position-item';
+                item.innerHTML = `<span>Swap with Screen ${positionNumber}</span>`;
+                item.onclick = (ev) => {
+                    ev.stopPropagation();
+                    ctx.swapWithSlot(index, slotIdx);
+                    positionRow.classList.remove('open');
+                    positionBtn.classList.remove('active');
+                };
+                positionRow.appendChild(item);
+            });
+        };
+    } else {
+        positionBtn.style.display = 'none';
+    }
+
+    // 📁 Folder assign — manually pin this panel to a folder; shuffles in a
+    // fresh link from it immediately, and future 🎲 Shuffles on this panel
+    // (and the master overlay's own-folder Shuffle) will use it too.
+    folderBtn.onclick = (e) => {
+        e.stopPropagation();
+        const isOpen = folderRow.classList.toggle('open');
+        folderBtn.classList.toggle('active', isOpen);
+        if (!isOpen) return;
+
+        folderRow.innerHTML = '';
+        const currentDb = getDatabaseStructure();
+        if (!currentDb || Object.keys(currentDb).length === 0) {
+            folderRow.innerHTML = '<div class="hotswap-folder-item" style="cursor:default;">No folders available</div>';
+            return;
+        }
+
+        Object.keys(currentDb).forEach((folderName) => {
+            const item = document.createElement('div');
+            item.className = 'hotswap-folder-item';
+            item.innerHTML = `<span>${folderName}</span><span class="hotswap-folder-count">${currentDb[folderName].length}</span>`;
+            item.onclick = (ev) => {
+                ev.stopPropagation();
+                iframe.setAttribute('data-source-folder', folderName);
+                const newUrl = loadReplacement(folderName);
+                if (newUrl) setIframeUrl(newUrl);
+                setUrlFolderMap({ ...getUrlFolderMap(), [index]: folderName });
+                folderRow.classList.remove('open');
+                folderBtn.classList.remove('active');
+            };
+            folderRow.appendChild(item);
+        });
+    };
 
     // 🌐 URL edit toggle
     toggleBtn.onclick = (e) => {
