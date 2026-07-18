@@ -71,6 +71,10 @@ export const KEYS = Object.freeze({
 
     // Triple mode
     tripleLayout:       'triple_screen_layout',
+
+    // Hotswap overlay customization
+    hotswapButtonVisibility: 'hotswap_button_visibility',
+    quickActionSlots:        'hotswap_quick_action_slots',
 });
 
 // ── Defaults ────────────────────────────────────────────────────────────────
@@ -97,6 +101,12 @@ const DEFAULTS = {
     [KEYS.singleModeFolder]: '',
     [KEYS.singleModeAutoplay]: false,
     [KEYS.tripleLayout]:    'lefttall',
+    [KEYS.hotswapButtonVisibility]: {
+        position: true, folder: true, star: true, toggle: true, reload: true,
+        shuffle: true, shuffleAll: true, delete: true, kill: true, purge: true,
+        launchpad: true,
+    },
+    [KEYS.quickActionSlots]: [],
 };
 
 // ── Type map ─────────────────────────────────────────────────────────────────
@@ -119,6 +129,8 @@ const TYPES = {
     [KEYS.spacerTopHeight]: 'number',
     [KEYS.spacerTopLocked]: 'boolean',
     [KEYS.tripleLayout]:    'string',
+    [KEYS.hotswapButtonVisibility]: 'json',
+    [KEYS.quickActionSlots]:        'json',
 };
 
 // ── In-memory cache ──────────────────────────────────────────────────────────
