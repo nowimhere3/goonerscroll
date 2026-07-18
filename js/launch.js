@@ -24,7 +24,9 @@
  *   - The iframe itself
  *   - A hotswap overlay with: 🖥 position swap, 📁 folder assign, ☆ star,
  *     🌐 URL edit, ⟳ reload, 🎲 shuffle, 🎲🎲 shuffle all, ❌ delete,
- *     ☠ kill, 🗑️ purge
+ *     ☠ kill, 🗑️ purge, 🚀 load Launchpad — each independently hideable via
+ *     Settings, and (for the single-click ones) assignable as an always-
+ *     visible Quick Action shortcut below the ··· trigger.
  *   - An IntersectionObserver for postMessage play/pause
  * ─────────────────────────────────────────────────────────────────────────────
  */
@@ -33,6 +35,25 @@ import { Store } from './storage.js';
 import { getDatabaseStructure, setDatabaseStructure, getDatabaseSha, setDatabaseSha, getUrlFolderMap, setUrlFolderMap } from './state.js';
 import { isBlacklisted, addToBlacklist } from './blacklist.js';
 import { pushDatabaseToRemote } from './sync.js';
+
+// Canonical list of every hotswap-overlay action. Drives both the tray
+// (Overlay Button Visibility in Settings) and the Quick Action shortcut slots.
+// `shortcutable: false` means the action opens its own picker/dropdown rather
+// than firing immediately — those stay tray-only, since a tiny always-visible
+// shortcut button isn't a good home for a full picker UI.
+export const HOTSWAP_ACTIONS = [
+    { key: 'position',   emoji: '🖥',  title: 'Swap position with another screen',                    className: 'btn-hotswap-position',    shortcutable: false },
+    { key: 'folder',     emoji: '📁',  title: 'Assign a folder for this panel',                       className: 'btn-hotswap-folder',      shortcutable: false },
+    { key: 'star',       emoji: '⭐',  title: 'Save to Playlist',                                     className: 'btn-hotswap-star',        shortcutable: true },
+    { key: 'toggle',     emoji: '🌐',  title: 'Edit URL',                                             className: 'btn-hotswap-toggle',      shortcutable: false },
+    { key: 'reload',     emoji: '⟳',  title: 'Reload this panel',                                    className: 'btn-hotswap-reload',      shortcutable: true },
+    { key: 'shuffle',    emoji: '🎲',  title: "Shuffle from this panel's assigned folder",            className: 'btn-hotswap-shuffle',     shortcutable: true },
+    { key: 'shuffleAll', emoji: '🎲🎲', title: 'Shuffle All — random URL from any folder',             className: 'btn-hotswap-shuffle-all', shortcutable: true },
+    { key: 'delete',     emoji: '❌',  title: "Delete this URL from its folder and load a replacement", className: 'btn-hotswap-delete',      shortcutable: true },
+    { key: 'kill',       emoji: '☠',  title: 'Remove this panel for this session',                   className: 'btn-hotswap-kill',        shortcutable: true },
+    { key: 'purge',      emoji: '🗑️', title: 'Purge — blacklist domain and remove from all folders',  className: 'btn-purge',               shortcutable: true },
+    { key: 'launchpad',  emoji: '🚀',  title: 'Load the Stream Loop Launchpad inside this panel',      className: 'btn-hotswap-launchpad',   shortcutable: true },
+];
 
 // ── Panel builder ─────────────────────────────────────────────────────────────
 
@@ -96,6 +117,7 @@ function _buildPanel(url, index, panelClass, panelHeight, ctx) {
             <button class="btn-hotswap-delete" title="Delete this URL from its folder and load a replacement">❌</button>
             <button class="btn-hotswap-kill" title="Remove this panel for this session">☠</button>
             <button class="btn-purge" title="Purge — blacklist domain and remove from all folders">🗑️</button>
+            <button class="btn-hotswap-launchpad" title="Load the Stream Loop Launchpad inside this panel">🚀</button>
         </div>
         <div class="hotswap-position-row"></div>
         <div class="hotswap-folder-row"></div>
@@ -120,6 +142,7 @@ function _buildPanel(url, index, panelClass, panelHeight, ctx) {
     const positionRow    = overlay.querySelector('.hotswap-position-row');
     const folderBtn      = overlay.querySelector('.btn-hotswap-folder');
     const folderRow      = overlay.querySelector('.hotswap-folder-row');
+    const launchpadBtn   = overlay.querySelector('.btn-hotswap-launchpad');
 
     // ── Overlay trigger (always-visible ··· button) ──────────────────────────
     const triggerBtn = document.createElement('button');
@@ -345,6 +368,55 @@ function _buildPanel(url, index, panelClass, panelHeight, ctx) {
         }
     };
 
+    // 🚀 Load Launchpad inside this panel — unlike ⚙ (which navigates the whole
+    // page away and ends the session), this only replaces THIS iframe's content
+    // with a fresh Launchpad instance; every other panel keeps running.
+    launchpadBtn.onclick = (e) => {
+        e.stopPropagation();
+        setIframeUrl('index.html');
+    };
+
+    // ── Overlay Button Visibility + Quick Action Shortcuts ────────────────────
+    // Hide any button the user turned off in Settings, and pull out whichever
+    // ones are assigned to a Quick Action slot (those move below ··· instead
+    // of living in the tray — never both).
+    const visibility = Store.get('hotswapButtonVisibility') || {};
+    const quickSlots = (Store.get('quickActionSlots') || []).filter(Boolean);
+
+    HOTSWAP_ACTIONS.forEach(({ key, className }) => {
+        const btn = overlay.querySelector(`.${className}`);
+        if (!btn) return;
+        // Position swap already hid itself above on pages that don't support
+        // it at all (e.g. plain index.html) — leave that alone either way.
+        if (key === 'position' && typeof ctx.getPositionOrder !== 'function') return;
+        const isShortcut  = quickSlots.includes(key);
+        const trayVisible = visibility[key] !== false && !isShortcut;
+        btn.style.display = trayVisible ? '' : 'none';
+    });
+
+    let shortcutRow = null;
+    const eligibleShortcuts = quickSlots.filter((key) =>
+        HOTSWAP_ACTIONS.find((a) => a.key === key)?.shortcutable
+    );
+    if (eligibleShortcuts.length > 0) {
+        shortcutRow = document.createElement('div');
+        shortcutRow.className = 'hotswap-shortcut-row';
+        eligibleShortcuts.forEach((key) => {
+            const action = HOTSWAP_ACTIONS.find((a) => a.key === key);
+            const trayBtn = overlay.querySelector(`.${action.className}`);
+            if (!trayBtn) return;
+            const shortcutBtn = document.createElement('button');
+            shortcutBtn.className = 'hotswap-shortcut-btn';
+            shortcutBtn.title = action.title;
+            shortcutBtn.textContent = action.emoji;
+            shortcutBtn.onclick = (e) => {
+                e.stopPropagation();
+                trayBtn.click(); // reuses that action's exact existing handler
+            };
+            shortcutRow.appendChild(shortcutBtn);
+        });
+    }
+
     // ── Viewport Director (postMessage play/pause) ────────────────────────────
     const viewportObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
@@ -357,6 +429,7 @@ function _buildPanel(url, index, panelClass, panelHeight, ctx) {
     // ── Assemble ─────────────────────────────────────────────────────────────
     panel.appendChild(iframe);
     panel.appendChild(triggerBtn);
+    if (shortcutRow) panel.appendChild(shortcutRow);
     panel.appendChild(overlay);
 
     return panel;
