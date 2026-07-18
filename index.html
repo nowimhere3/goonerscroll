@@ -319,7 +319,7 @@
 
         /* Small square icon buttons */
         .btn-hotswap-toggle, .btn-hotswap-star, .btn-hotswap-reload, .btn-hotswap-kill,
-        .btn-purge, .btn-hotswap-position, .btn-hotswap-folder {
+        .btn-purge, .btn-hotswap-position, .btn-hotswap-folder, .btn-hotswap-launchpad {
             border-radius: 10px;
             width: 28px;
             height: 28px;
@@ -386,6 +386,38 @@
             border: 1px solid #4a1a1e;
         }
         .btn-purge:hover { background: #ed4956; color: #fff; }
+
+        /* 🚀 Load Launchpad button */
+        .btn-hotswap-launchpad { background: #3a1f0a; border: 1px solid #a85a1a; color: #ff8c42; }
+        .btn-hotswap-launchpad:hover { background: #4a2810; }
+
+        /* Quick Action shortcuts — always visible below the ··· trigger,
+           independent of whether the overlay is open */
+        .hotswap-shortcut-row {
+            position: absolute;
+            top: 56px;
+            right: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            z-index: 10001;
+        }
+        .hotswap-shortcut-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.75);
+            border: 1px solid #555;
+            color: #ccc;
+            font-size: 15px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(6px);
+            transition: background 0.15s, transform 0.15s, border-color 0.15s;
+        }
+        .hotswap-shortcut-btn:hover { background: rgba(0, 0, 0, 0.95); border-color: #0095f6; transform: scale(1.1); }
 
         .btn-hotswap-delete {
             background: #1a1a1a;
