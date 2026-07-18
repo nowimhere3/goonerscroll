@@ -7,6 +7,7 @@
 import { Store } from './storage.js';
 import { fetchDatabaseWithUI, fetchDatabaseSilently } from './sync.js';
 import { renderFolderManager } from './folders.js';
+import { HOTSWAP_ACTIONS } from './launch.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     Store.warmCache();
@@ -38,6 +39,9 @@ async function bootSettings() {
 
     // ── Frame Height Settings ─────────────────────────────────────────────────
     _initFrameHeightSettings();
+
+    // ── Hotswap Overlay Controls ───────────────────────────────────────────────
+    _initHotswapControls();
 
     // ── Auto-fetch database if credentials are saved ──────────────────────────
     if (Store.get('gitToken') && Store.get('gitRepo')) {
@@ -121,4 +125,104 @@ function _wireSpacerLock(which, toggleEl, inputEl) {
         Store.set(friendlyKey, nowLocked);
         applyLockUI(nowLocked);
     };
+}
+
+function _initHotswapControls() {
+    const toggleListEl   = document.getElementById('hotswap-toggle-list');
+    const slotCountRowEl = document.getElementById('slot-count-row');
+    const pickersEl      = document.getElementById('quick-slot-pickers');
+    if (!toggleListEl || !slotCountRowEl || !pickersEl) return;
+
+    const visibility = { ...Store.get('hotswapButtonVisibility') };
+    let quickSlots    = [...(Store.get('quickActionSlots') || [])];
+
+    const shortcutableActions = HOTSWAP_ACTIONS.filter((a) => a.shortcutable);
+
+    function _renderToggleList() {
+        toggleListEl.innerHTML = '';
+        HOTSWAP_ACTIONS.forEach(({ key, emoji, title }) => {
+            const isShortcut = quickSlots.includes(key);
+            const row = document.createElement('div');
+            row.className = 'hotswap-toggle-row';
+            row.innerHTML = `
+                <span class="hotswap-toggle-label">
+                    <span class="hotswap-toggle-emoji">${emoji}</span>${title}
+                    ${isShortcut ? '<span class="hotswap-shortcut-badge">Quick Action</span>' : ''}
+                </span>
+                <label class="switch" style="margin:0;">
+                    <input type="checkbox" data-key="${key}" ${visibility[key] !== false ? 'checked' : ''}>
+                    <span class="slider"></span>
+                </label>
+            `;
+            row.querySelector('input').onchange = (e) => {
+                visibility[key] = e.target.checked;
+                Store.set('hotswapButtonVisibility', visibility);
+            };
+            toggleListEl.appendChild(row);
+        });
+    }
+
+    function _renderSlotCountButtons() {
+        slotCountRowEl.querySelectorAll('.btn-slot-count').forEach((btn) => {
+            btn.classList.toggle('active', parseInt(btn.dataset.count, 10) === quickSlots.length);
+        });
+    }
+
+    function _renderSlotPickers() {
+        pickersEl.innerHTML = '';
+        for (let i = 0; i < quickSlots.length; i += 1) {
+            const row = document.createElement('div');
+            row.className = 'quick-slot-picker-row';
+
+            const label = document.createElement('label');
+            label.textContent = `Slot ${i + 1}`;
+
+            const select = document.createElement('select');
+            select.className = 'quick-slot-select';
+
+            const noneOpt = document.createElement('option');
+            noneOpt.value = '';
+            noneOpt.textContent = '— none —';
+            select.appendChild(noneOpt);
+
+            shortcutableActions.forEach(({ key, emoji, title }) => {
+                // Don't offer an action already picked in a DIFFERENT slot
+                const takenElsewhere = quickSlots.some((v, idx) => v === key && idx !== i);
+                if (takenElsewhere) return;
+                const opt = document.createElement('option');
+                opt.value = key;
+                opt.textContent = `${emoji} ${title}`;
+                if (quickSlots[i] === key) opt.selected = true;
+                select.appendChild(opt);
+            });
+
+            select.onchange = () => {
+                quickSlots[i] = select.value;
+                Store.set('quickActionSlots', quickSlots);
+                _renderToggleList();
+                _renderSlotPickers(); // refresh exclusion sets across slots
+            };
+
+            row.appendChild(label);
+            row.appendChild(select);
+            pickersEl.appendChild(row);
+        }
+    }
+
+    slotCountRowEl.querySelectorAll('.btn-slot-count').forEach((btn) => {
+        btn.onclick = () => {
+            const newCount = parseInt(btn.dataset.count, 10);
+            const next = [];
+            for (let i = 0; i < newCount; i += 1) next.push(quickSlots[i] || '');
+            quickSlots = next;
+            Store.set('quickActionSlots', quickSlots);
+            _renderSlotCountButtons();
+            _renderSlotPickers();
+            _renderToggleList();
+        };
+    });
+
+    _renderToggleList();
+    _renderSlotCountButtons();
+    _renderSlotPickers();
 }
