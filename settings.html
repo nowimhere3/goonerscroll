@@ -312,6 +312,61 @@
         }
         .btn-fm-delete:hover { background: #ed4956; color: #fff; }
         .folder-manager-empty { color: #444; font-style: italic; font-size: 13px; text-align: center; padding: 20px 0; }
+
+        /* Hotswap Overlay Controls */
+        .hotswap-panel { border-top: 3px solid #0095f6; }
+        .hotswap-toggle-list { display: flex; flex-direction: column; gap: 8px; }
+        .hotswap-toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #111;
+            border: 1px solid #2a2a2a;
+            border-radius: 10px;
+            padding: 10px 14px;
+        }
+        .hotswap-toggle-label { font-size: 13px; color: #ddd; display: flex; align-items: center; gap: 8px; }
+        .hotswap-toggle-emoji { font-size: 15px; }
+        .hotswap-shortcut-badge {
+            font-size: 10px;
+            color: #6db8ff;
+            background: #0a2a4a;
+            border: 1px solid #2f6fb3;
+            border-radius: 6px;
+            padding: 2px 6px;
+            margin-left: 6px;
+        }
+
+        .slot-count-row { display: flex; gap: 8px; }
+        .btn-slot-count {
+            flex: 1;
+            background: #222;
+            border: 1px solid #333;
+            color: #aaa;
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s, color 0.15s;
+        }
+        .btn-slot-count:hover { background: #2a2a2a; }
+        .btn-slot-count.active { background: #0a2a4a; border-color: #0095f6; color: #6db8ff; }
+
+        .quick-slot-pickers { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+        .quick-slot-picker-row { display: flex; align-items: center; gap: 10px; }
+        .quick-slot-picker-row label { font-size: 12px; color: #aaa; font-weight: bold; width: 70px; flex-shrink: 0; }
+        .quick-slot-select {
+            flex: 1;
+            background: #222;
+            border: 1px solid #333;
+            color: #fff;
+            padding: 8px 10px;
+            border-radius: 8px;
+            font-size: 13px;
+            outline: none;
+        }
+        .quick-slot-select:focus { border-color: #0095f6; }
     </style>
 </head>
 <body>
@@ -408,6 +463,32 @@
                 <button class="btn-spacer-lock" id="btn-lock-spacer-end" title="Lock — prevents Save Heights from changing this row">🔓</button>
             </div>
         </div>
+    </div>
+
+    <!-- Hotswap Overlay Controls -->
+    <div class="config-card hotswap-panel">
+        <div class="section-header">
+            <h3>🎛 Hotswap Overlay Controls</h3>
+        </div>
+        <p class="subtitle">Choose which controls appear in each iframe's hotswap overlay (the "···" menu).</p>
+        <div class="hotswap-toggle-list" id="hotswap-toggle-list"></div>
+
+        <div class="section-header" style="margin-top:24px;">
+            <h3>Quick Action Shortcuts</h3>
+        </div>
+        <p class="subtitle">Pin up to 3 actions as always-visible shortcuts below the "···" button — no need to open the overlay first. A pinned action is automatically removed from the "···" tray. Applies to every iframe.</p>
+
+        <div class="input-group">
+            <label>Number of Shortcut Slots</label>
+            <div class="slot-count-row" id="slot-count-row">
+                <button class="btn-slot-count" data-count="0">0</button>
+                <button class="btn-slot-count" data-count="1">1</button>
+                <button class="btn-slot-count" data-count="2">2</button>
+                <button class="btn-slot-count" data-count="3">3</button>
+            </div>
+        </div>
+
+        <div class="quick-slot-pickers" id="quick-slot-pickers"></div>
     </div>
 
 </div>
