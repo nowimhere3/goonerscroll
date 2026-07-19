@@ -99,8 +99,16 @@
         .btn-add:hover { background: #2a2a2a; }
         .btn-remove { background: #331417; color: #ed4956; border: 1px solid #4a1a1e; }
         .btn-remove:hover { background: #441a1f; }
-        .btn-launch { background: #0095f6; color: #fff; width: 100%; margin-top: 15px; font-size: 16px; padding: 14px; }
+        .btn-launch { background: #0095f6; color: #fff; width: 100%; margin-top: 15px; font-size: 16px; padding: 14px; display: block; text-align: center; text-decoration: none; box-sizing: border-box; }
         .btn-launch:hover { background: #189ffa; }
+
+        /* Launch Grid / Launch Stream / Launch Solo — same size/format, distinct colors */
+        .btn-grid   { background: #22c55e; }
+        .btn-grid:hover   { background: #34d872; }
+        .btn-stream { background: #0095f6; }
+        .btn-stream:hover { background: #189ffa; }
+        .btn-solo   { background: #7c3aed; }
+        .btn-solo:hover   { background: #8f5cf5; }
 
         .actions-bar { display: flex; justify-content: space-between; margin-top: 15px; }
 
@@ -796,45 +804,6 @@
             opacity: 0.7;
             pointer-events: none;
         }
-
-        /* Mode buttons row — split into left and right */
-        .mode-buttons-row {
-            display: flex;
-            gap: 12px;
-            margin-top: 15px;
-        }
-        .mode-buttons-row .btn {
-            flex: 1;
-            margin-top: 0;
-        }
-        .btn-solo-left {
-            background: #1a3a2a;
-            border: 1px solid #4caf50;
-            color: #4caf50;
-        }
-        .btn-solo-left:hover {
-            background: #244a39;
-            border-color: #66bb6a;
-        }
-        .btn-triple {
-            background: #1a2a3a;
-            border: 1px solid #0095f6;
-            color: #0095f6;
-        }
-        .btn-triple:hover {
-            background: #243a4a;
-            border-color: #19a4f9;
-        }
-        .btn-settings {
-            background: #1a1a2a;
-            border: 1px solid #555;
-            color: #aaa;
-        }
-        .btn-settings:hover {
-            background: #222236;
-            border-color: #888;
-            color: #fff;
-        }
     </style>
 </head>
 <body>
@@ -865,8 +834,6 @@
             <button class="btn btn-remove" id="clear-cache-btn">Reset Grid</button>
         </div>
 
-        <button class="btn btn-launch" id="launch-btn">🚀 LAUNCH MATRIX</button>
-
         <div class="toggle-container">
             <span class="toggle-label">📐 Optimize Layout for Portrait Monitor</span>
             <label class="switch">
@@ -875,10 +842,9 @@
             </label>
         </div>
 
-        <div class="mode-buttons-row">
-            <a href="index2.html" class="btn btn-launch btn-solo-left">🎬 Single "SOLO" Page Version</a>
-            <a href="index3.html" class="btn btn-launch btn-triple">🎨 3 Page Layout</a>
-        </div>
+        <a href="index3.html" class="btn btn-launch btn-grid">🧩 LAUNCH GRID</a>
+        <button class="btn btn-launch btn-stream" id="launch-btn">🚀 LAUNCH STREAM</button>
+        <a href="index2.html" class="btn btn-launch btn-solo">🎬 LAUNCH SOLO</a>
     </div>
 
     <div class="config-card" style="padding: 16px 30px;">
