@@ -38,6 +38,8 @@ async function boot() {
     const btnShuffleAll      = document.getElementById('btn-shuffle-all');
     const folderDropdown     = document.getElementById('folder-dropdown');
     const bookmarkModalEl    = document.getElementById('bookmark-modal');
+    const controlBar         = document.getElementById('control-bar');
+    const btnToggleMaster    = document.getElementById('btn-toggle-master');
 
     // ── Initialize modules ─────────────────────────────────────────────────────
     initBlacklist();
@@ -195,6 +197,11 @@ async function boot() {
     }
 
     // ── Button handlers ────────────────────────────────────────────────────────
+    btnToggleMaster.onclick = () => {
+        const isOpen = controlBar.classList.toggle('open');
+        btnToggleMaster.classList.toggle('active', isOpen);
+    };
+
     btnFolder.onclick = () => {
         folderDropdown.classList.toggle('open');
     };
