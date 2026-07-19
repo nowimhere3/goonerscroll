@@ -14,9 +14,16 @@
     <link rel="manifest" href="./site.webmanifest" />
     <script>
         // Detect if this page is running nested inside another Launchpad
-        // iframe (e.g. via 🚀). Runs synchronously before <style> so the
-        // is-nested class is set before first paint.
-        if (window.self !== window.top) document.documentElement.classList.add('is-nested');
+        // iframe (e.g. via 🚀), and how many levels deep. Same-origin, so
+        // walking window.parent is safe. Runs synchronously before <style>
+        // so classes are set before first paint.
+        (function () {
+            var depth = 0;
+            var win = window;
+            while (win !== win.top) { depth += 1; win = win.parent; }
+            if (depth >= 1) document.documentElement.classList.add('is-nested');
+            if (depth === 1) document.documentElement.classList.add('layer-2');
+        })();
     </script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -323,6 +330,42 @@
             transform: translateX(0) scale(1);
         }
 
+        /* Layer 2 (running one level nested) — every panel's own ··· trigger
+           and Quick Action shortcuts move to the top-left with a yellow
+           border, since the OUTER layer's own per-panel ··· always lives at
+           top-right for that same panel. The overlay pops out to the right
+           instead of the left, since the trigger itself is now on the left. */
+        html.layer-2 .hotswap-trigger { right: auto; left: 16px; border-color: #f0c020; border-width: 2px; }
+        html.layer-2 .hotswap-trigger:hover { border-color: #ffd84a; }
+        html.layer-2 .hotswap-trigger.open { border-color: #f0c020; }
+        html.layer-2 .hotswap-overlay {
+            right: auto;
+            left: 90px;
+            transform-origin: top left;
+            transform: translateX(-12px) scale(0.95);
+        }
+        html.layer-2 .hotswap-overlay.open { transform: translateX(0) scale(1); }
+
+        /* Small always-visible indicator so it's obvious which layer you're
+           looking at — pure CSS, no markup needed. */
+        html.layer-2 body::after {
+            content: "🟡 Layer 2";
+            position: fixed;
+            top: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(20, 15, 0, 0.85);
+            color: #f0c020;
+            border: 1px solid #f0c020;
+            border-radius: 20px;
+            padding: 4px 14px;
+            font-size: 11px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            z-index: 999999;
+            pointer-events: none;
+        }
+
         /* Icon button row */
         .hotswap-icon-row {
             display: flex;
@@ -432,6 +475,10 @@
             transition: background 0.15s, transform 0.15s, border-color 0.15s;
         }
         .hotswap-shortcut-btn:hover { background: rgba(0, 0, 0, 0.95); border-color: #0095f6; transform: scale(1.1); }
+
+        html.layer-2 .hotswap-shortcut-row { right: auto; left: 16px; }
+        html.layer-2 .hotswap-shortcut-btn { border-color: #f0c020; }
+        html.layer-2 .hotswap-shortcut-btn:hover { border-color: #ffd84a; }
 
         .btn-hotswap-delete {
             background: #1a1a1a;
