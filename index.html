@@ -12,6 +12,12 @@
     <link rel="shortcut icon" href="./favicon.ico" />
     <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png" />
     <link rel="manifest" href="./site.webmanifest" />
+    <script>
+        // Detect if this page is running nested inside another Launchpad
+        // iframe (e.g. via 🚀). Runs synchronously before <style> so the
+        // is-nested class is set before first paint.
+        if (window.self !== window.top) document.documentElement.classList.add('is-nested');
+    </script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0b0b0b; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; overflow-x: hidden; }
@@ -283,8 +289,8 @@
         /* Expanded button panel — drops down from trigger */
         .hotswap-overlay {
             position: absolute;
-            top: 70px;
-            right: 16px;
+            top: 16px;
+            right: 90px;
             background: rgba(0, 0, 0, 0.9);
             border: 1px solid #333;
             border-radius: 16px;
@@ -299,14 +305,14 @@
             /* Collapsed state */
             opacity: 0;
             pointer-events: none;
-            transform: translateY(-12px) scale(0.95);
+            transform: translateX(12px) scale(0.95);
             transform-origin: top right;
             transition: opacity 0.15s ease, transform 0.15s ease;
         }
         .hotswap-overlay.open {
             opacity: 1;
             pointer-events: auto;
-            transform: translateY(0) scale(1);
+            transform: translateX(0) scale(1);
         }
 
         /* Icon button row */
@@ -501,6 +507,13 @@
             backdrop-filter: blur(10px);
             white-space: nowrap;
         }
+
+        /* When this page is loaded inside another Launchpad session (e.g. via
+           🚀), anchor the loop controls from the right edge instead of
+           centering — reserves the space index3.html's outer 🎬+⚙ cluster
+           needs, so they don't paint on top of each other. */
+        html.is-nested #controls { left: auto; right: 140px; transform: none; }
+
         #controls button { background: #222; border: 1px solid #444; color: white; padding: 6px 14px; border-radius: 20px; cursor: pointer; font-weight: bold; font-size: 13px; }
         #controls button#toggle { background: #0095f6; border: none; }
         #controls button#toggle.pause { background: #ed4956; }
