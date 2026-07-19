@@ -346,26 +346,6 @@
         }
         html.layer-2 .hotswap-overlay.open { transform: translateX(0) scale(1); }
 
-        /* Small always-visible indicator so it's obvious which layer you're
-           looking at — pure CSS, no markup needed. */
-        html.layer-2 body::after {
-            content: "🟡 Layer 2";
-            position: fixed;
-            top: 8px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(20, 15, 0, 0.85);
-            color: #f0c020;
-            border: 1px solid #f0c020;
-            border-radius: 20px;
-            padding: 4px 14px;
-            font-size: 11px;
-            font-weight: bold;
-            letter-spacing: 0.5px;
-            z-index: 999999;
-            pointer-events: none;
-        }
-
         /* Icon button row */
         .hotswap-icon-row {
             display: flex;
@@ -575,6 +555,35 @@
         #controls button.nav-jump { background: #333; color: #fff; border-color: #555; }
         #controls button.btn-gear { background: #333; font-size: 14px; padding: 6px 10px; }
         #controls .info { color: #888; font-size: 13px; font-family: monospace; }
+
+        /* Responsive sizing — shrinks progressively so every button in
+           #controls stays visible and reachable no matter how narrow the
+           page's own viewport is (full browser window, or a narrow nested
+           iframe panel in a Layer 2 grid). Pure viewport-width media
+           queries — not tied to nesting detection, so it works identically
+           either way. A horizontal-scroll fallback catches anything that
+           still doesn't fit even at the smallest breakpoint. */
+        #controls {
+            max-width: calc(100vw - 16px);
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        #controls::-webkit-scrollbar { display: none; }
+
+        @media (max-width: 768px) {
+            #controls { padding: 8px 12px; gap: 6px; }
+            #controls button { padding: 5px 10px; font-size: 11px; }
+            #controls button.btn-gear { padding: 5px 8px; font-size: 12px; }
+            #controls .info { font-size: 11px; }
+        }
+
+        @media (max-width: 480px) {
+            #controls { padding: 6px 8px; gap: 4px; border-radius: 20px; }
+            #controls button { padding: 4px 7px; font-size: 10px; }
+            #controls button.btn-gear { padding: 4px 6px; font-size: 11px; }
+            #controls .info { font-size: 10px; }
+            #controls .sep { display: none; }
+        }
 
         /* Blacklist Panel */
         .blacklist-panel { border-top: 3px solid #9c27b0; }
@@ -972,7 +981,7 @@
         <button id="prev-page-btn" class="nav-jump">▲ UP</button>
         <button id="next-page-btn" class="nav-jump">▼ DN</button>
         <span class="info" id="status">0 streams</span>
-        <span class="info">|</span>
+        <span class="info sep">|</span>
         <button id="faster">+</button>
         <button id="slower">−</button>
         <button id="mode-toggle" class="nav-jump" title="Toggle between landscape and portrait">📐</button>
