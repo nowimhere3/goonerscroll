@@ -367,6 +367,24 @@
             outline: none;
         }
         .quick-slot-select:focus { border-color: #0095f6; }
+
+        /* Ghost Mode */
+        .ghost-panel { border-top: 3px solid #9d6dff; }
+        .ghost-opacity-row { display: flex; align-items: center; gap: 10px; }
+        .ghost-opacity-row input[type="range"] { flex: 1; accent-color: #9d6dff; }
+        .ghost-opacity-row input[type="number"] {
+            width: 60px;
+            background: #222;
+            border: 1px solid #333;
+            color: #fff;
+            padding: 8px;
+            border-radius: 8px;
+            font-size: 13px;
+            text-align: center;
+            outline: none;
+        }
+        .ghost-opacity-row input[type="number"]:focus { border-color: #9d6dff; }
+        .ghost-opacity-pct { color: #888; font-size: 13px; font-weight: bold; width: 14px; }
     </style>
 </head>
 <body>
@@ -489,6 +507,25 @@
         </div>
 
         <div class="quick-slot-pickers" id="quick-slot-pickers"></div>
+    </div>
+
+    <!-- Ghost Mode -->
+    <div class="config-card ghost-panel">
+        <div class="section-header">
+            <h3>👻 Ghost Mode</h3>
+        </div>
+        <p class="subtitle">Fade specific overlay controls to a faint "ghost" opacity until you hover directly over them — keeps the screen clean while streams play, and reveals instantly on hover with no delay (pure CSS, no JavaScript tracking).</p>
+
+        <div class="input-group">
+            <label>Ghost Opacity</label>
+            <div class="ghost-opacity-row">
+                <input type="range" id="ghost-opacity-slider" min="0" max="100" step="1">
+                <input type="number" id="ghost-opacity-input" min="0" max="100" step="1">
+                <span class="ghost-opacity-pct">%</span>
+            </div>
+        </div>
+
+        <div class="hotswap-toggle-list" id="ghost-toggle-list" style="margin-top:16px;"></div>
     </div>
 
 </div>
