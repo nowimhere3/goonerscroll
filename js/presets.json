@@ -1,0 +1,57 @@
+[
+  {
+    "id": 1,
+    "name": "Preset 1",
+    "urls": [],
+    "folderMap": {},
+    "lockState": {},
+    "rowCount": 0,
+    "streamCount": 0,
+    "isEmpty": true,
+    "savedAt": null
+  },
+  {
+    "id": 2,
+    "name": "Preset 2",
+    "urls": [],
+    "folderMap": {},
+    "lockState": {},
+    "rowCount": 0,
+    "streamCount": 0,
+    "isEmpty": true,
+    "savedAt": null
+  },
+  {
+    "id": 3,
+    "name": "Preset 3",
+    "urls": [],
+    "folderMap": {},
+    "lockState": {},
+    "rowCount": 0,
+    "streamCount": 0,
+    "isEmpty": true,
+    "savedAt": null
+  },
+  {
+    "id": 4,
+    "name": "Preset 4",
+    "urls": [],
+    "folderMap": {},
+    "lockState": {},
+    "rowCount": 0,
+    "streamCount": 0,
+    "isEmpty": true,
+    "savedAt": null
+  },
+  {
+    "id": 5,
+    "name": "Preset 5",
+    "urls": [],
+    "folderMap": {},
+    "lockState": {},
+    "rowCount": 0,
+    "streamCount": 0,
+    "isEmpty": true,
+    "savedAt": null
+  }
+]
