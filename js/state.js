@@ -50,6 +50,10 @@ const _state = {
     databaseStructure: null,  // { folderName: [url, url, ...] } — full links.json content
     databaseSha:       null,  // current SHA of links.json — required for GitHub PUT updates
 
+    // ── Presets / Workspace Tabs (GitHub) ───────────────────────────────────
+    presetsStructure: null,   // array of preset objects — full presets.json content
+    presetsSha:       null,   // current SHA of presets.json — required for GitHub PUT updates
+
     // ── Bookmark modal ─────────────────────────────────────────────────────
     bookmarkTargetUrl: null,  // URL currently being saved to a playlist
     bookmarkStarBtn:   null,  // DOM reference to the ☆ button that triggered the modal
@@ -142,6 +146,8 @@ const _initialValues = {
     activeDragIdx:     -1,
     databaseStructure: null,
     databaseSha:       null,
+    presetsStructure:  null,
+    presetsSha:        null,
     bookmarkTargetUrl: null,
     bookmarkStarBtn:   null,
     singleModeUrl:     null,
@@ -184,6 +190,12 @@ export const getDatabaseStructure = () => _state.databaseStructure;
 export const setDatabaseStructure = (v) => { _state.databaseStructure = v; };
 export const getDatabaseSha       = () => _state.databaseSha;
 export const setDatabaseSha       = (v) => { _state.databaseSha = v; };
+
+// Presets / Workspace Tabs
+export const getPresetsStructure = () => _state.presetsStructure;
+export const setPresetsStructure = (v) => { _state.presetsStructure = v; };
+export const getPresetsSha       = () => _state.presetsSha;
+export const setPresetsSha       = (v) => { _state.presetsSha = v; };
 
 // Bookmark modal
 export const getBookmarkTargetUrl = () => _state.bookmarkTargetUrl;
