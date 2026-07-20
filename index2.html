@@ -21,6 +21,24 @@
             while (win !== win.top) { depth += 1; win = win.parent; }
             if (depth >= 1) document.documentElement.classList.add('is-nested');
             if (depth === 1) document.documentElement.classList.add('layer-2');
+
+            // Ghost Mode — reads raw localStorage directly (the Store module
+            // isn't loaded yet at this point). Sets --ghost-opacity plus one
+            // class per target so each surface can opt in independently.
+            try {
+                var opacityRaw = localStorage.getItem('hotswap_ghost_opacity');
+                var opacityPct = opacityRaw !== null ? parseFloat(opacityRaw) : 12;
+                if (isNaN(opacityPct)) opacityPct = 12;
+                opacityPct = Math.max(0, Math.min(100, opacityPct));
+                document.documentElement.style.setProperty('--ghost-opacity', opacityPct / 100);
+
+                var targetsRaw = localStorage.getItem('hotswap_ghost_targets');
+                var targets = targetsRaw ? JSON.parse(targetsRaw) : {};
+                if (targets.trigger) document.documentElement.classList.add('ghost-trigger');
+                if (targets.master)  document.documentElement.classList.add('ghost-master');
+                if (targets.stream)  document.documentElement.classList.add('ghost-stream');
+                if (targets.solo)    document.documentElement.classList.add('ghost-solo');
+            } catch (e) { /* Ghost Mode just won't apply this load */ }
         })();
     </script>
     <style>
@@ -56,9 +74,12 @@
             flex-wrap: wrap;
             box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.5);
             z-index: 29000;
-            transition: bottom 0.25s ease;
+            transition: bottom 0.25s ease, opacity 0.15s ease;
         }
         #control-bar.open { bottom: 0; }
+
+        html.ghost-solo #control-bar.open { opacity: var(--ghost-opacity, 0.12); }
+        html.ghost-solo #control-bar.open:hover { opacity: 1; }
 
         /* Floating 🎬 (toggle control bar) + ⚙ (back to Launchpad) */
         #floating-btns { position: fixed; bottom: 18px; right: 18px; z-index: 30000; display: flex; align-items: center; gap: 8px; }
