@@ -75,6 +75,8 @@ export const KEYS = Object.freeze({
     // Hotswap overlay customization
     hotswapButtonVisibility: 'hotswap_button_visibility',
     quickActionSlots:        'hotswap_quick_action_slots',
+    ghostOpacity:            'hotswap_ghost_opacity',
+    ghostTargets:            'hotswap_ghost_targets',
 });
 
 // ── Defaults ────────────────────────────────────────────────────────────────
@@ -107,6 +109,8 @@ const DEFAULTS = {
         launchpad: true,
     },
     [KEYS.quickActionSlots]: [],
+    [KEYS.ghostOpacity]: 12,
+    [KEYS.ghostTargets]: { trigger: false, master: false, stream: false, solo: false },
 };
 
 // ── Type map ─────────────────────────────────────────────────────────────────
@@ -131,6 +135,8 @@ const TYPES = {
     [KEYS.tripleLayout]:    'string',
     [KEYS.hotswapButtonVisibility]: 'json',
     [KEYS.quickActionSlots]:        'json',
+    [KEYS.ghostOpacity]:            'number',
+    [KEYS.ghostTargets]:            'json',
 };
 
 // ── In-memory cache ──────────────────────────────────────────────────────────
