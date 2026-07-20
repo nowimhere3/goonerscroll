@@ -23,6 +23,24 @@
             while (win !== win.top) { depth += 1; win = win.parent; }
             if (depth >= 1) document.documentElement.classList.add('is-nested');
             if (depth === 1) document.documentElement.classList.add('layer-2');
+
+            // Ghost Mode — reads raw localStorage directly (the Store module
+            // isn't loaded yet at this point). Sets --ghost-opacity plus one
+            // class per target so each surface can opt in independently.
+            try {
+                var opacityRaw = localStorage.getItem('hotswap_ghost_opacity');
+                var opacityPct = opacityRaw !== null ? parseFloat(opacityRaw) : 12;
+                if (isNaN(opacityPct)) opacityPct = 12;
+                opacityPct = Math.max(0, Math.min(100, opacityPct));
+                document.documentElement.style.setProperty('--ghost-opacity', opacityPct / 100);
+
+                var targetsRaw = localStorage.getItem('hotswap_ghost_targets');
+                var targets = targetsRaw ? JSON.parse(targetsRaw) : {};
+                if (targets.trigger) document.documentElement.classList.add('ghost-trigger');
+                if (targets.master)  document.documentElement.classList.add('ghost-master');
+                if (targets.stream)  document.documentElement.classList.add('ghost-stream');
+                if (targets.solo)    document.documentElement.classList.add('ghost-solo');
+            } catch (e) { /* Ghost Mode just won't apply this load */ }
         })();
     </script>
     <style>
@@ -295,11 +313,28 @@
             padding: 8px 18px;
             z-index: 10001;
             backdrop-filter: blur(6px);
-            transition: background 0.15s, color 0.15s, border-color 0.15s;
+            transition: background 0.15s, color 0.15s, border-color 0.15s, opacity 0.15s;
             user-select: none;
+        }
+        /* Invisible hit-area larger than the visible button — hovering
+           anywhere in this expanded zone still counts as hovering the
+           button itself (generated content is part of the element's own
+           box for :hover purposes), so Ghost Mode's small buttons are
+           easier to land the mouse on without changing how big they look. */
+        .hotswap-trigger::before {
+            content: '';
+            position: absolute;
+            top: -10px; left: -10px; right: -10px; bottom: -10px;
         }
         .hotswap-trigger:hover { background: rgba(0,0,0,0.95); color: #fff; border-color: #888; }
         .hotswap-trigger.open { background: rgba(0,95,200,0.85); border-color: #0095f6; color: #fff; }
+
+        /* Ghost Mode — faint until hovered (or open). Pure CSS :hover, no JS,
+           so there's no zone-tracking to lag or flicker. Opacity value is
+           user-configurable in Settings via the --ghost-opacity variable. */
+        html.ghost-trigger .hotswap-trigger { opacity: var(--ghost-opacity, 0.12); }
+        html.ghost-trigger .hotswap-trigger:hover,
+        html.ghost-trigger .hotswap-trigger.open { opacity: 1; }
 
         /* Expanded button panel — drops down from trigger */
         .hotswap-overlay {
@@ -440,6 +475,7 @@
             z-index: 10001;
         }
         .hotswap-shortcut-btn {
+            position: relative;
             width: 32px;
             height: 32px;
             border-radius: 50%;
@@ -452,9 +488,17 @@
             align-items: center;
             justify-content: center;
             backdrop-filter: blur(6px);
-            transition: background 0.15s, transform 0.15s, border-color 0.15s;
+            transition: background 0.15s, transform 0.15s, border-color 0.15s, opacity 0.15s;
+        }
+        .hotswap-shortcut-btn::before {
+            content: '';
+            position: absolute;
+            top: -8px; left: -8px; right: -8px; bottom: -8px;
         }
         .hotswap-shortcut-btn:hover { background: rgba(0, 0, 0, 0.95); border-color: #0095f6; transform: scale(1.1); }
+
+        html.ghost-trigger .hotswap-shortcut-btn { opacity: var(--ghost-opacity, 0.12); }
+        html.ghost-trigger .hotswap-shortcut-btn:hover { opacity: 1; }
 
         html.layer-2 .hotswap-shortcut-row { right: auto; left: 16px; }
         html.layer-2 .hotswap-shortcut-btn { border-color: #f0c020; }
@@ -541,7 +585,11 @@
             border: 1px solid #333;
             backdrop-filter: blur(10px);
             white-space: nowrap;
+            transition: opacity 0.15s ease;
         }
+
+        html.ghost-stream #controls { opacity: var(--ghost-opacity, 0.12); }
+        html.ghost-stream #controls:hover { opacity: 1; }
 
         /* When this page is loaded inside another Launchpad session (e.g. via
            🚀), anchor the loop controls from the right edge instead of
