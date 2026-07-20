@@ -16,6 +16,24 @@
             while (win !== win.top) { depth += 1; win = win.parent; }
             if (depth >= 1) document.documentElement.classList.add('is-nested');
             if (depth === 1) document.documentElement.classList.add('layer-2');
+
+            // Ghost Mode — reads raw localStorage directly (the Store module
+            // isn't loaded yet at this point). Sets --ghost-opacity plus one
+            // class per target so each surface can opt in independently.
+            try {
+                var opacityRaw = localStorage.getItem('hotswap_ghost_opacity');
+                var opacityPct = opacityRaw !== null ? parseFloat(opacityRaw) : 12;
+                if (isNaN(opacityPct)) opacityPct = 12;
+                opacityPct = Math.max(0, Math.min(100, opacityPct));
+                document.documentElement.style.setProperty('--ghost-opacity', opacityPct / 100);
+
+                var targetsRaw = localStorage.getItem('hotswap_ghost_targets');
+                var targets = targetsRaw ? JSON.parse(targetsRaw) : {};
+                if (targets.trigger) document.documentElement.classList.add('ghost-trigger');
+                if (targets.master)  document.documentElement.classList.add('ghost-master');
+                if (targets.stream)  document.documentElement.classList.add('ghost-stream');
+                if (targets.solo)    document.documentElement.classList.add('ghost-solo');
+            } catch (e) { /* Ghost Mode just won't apply this load */ }
         })();
     </script>
     <style>
@@ -111,7 +129,10 @@
         .float-btn.active { background: rgba(0,95,200,0.85); border-color: #0095f6; color: #fff; }
 
         /* Master control bar - hidden until toggled */
-        #master-bar { position: fixed; bottom: -120px; left: 0; right: 0; z-index: 29000; background: rgba(10,10,10,0.96); border-top: 1px solid #2d2d2d; backdrop-filter: blur(12px); padding: 14px 20px; display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; transition: bottom 0.25s ease; }
+        #master-bar { position: fixed; bottom: -120px; left: 0; right: 0; z-index: 29000; background: rgba(10,10,10,0.96); border-top: 1px solid #2d2d2d; backdrop-filter: blur(12px); padding: 14px 20px; display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; transition: bottom 0.25s ease, opacity 0.15s ease; }
+
+        html.ghost-master #master-bar.open { opacity: var(--ghost-opacity, 0.12); }
+        html.ghost-master #master-bar.open:hover { opacity: 1; }
         #master-bar.open { bottom: 0; }
         .master-btn { border: 1px solid #333; padding: 9px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; background: #1a1a1a; color: #eee; transition: background 0.15s, border-color 0.15s; white-space: nowrap; flex-shrink: 0; text-decoration: none; display: inline-flex; align-items: center; }
         .master-btn:hover { background: #252525; border-color: #555; }
@@ -154,7 +175,11 @@
         .dropup-count { font-size: 11px; color: #555; margin-left: 8px; }
 
         /* Per-panel hotswap trigger */
-        .hotswap-trigger { position: absolute; top: 16px; right: 16px; background: rgba(0,0,0,0.75); border: 1px solid #555; border-radius: 12px; color: #ccc; font-size: 16px; font-weight: bold; letter-spacing: 2px; cursor: pointer; padding: 6px 14px; z-index: 10001; backdrop-filter: blur(6px); transition: background 0.15s, color 0.15s, border-color 0.15s; user-select: none; }
+        .hotswap-trigger { position: absolute; top: 16px; right: 16px; background: rgba(0,0,0,0.75); border: 1px solid #555; border-radius: 12px; color: #ccc; font-size: 16px; font-weight: bold; letter-spacing: 2px; cursor: pointer; padding: 6px 14px; z-index: 10001; backdrop-filter: blur(6px); transition: background 0.15s, color 0.15s, border-color 0.15s, opacity 0.15s; user-select: none; }
+        .hotswap-trigger::before { content: ''; position: absolute; top: -10px; left: -10px; right: -10px; bottom: -10px; }
+        html.ghost-trigger .hotswap-trigger { opacity: var(--ghost-opacity, 0.12); }
+        html.ghost-trigger .hotswap-trigger:hover,
+        html.ghost-trigger .hotswap-trigger.open { opacity: 1; }
         .hotswap-trigger:hover { background: rgba(0,0,0,0.95); color: #fff; border-color: #888; }
         .hotswap-trigger.open  { background: rgba(0,95,200,0.85); border-color: #0095f6; color: #fff; }
 
@@ -227,6 +252,7 @@
             z-index: 10001;
         }
         .hotswap-shortcut-btn {
+            position: relative;
             width: 32px;
             height: 32px;
             border-radius: 50%;
@@ -239,8 +265,15 @@
             align-items: center;
             justify-content: center;
             backdrop-filter: blur(6px);
-            transition: background 0.15s, transform 0.15s, border-color 0.15s;
+            transition: background 0.15s, transform 0.15s, border-color 0.15s, opacity 0.15s;
         }
+        .hotswap-shortcut-btn::before {
+            content: '';
+            position: absolute;
+            top: -8px; left: -8px; right: -8px; bottom: -8px;
+        }
+        html.ghost-trigger .hotswap-shortcut-btn { opacity: var(--ghost-opacity, 0.12); }
+        html.ghost-trigger .hotswap-shortcut-btn:hover { opacity: 1; }
         .hotswap-shortcut-btn:hover { background: rgba(0, 0, 0, 0.95); border-color: #0095f6; transform: scale(1.1); }
 
         html.layer-2 .hotswap-shortcut-row { right: auto; left: 16px; top: 80px; }
