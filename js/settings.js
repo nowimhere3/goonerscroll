@@ -42,6 +42,7 @@ async function bootSettings() {
 
     // ── Hotswap Overlay Controls ───────────────────────────────────────────────
     _initHotswapControls();
+    _initGhostMode();
 
     // ── Auto-fetch database if credentials are saved ──────────────────────────
     if (Store.get('gitToken') && Store.get('gitRepo')) {
@@ -225,4 +226,56 @@ function _initHotswapControls() {
     _renderToggleList();
     _renderSlotCountButtons();
     _renderSlotPickers();
+}
+
+const GHOST_TARGETS = [
+    { key: 'trigger', emoji: '···', title: '"···" + Quick Action Shortcuts' },
+    { key: 'master',  emoji: '🎬',  title: 'Master Overlay (Launch Grid)' },
+    { key: 'stream',  emoji: '🚀',  title: 'Stream Overlay (Launch Stream)' },
+    { key: 'solo',    emoji: '🎬',  title: 'Solo Overlay (Launch Solo)' },
+];
+
+function _initGhostMode() {
+    const sliderEl = document.getElementById('ghost-opacity-slider');
+    const inputEl  = document.getElementById('ghost-opacity-input');
+    const toggleListEl = document.getElementById('ghost-toggle-list');
+    if (!sliderEl || !inputEl || !toggleListEl) return;
+
+    const opacity = Store.get('ghostOpacity');
+    sliderEl.value = opacity;
+    inputEl.value  = opacity;
+
+    const setOpacity = (val) => {
+        const clamped = Math.max(0, Math.min(100, Math.round(val)));
+        sliderEl.value = clamped;
+        inputEl.value  = clamped;
+        Store.set('ghostOpacity', clamped);
+    };
+
+    sliderEl.oninput = () => setOpacity(parseFloat(sliderEl.value));
+    inputEl.oninput  = () => {
+        if (inputEl.value === '') return;
+        setOpacity(parseFloat(inputEl.value));
+    };
+    inputEl.onblur = () => setOpacity(parseFloat(inputEl.value) || 0);
+
+    const targets = { ...Store.get('ghostTargets') };
+    GHOST_TARGETS.forEach(({ key, emoji, title }) => {
+        const row = document.createElement('div');
+        row.className = 'hotswap-toggle-row';
+        row.innerHTML = `
+            <span class="hotswap-toggle-label">
+                <span class="hotswap-toggle-emoji">${emoji}</span>${title}
+            </span>
+            <label class="switch" style="margin:0;">
+                <input type="checkbox" data-key="${key}" ${targets[key] ? 'checked' : ''}>
+                <span class="slider"></span>
+            </label>
+        `;
+        row.querySelector('input').onchange = (e) => {
+            targets[key] = e.target.checked;
+            Store.set('ghostTargets', targets);
+        };
+        toggleListEl.appendChild(row);
+    });
 }
