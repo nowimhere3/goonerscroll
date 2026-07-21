@@ -17,6 +17,8 @@ import {
     renderFolderManager,
 } from './folders.js';
 import { fetchDatabaseSilently, pushDatabaseToRemote } from './sync.js';
+import { getPresets, getPresetSummary, loadPresetsSilently } from './presets.js';
+import { getActiveWorkspaceId, switchWorkspace, isLiveBuilder } from './workspace.js';
 import { initDropzone } from './parser.js';
 import { initGrid, renderInputRows } from './grid.js';
 import { initScrollEngine, stopScrolling, updateSpeedLabel } from './scroll.js';
@@ -232,10 +234,64 @@ async function boot() {
     await _restoreGitSyncState();
     console.log('[app] boot: checkpoint 10 — git sync state restored, boot complete');
 
+    await _initWorkspaceTabs();
+
     window.addEventListener('pageshow', async (event) => {
         if (!event.persisted) return;
         await _restoreGitSyncState(true);
+        await _initWorkspaceTabs();
     });
+}
+
+// ── Workspace Tabs ───────────────────────────────────────────────────────────
+// Pure navigation — this section only ever calls switchWorkspace() (owned by
+// workspace.js) and re-renders. It never reads/writes presets.json or Store
+// directly; that's workspace.js's and presets.js's job, not this UI's.
+
+async function _initWorkspaceTabs() {
+    const tabsEl = document.getElementById('workspace-tabs');
+    if (!tabsEl) return;
+
+    await loadPresetsSilently();
+    _renderWorkspaceTabs(tabsEl);
+}
+
+function _renderWorkspaceTabs(tabsEl) {
+    const activeId = getActiveWorkspaceId();
+    tabsEl.innerHTML = '';
+
+    const liveTab = document.createElement('button');
+    liveTab.className = 'workspace-tab' + (isLiveBuilder(activeId) ? ' active' : '');
+    liveTab.innerHTML = `<span class="workspace-tab-name">Live Builder</span>`;
+    liveTab.title = 'Your general workspace — always auto-saves, never a preset';
+    liveTab.onclick = () => _handleWorkspaceSwitch('live', tabsEl);
+    tabsEl.appendChild(liveTab);
+
+    const divider = document.createElement('span');
+    divider.className = 'workspace-tab-divider';
+    tabsEl.appendChild(divider);
+
+    getPresets().forEach((preset) => {
+        const summary = getPresetSummary(preset);
+        const tab = document.createElement('button');
+        tab.className = 'workspace-tab' + (String(preset.id) === String(activeId) ? ' active' : '');
+        tab.innerHTML = `
+            <span class="workspace-tab-name">📁 ${preset.name}</span>
+            <span class="workspace-tab-meta">${summary.isEmpty ? 'Empty' : `${preset.rowCount}R · ${preset.streamCount}S`}</span>
+        `;
+        tab.title = summary.isEmpty
+            ? `${preset.name} — empty`
+            : `${summary.rowsLabel} · ${summary.streamsLabel} · ${summary.savedLabel}`;
+        tab.onclick = () => _handleWorkspaceSwitch(preset.id, tabsEl);
+        tabsEl.appendChild(tab);
+    });
+}
+
+function _handleWorkspaceSwitch(workspaceId, tabsEl) {
+    if (String(workspaceId) === String(getActiveWorkspaceId())) return; // already active
+    switchWorkspace(workspaceId);
+    renderInputRows();
+    _renderWorkspaceTabs(tabsEl);
 }
 
 // ── Setup screen helpers ──────────────────────────────────────────────────────
