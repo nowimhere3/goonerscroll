@@ -72,6 +72,43 @@
         
         /* Panel Accents */
         .grid-panel { border-top: 3px solid #0095f6; }
+
+        /* Workspace Tabs */
+        .workspace-panel { border-top: 3px solid #9d6dff; }
+        .workspace-tabs {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+        }
+        .workspace-tab {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-bottom: 3px solid transparent;
+            border-radius: 10px 10px 4px 4px;
+            color: #999;
+            padding: 10px 16px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 2px;
+            font-family: inherit;
+            transition: background 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.15s, color 0.15s;
+        }
+        .workspace-tab:hover { background: #222; color: #ccc; transform: translateY(-1px); }
+        .workspace-tab.active {
+            background: #241a38;
+            border-color: #9d6dff;
+            border-bottom-color: #9d6dff;
+            color: #fff;
+            box-shadow: 0 0 14px rgba(157, 109, 255, 0.5);
+        }
+        .workspace-tab-name { font-size: 13px; font-weight: bold; }
+        .workspace-tab-meta { font-size: 10px; color: #888; }
+        .workspace-tab.active .workspace-tab-meta { color: #c9b3ff; }
+        .workspace-tab-divider { width: 1px; height: 24px; background: #333; margin: 0 6px; }
         .ingest-panel { border-top: 3px solid #ff9800; }
         .git-panel { border-top: 3px solid #f1502f; }
 
@@ -914,6 +951,14 @@
 
 <div id="setup-screen">
     
+    <div class="config-card workspace-panel">
+        <h2>Workspace</h2>
+        <p class="subtitle">Switch between your Live Builder and saved Presets — like browser tabs. Whichever one is active auto-saves as you edit.</p>
+        <div class="workspace-tabs" id="workspace-tabs">
+            <!-- populated by app.js's _renderWorkspaceTabs() -->
+        </div>
+    </div>
+
     <div class="config-card grid-panel">
         <h2>Stream Loop Launchpad</h2>
         <p class="subtitle">Configure grid targets manually or shuffle from active directory folders.</p>
@@ -935,7 +980,7 @@
 
         <div class="actions-bar">
             <button class="btn btn-add" id="add-field-btn">+ Add Stream Row</button>
-            <button class="btn btn-remove" id="clear-cache-btn">Reset Grid</button>
+            <button class="btn btn-remove" id="clear-cache-btn">Reset / Clear</button>
         </div>
 
         <div class="toggle-container">
