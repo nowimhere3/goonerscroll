@@ -161,6 +161,9 @@
         .btn-add:hover { background: #2a2a2a; }
         .btn-remove { background: #331417; color: #ed4956; border: 1px solid #4a1a1e; }
         .btn-remove:hover { background: #441a1f; }
+        .btn-undo { background: #2a2210; color: #d4a94a; border: 1px solid #6a4a1a; }
+        .btn-undo:hover:not(:disabled) { background: #3a2e14; }
+        .btn-undo:disabled { opacity: 0.35; cursor: not-allowed; }
         .btn-launch { background: #0095f6; color: #fff; width: 100%; margin-top: 15px; font-size: 16px; padding: 14px; display: block; text-align: center; text-decoration: none; box-sizing: border-box; }
         .btn-launch:hover { background: #189ffa; }
 
@@ -172,7 +175,8 @@
         .btn-solo   { background: #7c3aed; }
         .btn-solo:hover   { background: #8f5cf5; }
 
-        .actions-bar { display: flex; justify-content: space-between; margin-top: 15px; }
+        .actions-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 15px; }
+        .actions-bar .btn { flex: 1; }
 
         .toggle-container { display: flex; align-items: center; justify-content: space-between; background: #222; border: 1px solid #333; border-radius: 12px; padding: 14px 20px; margin-top: 20px; }
         .toggle-label { font-size: 14px; font-weight: bold; color: #ddd; }
@@ -980,6 +984,7 @@
 
         <div class="actions-bar">
             <button class="btn btn-add" id="add-field-btn">+ Add Stream Row</button>
+            <button class="btn btn-undo" id="btn-undo" disabled title="Undo the last change to this workspace">↩ Undo</button>
             <button class="btn btn-remove" id="clear-cache-btn">Reset / Clear</button>
         </div>
 
