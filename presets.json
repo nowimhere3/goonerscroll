@@ -27,13 +27,17 @@
   {
     "id": 2,
     "name": "Preset 2",
-    "urls": [],
+    "urls": [
+      "",
+      "",
+      ""
+    ],
     "folderMap": {},
     "lockState": {},
-    "rowCount": 0,
+    "rowCount": 3,
     "streamCount": 0,
     "isEmpty": true,
-    "savedAt": null
+    "savedAt": "2026-07-21T13:00:51.291Z"
   },
   {
     "id": 3,
