@@ -23,6 +23,7 @@
  */
 
 import { Store } from './storage.js';
+import { notifyWorkspaceEdited } from './workspace.js';
 import {
     getTargetUrls, setTargetUrls,
     getUrlFolderMap, setUrlFolderMap,
@@ -57,11 +58,19 @@ export function saveInputsToState() {
     const urls    = [];
     inputs.forEach(input => urls.push(input.value.trim()));
 
+    const folderMap = getUrlFolderMap();
+    const lockState = getRowLockState();
+
     setTargetUrls(urls);
     Store.set('matrixUrls', urls);
     Store.set('portraitMode', _portraitToggle?.checked ?? false);
-    Store.set('lockState', getRowLockState());
-    Store.set('folderMap', getUrlFolderMap());
+    Store.set('lockState', lockState);
+    Store.set('folderMap', folderMap);
+
+    // Local save is already done above (that's what makes this behave
+    // "exactly like today" for Live Builder). This only decides whether the
+    // edit should ALSO be mirrored into a preset + GitHub, debounced.
+    notifyWorkspaceEdited(urls, folderMap, lockState);
 }
 
 // ── Drag-drop helpers ─────────────────────────────────────────────────────────
@@ -404,9 +413,11 @@ export function initGrid({ containerEl, dirDropdown, portraitToggle, launchCallb
     // Reset grid
     document.getElementById('clear-cache-btn')?.addEventListener('click', () => {
         if (!confirm('Clear matrix definitions?')) return;
-        Store.remove('matrixUrls');
         setTargetUrls(['', '', '']);
+        setUrlFolderMap({});
+        setRowLockState({});
         renderInputRows();
+        saveInputsToState();
     });
 
     // Curated mode toggle
