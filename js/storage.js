@@ -77,6 +77,9 @@ export const KEYS = Object.freeze({
     quickActionSlots:        'hotswap_quick_action_slots',
     ghostOpacity:            'hotswap_ghost_opacity',
     ghostTargets:            'hotswap_ghost_targets',
+
+    // Workspace Tabs
+    activeWorkspaceId:       'workspace_active_id',
 });
 
 // ── Defaults ────────────────────────────────────────────────────────────────
@@ -111,6 +114,7 @@ const DEFAULTS = {
     [KEYS.quickActionSlots]: [],
     [KEYS.ghostOpacity]: 12,
     [KEYS.ghostTargets]: { trigger: false, master: false, stream: false, solo: false },
+    [KEYS.activeWorkspaceId]: 'live',
 };
 
 // ── Type map ─────────────────────────────────────────────────────────────────
@@ -137,6 +141,7 @@ const TYPES = {
     [KEYS.quickActionSlots]:        'json',
     [KEYS.ghostOpacity]:            'number',
     [KEYS.ghostTargets]:            'json',
+    [KEYS.activeWorkspaceId]:       'string',
 };
 
 // ── In-memory cache ──────────────────────────────────────────────────────────
