@@ -38,6 +38,81 @@ import { getPresetById, saveWorkspaceToPreset } from './presets.js';
 const GITHUB_SYNC_DEBOUNCE_MS = 1500;
 let _debounceTimer = null;
 
+// ── Undo ─────────────────────────────────────────────────────────────────────
+// Snapshot-based (a full workspace state per undo point, not a list of
+// inverse operations) — deliberately simple, and the shape this stores is
+// exactly what a future History/Versioning/Session-Restore feature would
+// also want to read, so extending this later doesn't require redesigning it.
+const MAX_UNDO_STACK = 50;
+let _undoStack = [];
+
+function _cloneWorkspaceSnapshot(urls, folderMap, lockState) {
+    return {
+        workspaceId: getActiveWorkspaceId(),
+        urls: [...(urls || [])],
+        folderMap: { ...(folderMap || {}) },
+        lockState: { ...(lockState || {}) },
+    };
+}
+
+/**
+ * Capture the CURRENT (pre-mutation) workspace state as an undo point. Call
+ * this BEFORE writing new state — every action that changes the workspace
+ * (URL edits, Add/Remove Row, Reset/Clear, Shuffle, Shuffle All, drag
+ * reorder, lock changes, folder assignment, etc.) already funnels through
+ * grid.js's one _persistAndNotify() helper, which is the only place this
+ * needs to be called from — so "what's undoable" never needs a second list
+ * to maintain here.
+ */
+export function pushUndoSnapshot() {
+    _undoStack.push(_cloneWorkspaceSnapshot(
+        Store.get('matrixUrls'),
+        Store.get('folderMap'),
+        Store.get('lockState'),
+    ));
+    if (_undoStack.length > MAX_UNDO_STACK) _undoStack.shift();
+}
+
+export function canUndo() {
+    return _undoStack.some((s) => s.workspaceId === getActiveWorkspaceId());
+}
+
+/**
+ * Restore the most recent snapshot for the CURRENTLY active workspace.
+ * Returns the restored {urls, folderMap, lockState}, or null if there was
+ * nothing to undo. The restored state is itself treated as a normal edit
+ * (persisted locally + routed through the same debounced GitHub sync) so an
+ * undo is never silently lost on the next page load.
+ */
+export function undo() {
+    // Defensive: switchWorkspace() already clears the stack, so in practice
+    // every entry belongs to the active workspace — but never apply a
+    // snapshot from a different workspace if this is ever called out of order.
+    while (_undoStack.length && _undoStack[_undoStack.length - 1].workspaceId !== getActiveWorkspaceId()) {
+        _undoStack.pop();
+    }
+    if (!_undoStack.length) return null;
+
+    const snapshot = _undoStack.pop();
+    Store.set('matrixUrls', snapshot.urls);
+    Store.set('folderMap', snapshot.folderMap);
+    Store.set('lockState', snapshot.lockState);
+    setTargetUrls(snapshot.urls);
+    setUrlFolderMap(snapshot.folderMap);
+    setRowLockState(snapshot.lockState);
+
+    notifyWorkspaceEdited(snapshot.urls, snapshot.folderMap, snapshot.lockState);
+
+    return { urls: snapshot.urls, folderMap: snapshot.folderMap, lockState: snapshot.lockState };
+}
+
+/** Called on every workspace switch — a snapshot from one workspace doesn't
+ * make sense to apply to a different one, so history is scoped per editing
+ * session on a given tab rather than following you across tabs. */
+export function clearUndoHistory() {
+    _undoStack = [];
+}
+
 /** 'live' or a preset id, as a string (Store persists strings). */
 export function getActiveWorkspaceId() {
     return Store.get('activeWorkspaceId') || 'live';
@@ -68,6 +143,7 @@ export function getActiveWorkspaceType() {
  */
 export function switchWorkspace(workspaceId) {
     const id = String(workspaceId);
+    clearUndoHistory();
     let urls = [];
     let folderMap = {};
     let lockState = {};
