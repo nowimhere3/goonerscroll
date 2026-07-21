@@ -23,7 +23,7 @@
  */
 
 import { Store } from './storage.js';
-import { notifyWorkspaceEdited } from './workspace.js';
+import { notifyWorkspaceEdited, pushUndoSnapshot, undo, canUndo } from './workspace.js';
 import {
     getTargetUrls, setTargetUrls,
     getUrlFolderMap, setUrlFolderMap,
@@ -53,6 +53,26 @@ let _launchCallback = null;  // called with filtered URLs when Launch is clicked
  * exist on index.html, so every call here was silently wiping the
  * saved credentials back to empty strings.
  */
+/** Single funnel for "persist this grid state locally + notify workspace.js" —
+ * used by saveInputsToState() and by the drag-reorder handler below, so
+ * neither one can silently bypass workspace-aware sync (drag-reorder used to,
+ * before this refactor). */
+function _persistAndNotify(urls, folderMap, lockState) {
+    pushUndoSnapshot(); // capture state as it was BEFORE this change
+    Store.set('matrixUrls', urls);
+    Store.set('folderMap', folderMap);
+    Store.set('lockState', lockState);
+    notifyWorkspaceEdited(urls, folderMap, lockState);
+    _updateUndoButtonState();
+}
+
+/** Keep the Undo button's enabled/disabled state in sync with whether
+ * there's actually anything to undo for the CURRENTLY active workspace. */
+function _updateUndoButtonState() {
+    const btn = document.getElementById('btn-undo');
+    if (btn) btn.disabled = !canUndo();
+}
+
 export function saveInputsToState() {
     const inputs  = document.querySelectorAll('.url-grid-field');
     const urls    = [];
@@ -62,15 +82,8 @@ export function saveInputsToState() {
     const lockState = getRowLockState();
 
     setTargetUrls(urls);
-    Store.set('matrixUrls', urls);
     Store.set('portraitMode', _portraitToggle?.checked ?? false);
-    Store.set('lockState', lockState);
-    Store.set('folderMap', folderMap);
-
-    // Local save is already done above (that's what makes this behave
-    // "exactly like today" for Live Builder). This only decides whether the
-    // edit should ALSO be mirrored into a preset + GitHub, debounced.
-    notifyWorkspaceEdited(urls, folderMap, lockState);
+    _persistAndNotify(urls, folderMap, lockState);
 }
 
 // ── Drag-drop helpers ─────────────────────────────────────────────────────────
@@ -257,7 +270,10 @@ export function renderInputRows() {
                 delete fmap[idx];
                 delete lmap[idx];
                 setTargetUrls(urls);
+                setUrlFolderMap(fmap);
+                setRowLockState(lmap);
                 renderInputRows();
+                saveInputsToState(); // persist the removal itself
             };
 
             const preview = document.createElement('div');
@@ -329,6 +345,7 @@ export function renderInputRows() {
                 setTargetUrls(urls);
                 setRowLockState(lmap);
                 renderInputRows();
+                saveInputsToState(); // persist the removal itself
             };
 
             row.appendChild(handle);
@@ -339,6 +356,8 @@ export function renderInputRows() {
             _containerEl.appendChild(row);
         }
     });
+
+    _updateUndoButtonState();
 }
 
 // ── Shuffle helpers ───────────────────────────────────────────────────────────
@@ -401,13 +420,22 @@ export function initGrid({ containerEl, dirDropdown, portraitToggle, launchCallb
     _portraitToggle = portraitToggle;
     _launchCallback = launchCallback;
 
+    // Undo
+    document.getElementById('btn-undo')?.addEventListener('click', () => {
+        const restored = undo();
+        if (!restored) return;
+        renderInputRows();
+    });
+    _updateUndoButtonState();
+
     // Add slot
     document.getElementById('add-field-btn')?.addEventListener('click', () => {
-        saveInputsToState();
+        saveInputsToState(); // commit anything already typed, and mark this as the undo point to return to
         const urls = getTargetUrls();
         urls.push('');
         setTargetUrls(urls);
         renderInputRows();
+        saveInputsToState(); // persist the row that was just added
     });
 
     // Reset grid
