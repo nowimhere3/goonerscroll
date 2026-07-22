@@ -103,11 +103,27 @@
   {
     "id": 5,
     "name": "Preset 5",
-    "urls": [
-      "https://chaturbate.com/followed-cams/",
-      "https://chaturbate.com/followed-cams/",
-      "https://chaturbate.com/followed-cams/",
-      "https://chaturbate.com/followed-cams/"
+    "panels": [
+      {
+        "type": "url",
+        "source": "https://chaturbate.com/followed-cams/",
+        "options": {}
+      },
+      {
+        "type": "url",
+        "source": "https://chaturbate.com/followed-cams/",
+        "options": {}
+      },
+      {
+        "type": "url",
+        "source": "https://chaturbate.com/followed-cams/",
+        "options": {}
+      },
+      {
+        "type": "url",
+        "source": "https://chaturbate.com/followed-cams/",
+        "options": {}
+      }
     ],
     "folderMap": {
       "0": "ChaterBate_FOLLOWED_1",
@@ -124,6 +140,6 @@
     "rowCount": 4,
     "streamCount": 4,
     "isEmpty": false,
-    "savedAt": "2026-07-22T03:14:58.737Z"
+    "savedAt": "2026-07-22T16:52:05.541Z"
   }
 ]
