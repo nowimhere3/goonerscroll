@@ -115,10 +115,15 @@
       "2": "ChaterBate_FOLLOWED_1",
       "3": "ChaterBate_FOLLOWED_1"
     },
-    "lockState": {},
+    "lockState": {
+      "0": 2,
+      "1": 2,
+      "2": 2,
+      "3": 2
+    },
     "rowCount": 4,
     "streamCount": 4,
     "isEmpty": false,
-    "savedAt": "2026-07-22T03:12:20.446Z"
+    "savedAt": "2026-07-22T03:12:30.060Z"
   }
 ]
