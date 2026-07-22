@@ -5,7 +5,7 @@
     "panels": [
       {
         "type": "url",
-        "source": "index.html",
+        "source": "http://10.0.0.211:8096/web/#/home",
         "options": {}
       },
       {
@@ -60,7 +60,7 @@
     "rowCount": 7,
     "streamCount": 7,
     "isEmpty": false,
-    "savedAt": "2026-07-22T16:58:37.498Z"
+    "savedAt": "2026-07-22T17:04:46.412Z"
   },
   {
     "id": 2,
