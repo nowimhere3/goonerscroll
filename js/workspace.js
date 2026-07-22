@@ -33,7 +33,8 @@
 
 import { Store } from './storage.js';
 import { setTargetUrls, setUrlFolderMap, setRowLockState } from './state.js';
-import { getPresetById, saveWorkspaceToPreset } from './presets.js';
+import { getPresetById, getPresetPanels, saveWorkspaceToPreset } from './presets.js';
+import { normalizePanelsArray, getUrlPanelSource } from './panels.js';
 
 const GITHUB_SYNC_DEBOUNCE_MS = 1500;
 let _debounceTimer = null;
@@ -156,7 +157,11 @@ export function switchWorkspace(workspaceId) {
         lockState = Store.get('lockState')  || {};
     } else {
         const preset = getPresetById(Number(id));
-        urls      = preset?.urls      || [];
+        // getPresetPanels() transparently upconverts any preset saved before
+        // Phase 4A (which has `urls: string[]` instead of `panels: Panel[]`) —
+        // this is the only place that should ever read a preset's content.
+        const panels = getPresetPanels(preset);
+        urls      = panels.map(getUrlPanelSource);
         folderMap = preset?.folderMap || {};
         lockState = preset?.lockState || {};
 
@@ -174,6 +179,12 @@ export function switchWorkspace(workspaceId) {
     setRowLockState(lockState);
     Store.set('activeWorkspaceId', id);
 
+    // NOTE (Phase 4A→4B/4C): this bridges a preset's panels down to plain
+    // URL strings for the shared Store surface, since grid.js/Store still
+    // only deal in strings today. That's fine while nothing produces
+    // workspace-type panels yet — but once Layer 2 workspace references
+    // exist (Phase 4C), a workspace-type panel would silently become an
+    // empty slot here. This is the spot that'll need revisiting then.
     return { urls, folderMap, lockState };
 }
 
@@ -187,9 +198,10 @@ export function notifyWorkspaceEdited(urls, folderMap, lockState) {
     if (isLiveBuilder()) return; // nothing further to do — already fully saved locally
 
     const presetId = getActivePresetId();
+    const panels = normalizePanelsArray(urls); // presets.js's schema is panel-based from Phase 4A on
     if (_debounceTimer) clearTimeout(_debounceTimer);
     _debounceTimer = setTimeout(() => {
         _debounceTimer = null;
-        saveWorkspaceToPreset(presetId, { urls, folderMap, lockState });
+        saveWorkspaceToPreset(presetId, { panels, folderMap, lockState });
     }, GITHUB_SYNC_DEBOUNCE_MS);
 }
