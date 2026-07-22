@@ -17,7 +17,7 @@
  *
  * What lives here:
  *   - Scroll engine vars   (isScrolling, scrollSpeed, animationFrameId, accurateYPosition)
- *   - Grid/slot vars       (targetUrls, urlFolderMap, rowLockState, isCuratedMode, activeDragIdx)
+ *   - Grid/slot vars       (panels, urlFolderMap, rowLockState, isCuratedMode, activeDragIdx)
  *   - Database vars        (databaseStructure, databaseSha)
  *   - Bookmark modal vars  (bookmarkTargetUrl, bookmarkStarBtn)
  *
@@ -29,6 +29,7 @@
  */
 
 import { Store } from './storage.js';
+import { normalizePanelsArray, normalizePanel, createUrlPanel, getUrlPanelSource } from './panels.js';
 
 // ── Internal state object ────────────────────────────────────────────────────
 const _state = {
@@ -39,8 +40,15 @@ const _state = {
     scrollSpeed:      Store.get('scrollSpeed'),   // loaded from storage at boot
     accurateYPosition: 0,
 
-    // ── Grid / URL slots ───────────────────────────────────────────────────
-    targetUrls:    [],        // ordered array of URLs currently in the grid
+    // ── Grid / Panel slots ─────────────────────────────────────────────────
+    // Phase 4A: internally, a slot is always a Panel object (see panels.js),
+    // not a plain URL string — that's the actual domain model going forward.
+    // getTargetUrls()/setTargetUrls() below remain as a string-based
+    // compatibility view so existing grid.js/launch.js/triple-mode.js code
+    // needs zero changes; getPanels()/setPanels() are the panel-aware API
+    // that future work (Layer 2 workspace references, Collections, etc.)
+    // should use directly instead.
+    panels:        [],        // ordered array of Panel objects currently in the grid
     urlFolderMap:  {},        // { slotIndex: folderName } — which folder each slot came from
     rowLockState:  {},        // { slotIndex: 0|1|2 } — 0=unlocked, 1=URL lock, 2=folder lock
     isCuratedMode: false,     // when true, each slot shows a folder picker dropdown
@@ -139,7 +147,7 @@ const _initialValues = {
     isScrolling:       false,
     scrollSpeed:       1.00,
     accurateYPosition: 0,
-    targetUrls:        [],
+    panels:            [],
     urlFolderMap:      {},
     rowLockState:      {},
     isCuratedMode:     false,
@@ -174,8 +182,27 @@ export const getAccurateYPosition = () => _state.accurateYPosition;
 export const setAccurateYPosition = (v) => { _state.accurateYPosition = v; };
 
 // Grid
-export const getTargetUrls    = () => _state.targetUrls;
-export const setTargetUrls    = (v) => { _state.targetUrls = v; };
+// Grid — panel-aware API (the real domain model; use this in new code)
+export const getPanels = () => _state.panels;
+export const setPanels = (v) => { _state.panels = normalizePanelsArray(v); };
+
+// Grid — legacy string-array compatibility view over the same panels array.
+// Existing grid.js/launch.js/triple-mode.js code keeps calling these exactly
+// as before; underneath, the source of truth is always _state.panels.
+// NOTE: setTargetUrls always writes url-type panels — it's the right choice
+// for code that only ever deals in URL strings (which is everything today),
+// but it will overwrite whatever was at that index, including a
+// workspace-type panel, if called on a slot that holds one. Once workspace
+// panels actually exist (Phase 4C), call setPanels()/setPanel() directly to
+// preserve a non-url panel instead of going through this string-only view.
+export const getTargetUrls = () => _state.panels.map(getUrlPanelSource);
+export const setTargetUrls = (v) => { _state.panels = (Array.isArray(v) ? v : []).map(createUrlPanel); };
+
+/** Read/write a single slot by index without disturbing the others —
+ * panel-aware, so this is safe to use even once workspace-type panels exist. */
+export const getPanel = (i) => _state.panels[i] ?? null;
+export const setPanel = (i, panel) => { _state.panels[i] = normalizePanel(panel); };
+
 export const getUrlFolderMap  = () => _state.urlFolderMap;
 export const setUrlFolderMap  = (v) => { _state.urlFolderMap = v; };
 export const getRowLockState  = () => _state.rowLockState;
