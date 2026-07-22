@@ -104,16 +104,18 @@
     "id": 5,
     "name": "Preset 5",
     "urls": [
-      "",
+      "https://chaturbate.com/followed-cams/",
       "",
       "",
       ""
     ],
-    "folderMap": {},
+    "folderMap": {
+      "0": "ChaterBate_FOLLOWED_1"
+    },
     "lockState": {},
     "rowCount": 4,
-    "streamCount": 0,
-    "isEmpty": true,
-    "savedAt": "2026-07-22T03:12:00.824Z"
+    "streamCount": 1,
+    "isEmpty": false,
+    "savedAt": "2026-07-22T03:12:04.758Z"
   }
 ]
