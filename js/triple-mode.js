@@ -11,6 +11,10 @@ import { initBlacklist } from './blacklist.js';
 import { fetchDatabaseSilently, pushDatabaseToRemote } from './sync.js';
 import { populateBookmarkFolderSelect } from './folders.js';
 import { buildStreamPanel } from './launch.js';
+import {
+    initGridSession, updateGridSession, setGridSessionSilently, getSessionUrls,
+    canUndoGridSession, undoGridSession,
+} from './grid-session.js';
 
 const SLOT_IDS = ['screen-1-slot', 'screen-2-slot', 'screen-3-slot', 'screen-4-slot'];
 const LAYOUT_IDS = ['top2', 'bottom2', '3col', 'lefttall', 'righttall', 'vsplit', 'hsplit', '4grid'];
@@ -101,7 +105,7 @@ function _inferFolderForUrl(db, url) {
 }
 
 function _buildTripleSet(db, preferredFolder = '') {
-    const stored = Store.get('matrixUrls');
+    const stored = getSessionUrls();
     const urls = Array.isArray(stored) ? stored.slice(0, SLOT_IDS.length) : [];
     const map = {};
 
@@ -405,8 +409,24 @@ function _applyLayout(layoutName, tripleLayoutEl, layoutBtns) {
     Store.set('tripleLayout', safeName);
 }
 
-function _renderPanels(urls, map, ctx) {
-    Store.set('matrixUrls', urls);
+function _renderPanels(urls, map, ctx, { skipUndoSnapshot = false } = {}) {
+    // Phase 4B: this used to call Store.set('matrixUrls', urls) here, which
+    // silently overwrote whatever workspace was active on index.html on
+    // every single render (initial load, every Shuffle, every folder
+    // reassignment) — that's the bug this phase fixes. Now this only ever
+    // touches the isolated in-memory working copy; nothing here can leak
+    // back into a saved preset or Live Builder unless the user explicitly
+    // uses 💾 Save Session As... later.
+    //
+    // skipUndoSnapshot=true is only for the very first (boot) render, where
+    // initGridSession() has already set the session's starting data — there
+    // being nothing meaningful to undo back to yet, this just re-syncs
+    // state.js's compatibility view without pushing a spurious undo point.
+    if (skipUndoSnapshot) {
+        setGridSessionSilently(urls, map);
+    } else {
+        updateGridSession(urls, map);
+    }
     setTargetUrls(urls);
     setUrlFolderMap(map);
 
@@ -484,6 +504,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const folderDropupEl  = document.getElementById('master-folder-dropup');
     const shuffleBtn      = document.getElementById('btn-master-shuffle');
     const shuffleAllBtn   = document.getElementById('btn-master-shuffle-all');
+    const undoBtn         = document.getElementById('btn-master-undo');
     const tripleLayoutEl  = document.getElementById('triple-layout');
     const layoutBtns = {
         top2:      document.getElementById('btn-layout-top2'),
@@ -552,9 +573,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             : 'Not connected';
     });
 
+    initGridSession(); // Phase 4B: load the working copy from whichever workspace launched this session
+
     const initialDb = getDatabaseStructure();
     const initialSet = _buildTripleSet(initialDb, _activeFolder);
-    _renderPanels(initialSet.urls, initialSet.map, ctx);
+    _renderPanels(initialSet.urls, initialSet.map, ctx, { skipUndoSnapshot: true });
 
     // 🎲 Shuffle — reshuffle every panel independently, each from its OWN
     // currently-assigned folder (same folder it was launched with from index.html)
@@ -572,4 +595,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         const set = _reshuffleRandomFolders(db);
         _renderPanels(set.urls, set.map, ctx);
     };
+
+    // ↩ Undo — steps back through this SESSION's own history only (Shuffle,
+    // Shuffle All, folder reassignment, position swaps). Never touches
+    // index.html's Undo — these are two entirely separate undo stacks.
+    if (undoBtn) {
+        const _updateUndoBtnState = () => { undoBtn.disabled = !canUndoGridSession(); };
+        undoBtn.onclick = () => {
+            const restored = undoGridSession();
+            if (!restored) return;
+            setTargetUrls(restored.urls);
+            setUrlFolderMap(restored.folderMap);
+            _renderPanels(restored.urls, restored.folderMap, ctx, { skipUndoSnapshot: true });
+            _updateUndoBtnState();
+        };
+        _updateUndoBtnState();
+    }
 });
