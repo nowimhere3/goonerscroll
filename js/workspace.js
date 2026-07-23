@@ -35,6 +35,7 @@ import { Store } from './storage.js';
 import { setTargetUrls, setUrlFolderMap, setRowLockState } from './state.js';
 import { getPresetById, getPresetPanels, saveWorkspaceToPreset } from './presets.js';
 import { normalizePanelsArray, getUrlPanelSource } from './panels.js';
+import { createUndoStack } from './undo-stack.js';
 
 const GITHUB_SYNC_DEBOUNCE_MS = 1500;
 let _debounceTimer = null;
@@ -44,8 +45,7 @@ let _debounceTimer = null;
 // inverse operations) — deliberately simple, and the shape this stores is
 // exactly what a future History/Versioning/Session-Restore feature would
 // also want to read, so extending this later doesn't require redesigning it.
-const MAX_UNDO_STACK = 50;
-let _undoStack = [];
+const _undoStack = createUndoStack(50);
 
 function _cloneWorkspaceSnapshot(urls, folderMap, lockState) {
     return {
@@ -71,11 +71,11 @@ export function pushUndoSnapshot() {
         Store.get('folderMap'),
         Store.get('lockState'),
     ));
-    if (_undoStack.length > MAX_UNDO_STACK) _undoStack.shift();
 }
 
 export function canUndo() {
-    return _undoStack.some((s) => s.workspaceId === getActiveWorkspaceId());
+    const top = _undoStack.peek();
+    return !!top && top.workspaceId === getActiveWorkspaceId();
 }
 
 /**
@@ -86,13 +86,10 @@ export function canUndo() {
  * undo is never silently lost on the next page load.
  */
 export function undo() {
-    // Defensive: switchWorkspace() already clears the stack, so in practice
-    // every entry belongs to the active workspace — but never apply a
-    // snapshot from a different workspace if this is ever called out of order.
-    while (_undoStack.length && _undoStack[_undoStack.length - 1].workspaceId !== getActiveWorkspaceId()) {
-        _undoStack.pop();
-    }
-    if (!_undoStack.length) return null;
+    // clearUndoHistory() already runs on every workspace switch, so in
+    // normal operation every entry belongs to the active workspace. This is
+    // just a defensive guard against calling undo() out of order.
+    if (!canUndo()) return null;
 
     const snapshot = _undoStack.pop();
     Store.set('matrixUrls', snapshot.urls);
@@ -111,7 +108,7 @@ export function undo() {
  * make sense to apply to a different one, so history is scoped per editing
  * session on a given tab rather than following you across tabs. */
 export function clearUndoHistory() {
-    _undoStack = [];
+    _undoStack.clear();
 }
 
 /** 'live' or a preset id, as a string (Store persists strings). */
