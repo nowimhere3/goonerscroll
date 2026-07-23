@@ -42,6 +42,20 @@ let _panels = [];
 let _folderMap = {};
 const _undoStack = createUndoStack(50);
 
+const DEBUG = '[Grid session trace]';
+
+function _copyForTrace(value) {
+    // Console output must be a point-in-time snapshot, not a live object
+    // reference that later expands to misleading changed values.
+    return JSON.parse(JSON.stringify(value ?? null));
+}
+
+function _trace(stage, details) {
+    console.groupCollapsed(`${DEBUG} ${stage}`);
+    Object.entries(details).forEach(([key, value]) => console.log(key, _copyForTrace(value)));
+    console.groupEnd();
+}
+
 function _readSourceWorkspaceIdFromUrl() {
     const params = new URLSearchParams(window.location.search);
     return params.get('workspace') || 'live';
@@ -54,6 +68,15 @@ function _readSourceWorkspaceIdFromUrl() {
  */
 export function initGridSession() {
     const workspaceId = _readSourceWorkspaceIdFromUrl();
+    const storedUrls = Store.get('matrixUrls');
+    const storedFolderMap = Store.get('folderMap');
+
+    _trace('boot input', {
+        href: window.location.href,
+        workspaceId,
+        persistedUrls: storedUrls,
+        persistedFolderMap: storedFolderMap,
+    });
 
     if (workspaceId === 'live') {
         _sourceType = 'live';
@@ -62,19 +85,44 @@ export function initGridSession() {
         // whatever's currently in the shared Store surface. We still only
         // ever READ it once here, at boot; nothing in this module writes
         // back to it afterward.
-        _panels = normalizePanelsArray(Store.get('matrixUrls'));
-        _folderMap = { ...(Store.get('folderMap') || {}) };
+        _panels = normalizePanelsArray(storedUrls);
+        _folderMap = { ...(storedFolderMap || {}) };
+        _trace('live source copied', {
+            sourcePanels: storedUrls,
+            sessionPanels: _panels,
+            sourceFolderMap: storedFolderMap,
+            sessionFolderMap: _folderMap,
+            samePanelArrayReference: storedUrls === _panels,
+            sameFolderMapReference: storedFolderMap === _folderMap,
+        });
     } else {
         _sourceType = 'preset';
         _sourceId = Number(workspaceId);
         const preset = getPresetById(_sourceId);
-        _panels = getPresetPanels(preset); // transparently upconverts legacy `urls` data
+        const sourcePanels = getPresetPanels(preset);
+        _panels = sourcePanels; // getPresetPanels normalizes into new Panel objects
         _folderMap = { ...(preset?.folderMap || {}) };
+        _trace('preset source resolved', {
+            requestedWorkspaceId: workspaceId,
+            resolvedPreset: preset,
+            sourcePanels,
+            sessionPanels: _panels,
+            sourceFolderMap: preset?.folderMap || {},
+            sessionFolderMap: _folderMap,
+            sameFolderMapReference: preset?.folderMap === _folderMap,
+        });
     }
 
     _undoStack.clear();
 
-    return { urls: _panels.map(getUrlPanelSource), folderMap: { ..._folderMap } };
+    const result = { urls: _panels.map(getUrlPanelSource), folderMap: { ..._folderMap } };
+    _trace('boot complete', {
+        source: getSourceWorkspaceInfo(),
+        sessionResult: result,
+        sessionPanels: _panels,
+        sessionFolderMap: _folderMap,
+    });
+    return result;
 }
 
 /**
@@ -102,6 +150,13 @@ export function getSessionFolderMap() {
  * writes to Store or presets.json — purely in-memory.
  */
 export function updateGridSession(urls, folderMap) {
+    _trace('session write', {
+        beforeUrls: _panels.map(getUrlPanelSource),
+        beforeFolderMap: _folderMap,
+        nextUrls: urls,
+        nextFolderMap: folderMap,
+        persistence: 'none — Grid session memory only',
+    });
     _undoStack.push({
         panels: _panels.map((p) => ({ ...p })),
         folderMap: { ..._folderMap },
@@ -119,6 +174,11 @@ export function updateGridSession(urls, folderMap) {
  * before the page has even finished its first render.
  */
 export function setGridSessionSilently(urls, folderMap) {
+    _trace('initial render sync', {
+        renderedUrls: urls,
+        renderedFolderMap: folderMap,
+        persistence: 'none — Grid session memory only',
+    });
     _panels = normalizePanelsArray(urls);
     _folderMap = { ...(folderMap || {}) };
 }
