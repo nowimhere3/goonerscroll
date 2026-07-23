@@ -1,3 +1,4 @@
+
 /**
  * app.js — Stream Loop Launchpad
  * Root initializer. Connects all modules and boots the application.
@@ -226,6 +227,15 @@ async function boot() {
             _initLaunchpad();
         };
     }
+
+    // 🧩 Launch Grid — pass along exactly which workspace was active AT CLICK
+    // TIME via a URL param, so index3.html's working copy is tied to the
+    // right source unambiguously (rather than re-reading Store at its own
+    // boot, which could race if e.g. multiple tabs are open).
+    document.getElementById('btn-launch-grid')?.addEventListener('click', () => {
+        const workspaceId = getActiveWorkspaceId();
+        window.location.href = `index3.html?workspace=${encodeURIComponent(workspaceId)}`;
+    });
 
     // ── Initial render ────────────────────────────────────────────────────────
     console.log('[app] boot: checkpoint 8 — settings-btn wired, about to init launchpad');
