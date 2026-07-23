@@ -268,9 +268,15 @@
         }
 
         /*
-         * Living RGB Backlit Keyboard Schema — SPECTACLE MODE (Active Tab Only)
-         * Uses full-spectrum multi-color rotation, convective transitions, 
-         * and rim lighting to emulate high-end RGB mechanical keyboard wave schemas.
+         * Living RGB — SPECTACLE MODE — active workspace only
+         * Selector: .workspace-tab.active (set by app.js _renderWorkspaceTabs)
+         * Approach: pure CSS. Oversized multi-radial plasma + @property-driven
+         *   conic wash for full-hue traversal; layered transform/opacity/filter
+         *   and edge box-shadow for "pressure trying to break out." No SVG —
+         *   pulse/surge reads clearly via filter brightness spikes + rim glow.
+         * Feel: 70% spectacle / 30% elegance — Creativity Unleashed, barely contained.
+         * Readability: heavy dark scrim + stacked text-shadow (saturation is free;
+         *   contrast is enforced by overlay, not by dulling color).
          */
         @property --living-spin {
             syntax: "<angle>";
@@ -293,6 +299,7 @@
                 0 0 72px rgba(236, 72, 153, 0.22),
                 inset 0 0 22px rgba(192, 132, 252, 0.28),
                 inset 0 1px 0 rgba(255, 255, 255, 0.28);
+            /* Scrim-backed readability — do not thin these for spectacle */
             text-shadow:
                 0 0 2px rgba(0, 0, 0, 1),
                 0 1px 2px rgba(0, 0, 0, 0.95),
@@ -310,6 +317,12 @@
             border-color: #fff;
         }
 
+        /*
+         * Plasma core — full spectrum under pressure.
+         * Conic wash traverses the hue circle organically (not linear RGB strip).
+         * Radials collide & surge; purple peaks recur as the loudest note.
+         * ~25%+ faster than prior spectacle pass: 16s orbit / 5.2s surge.
+         */
         .workspace-tab.active::before {
             content: "";
             position: absolute;
@@ -317,6 +330,7 @@
             z-index: 0;
             pointer-events: none;
             background:
+                /* Full-spectrum energy field — organic spin via --living-spin */
                 conic-gradient(
                     from var(--living-spin) at 50% 50%,
                     #7c3aed 0deg,
@@ -332,11 +346,14 @@
                     #8b5cf6 335deg,
                     #7c3aed 360deg
                 ),
+                /* Violet dominant peaks */
                 radial-gradient(ellipse 55% 48% at 42% 48%, rgba(147, 51, 234, 0.95), transparent 64%),
                 radial-gradient(ellipse 42% 40% at 65% 28%, rgba(109, 40, 217, 0.85), transparent 58%),
+                /* Hot surges — amber / crimson / white-adjacent */
                 radial-gradient(ellipse 28% 24% at 78% 55%, rgba(255, 255, 255, 0.55), transparent 50%),
                 radial-gradient(ellipse 32% 28% at 88% 40%, rgba(251, 191, 36, 0.85), transparent 52%),
                 radial-gradient(ellipse 26% 22% at 12% 42%, rgba(239, 68, 68, 0.75), transparent 48%),
+                /* Cyan / emerald / magenta collisions */
                 radial-gradient(ellipse 38% 34% at 20% 75%, rgba(6, 182, 212, 0.8), transparent 56%),
                 radial-gradient(ellipse 34% 30% at 75% 78%, rgba(16, 185, 129, 0.75), transparent 54%),
                 radial-gradient(ellipse 30% 28% at 50% 15%, rgba(236, 72, 153, 0.8), transparent 52%);
@@ -349,6 +366,11 @@
                 living-surge 5.2s ease-in-out infinite;
         }
 
+        /*
+         * Heavy readability scrim (does the contrast work) + pressure wash.
+         * Dark enough that the brightest plasma frame still clears WCAG AA
+         * against #fff label text.
+         */
         .workspace-tab.active::after {
             content: "";
             position: absolute;
@@ -425,6 +447,7 @@
             }
         }
 
+        /* Strain against the glass — irregular pulse, not a soft sine */
         @keyframes living-pressure {
             0%, 100% {
                 box-shadow:
@@ -468,6 +491,7 @@
             }
         }
 
+        /* Uneven hue traversal — full circle without a flat rainbow strip feel */
         @keyframes living-spin {
             0%   { --living-spin: 0deg; }
             18%  { --living-spin: 95deg; }
@@ -477,6 +501,7 @@
             100% { --living-spin: 360deg; }
         }
 
+        /* Forceful collision paths — light slammed toward the edges */
         @keyframes living-orbit {
             0%   { transform: translate3d(-14%, -12%, 0) rotate(0deg) scale(1.05); }
             15%  { transform: translate3d(16%, -14%, 0) rotate(18deg) scale(1.22); }
@@ -487,6 +512,7 @@
             100% { transform: translate3d(-14%, -12%, 0) rotate(0deg) scale(1.05); }
         }
 
+        /* White-hot / amber / crimson intensifications — pulse, don't glide */
         @keyframes living-surge {
             0%, 100% {
                 opacity: 0.92;
@@ -2070,7 +2096,7 @@
         <div class="app-mark" aria-hidden="true">G</div>
         <div class="app-brand-text">
             <div class="app-brand-name">GoonerScroll</div>
-            <div class="app-brand-tag">Multi-Stream Loop Launchpad - Creativity Unleashed[cite: 1]</div>
+            <div class="app-brand-tag">Multi-Stream Loop Launchpad</div>
         </div>
     </header>
 
