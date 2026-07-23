@@ -1,12 +1,9 @@
-
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Multi-Stream Loop Launchpad (Cloud Sync)</title>
-    <!-- Favicon: place favicon files in the same folder as this HTML file -->
-    <!-- The data URI below acts as a fallback so something always shows in the tab -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%233b82f6'/><text y='72' x='50' text-anchor='middle' font-size='60' font-weight='bold' fill='%23fff'>G</text></svg>">
     <link rel="icon" type="image/png" href="./favicon-96x96.png" sizes="96x96" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
@@ -17,27 +14,18 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script>
-        // Detect if this page is running nested inside another Launchpad
-        // iframe (e.g. via 🚀), and how many levels deep. Same-origin, so
-        // walking window.parent is safe. Runs synchronously before <style>
-        // so classes are set before first paint.
         (function () {
             var depth = 0;
             var win = window;
             while (win !== win.top) { depth += 1; win = win.parent; }
             if (depth >= 1) document.documentElement.classList.add('is-nested');
             if (depth === 1) document.documentElement.classList.add('layer-2');
-
-            // Ghost Mode — reads raw localStorage directly (the Store module
-            // isn't loaded yet at this point). Sets --ghost-opacity plus one
-            // class per target so each surface can opt in independently.
             try {
                 var opacityRaw = localStorage.getItem('hotswap_ghost_opacity');
                 var opacityPct = opacityRaw !== null ? parseFloat(opacityRaw) : 12;
                 if (isNaN(opacityPct)) opacityPct = 12;
                 opacityPct = Math.max(0, Math.min(100, opacityPct));
                 document.documentElement.style.setProperty('--ghost-opacity', opacityPct / 100);
-
                 var targetsRaw = localStorage.getItem('hotswap_ghost_targets');
                 var targets = targetsRaw ? JSON.parse(targetsRaw) : {};
                 if (targets.trigger) document.documentElement.classList.add('ghost-trigger');
@@ -111,7 +99,6 @@
             color: #fff;
         }
 
-        /* ── Setup shell ──────────────────────────────────────────────────── */
         #setup-screen {
             display: flex;
             flex-direction: column;
@@ -119,52 +106,6 @@
             min-height: 100vh;
             padding: 48px 24px 80px;
             gap: 16px;
-        }
-
-        .app-brand {
-            width: 100%;
-            max-width: 680px;
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            margin-bottom: 8px;
-            padding: 0 4px;
-        }
-
-        .app-mark {
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
-            background: linear-gradient(145deg, #3b82f6 0%, #2563eb 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 16px;
-            color: #fff;
-            letter-spacing: -0.02em;
-            box-shadow: 0 0 0 1px rgba(255,255,255,0.1), 0 8px 20px rgba(37, 99, 235, 0.25);
-            flex-shrink: 0;
-        }
-
-        .app-brand-text {
-            display: flex;
-            flex-direction: column;
-            gap: 1px;
-            min-width: 0;
-        }
-
-        .app-brand-name {
-            font-size: 15px;
-            font-weight: 650;
-            letter-spacing: -0.02em;
-            color: var(--text);
-        }
-
-        .app-brand-tag {
-            font-size: 12px;
-            color: var(--text-muted);
-            letter-spacing: 0.01em;
         }
 
         .config-card {
@@ -201,7 +142,6 @@
             max-width: 52ch;
         }
 
-        /* Panel accents — restrained left edge */
         .grid-panel { box-shadow: inset 3px 0 0 0 var(--accent); }
         .workspace-panel { box-shadow: inset 3px 0 0 0 var(--violet); }
         .ingest-panel { box-shadow: inset 3px 0 0 0 var(--warning); }
@@ -267,16 +207,6 @@
             border-color: var(--border-strong);
         }
 
-        /*
-         * Living Heart — signature active-workspace treatment
-         * Selector: .workspace-tab.active (app.js _renderWorkspaceTabs)
-         * Alias:    .tab--live-gradient (reusable; same visuals)
-         * Approach: pure CSS — @property brightness/hue + layered liquid-light
-         *   radials. No SVG/Canvas. Border acts as containment field.
-         * Emotion: Creativity Unleashed — contained, disciplined, alive.
-         *          Not “cool RGB”; the living heart of the workspace.
-         * Tunables: --heart-* below.
-         */
         @property --heart-hue {
             syntax: "<angle>";
             inherits: false;
@@ -324,7 +254,6 @@
                 heart-containment var(--heart-breathe-duration) ease-in-out 0.75s infinite;
         }
 
-        /* Inactive tabs stay calm — only active hover disturbs the plasma */
         .workspace-tab.active:hover,
         .tab--live-gradient:hover {
             background: transparent;
@@ -349,11 +278,6 @@
                 contrast(calc(var(--heart-density) * 1.04));
         }
 
-        /*
-         * Liquid light beneath glass — full spectrum available; violet peaks
-         * recur as brand identity without locking the palette. Soft volumes
-         * compress/expand (density) while hue drifts organically.
-         */
         .workspace-tab.active::before,
         .tab--live-gradient::before {
             content: "";
@@ -387,7 +311,6 @@
                     hsl(calc(var(--heart-hue) + 280deg) 65% 62% / 0.5),
                     transparent 52%
                 ),
-                /* Occasional hotter filaments — amber / magenta / cyan / white */
                 radial-gradient(
                     ellipse 18% 16% at 88% 48%,
                     hsl(38 85% 58% / 0.45),
@@ -419,7 +342,6 @@
                 heart-flow var(--heart-flow-duration) ease-in-out infinite;
         }
 
-        /* Containment scrim — AA at surge peaks; energy stays behind the text */
         .workspace-tab.active::after,
         .tab--live-gradient::after {
             content: "";
@@ -467,7 +389,6 @@
             color: rgba(255, 255, 255, 0.9);
         }
 
-        /* Awaken — soft bloom into ambient life */
         @keyframes heart-wake {
             0% {
                 filter: brightness(0.9);
@@ -488,7 +409,6 @@
             }
         }
 
-        /* Magnetic rim — the border holding energy in */
         @keyframes heart-containment {
             0%, 100% {
                 border-color: rgba(167, 139, 250, 0.4);
@@ -519,10 +439,6 @@
             }
         }
 
-        /*
-         * Organic spectrum access — violet as recurring peak, not a ceiling.
-         * Uneven timing so motion never reads as a flat rainbow strip.
-         */
         @keyframes heart-hue {
             0%   { --heart-hue: 265deg; }
             12%  { --heart-hue: 220deg; }
@@ -536,10 +452,6 @@
             100% { --heart-hue: 625deg; }
         }
 
-        /*
-         * Heartbeat brightness + density (compress → surge → release).
-         * Eye tracks brightness more than hue — intentional.
-         */
         @keyframes heart-breathe {
             0%   { --heart-bright: 0.95; --heart-density: 1; }
             10%  { --heart-bright: 0.98; --heart-density: 1.02; }
@@ -553,7 +465,6 @@
             100% { --heart-bright: 0.95; --heart-density: 1; }
         }
 
-        /* Liquid flow — expand / contract / reorganize (never L→R slide) */
         @keyframes heart-flow {
             0%   { transform: translate3d(-5%, -4%, 0) rotate(0deg) scale(1); }
             18%  { transform: translate3d(6%, -6%, 0) rotate(5deg) scale(1.07); }
@@ -568,7 +479,6 @@
             100% { transform: translate3d(-2%, -2%, 0) scale(1.04); }
         }
 
-        /* Scrim thickens slightly at surge so AA holds at peak brightness */
         @keyframes heart-scrim {
             0%, 100% { opacity: 0.92; }
             44%      { opacity: 0.9; }
@@ -634,6 +544,47 @@
             height: 28px;
             background: var(--border-strong);
             margin: 0 4px;
+        }
+
+        /* ── Living Border for config cards ──────────────────────────────── */
+        .living-border {
+            position: relative;
+            isolation: isolate;
+            border-radius: var(--radius-xl);
+            animation: heart-containment var(--heart-breathe-duration, 7.2s) ease-in-out infinite;
+            border-color: rgba(167, 139, 250, 0.3);
+            box-shadow:
+                0 0 0 1px rgba(167, 139, 250, 0.15),
+                0 0 20px rgba(139, 92, 246, 0.1);
+        }
+
+        .living-border::before {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: calc(var(--radius-xl) + 4px);
+            padding: 4px;
+            z-index: -1;
+            pointer-events: none;
+            background:
+                radial-gradient(ellipse 55% 48% at 42% 45%, hsl(var(--heart-hue) 62% 54% / 0.7), transparent 64%),
+                radial-gradient(ellipse 40% 36% at 68% 32%, hsl(calc(var(--heart-hue) + 48deg) 58% 56% / 0.6), transparent 60%),
+                radial-gradient(ellipse 36% 40% at 28% 68%, hsl(calc(var(--heart-hue) + 120deg) 55% 52% / 0.55), transparent 58%),
+                radial-gradient(ellipse 30% 28% at 78% 70%, hsl(calc(var(--heart-hue) + 200deg) 60% 55% / 0.5), transparent 56%),
+                radial-gradient(ellipse 22% 20% at 55% 22%, hsl(calc(var(--heart-hue) + 280deg) 65% 62% / 0.45), transparent 52%);
+            filter: brightness(var(--heart-bright)) saturate(1.12) contrast(var(--heart-density));
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            animation:
+                heart-hue var(--heart-hue-duration, 22s) cubic-bezier(0.4, 0.05, 0.6, 0.95) infinite,
+                heart-flow var(--heart-flow-duration, 19s) ease-in-out infinite,
+                heart-breathe var(--heart-breathe-duration, 7.2s) ease-in-out infinite;
+        }
+
+        .living-border:hover {
+            --heart-breathe-duration: 4.8s;
+            --heart-flow-duration: 12s;
         }
 
         /* ── Forms ────────────────────────────────────────────────────────── */
@@ -1669,7 +1620,6 @@
         }
 
         @media (max-width: 480px) {
-            .app-brand { margin-bottom: 4px; }
             .pool-header-row { flex-direction: column; align-items: stretch; }
             .pool-actions { width: 100%; }
             .pool-actions > * { flex: 1; text-align: center; }
@@ -2086,7 +2036,6 @@
             pointer-events: none;
         }
 
-        /* Focus-visible for keyboard users */
         :focus-visible {
             outline: 2px solid rgba(59, 130, 246, 0.55);
             outline-offset: 2px;
@@ -2102,15 +2051,9 @@
 
 <div id="setup-screen">
 
-    <header class="app-brand">
-        <div class="app-mark" aria-hidden="true">G</div>
-        <div class="app-brand-text">
-            <div class="app-brand-name">GoonerScroll</div>
-            <div class="app-brand-tag">Multi-Stream Loop Launchpad</div>
-        </div>
-    </header>
+    <!-- Header removed entirely -->
 
-    <div class="config-card workspace-panel">
+    <div class="config-card workspace-panel living-border">
         <h2>Workspace</h2>
         <p class="subtitle">Switch between your Live Builder and saved Presets. The active workspace auto-saves as you edit.</p>
         <div class="workspace-tabs" id="workspace-tabs">
@@ -2118,7 +2061,7 @@
         </div>
     </div>
 
-    <div class="config-card grid-panel">
+    <div class="config-card grid-panel living-border">
         <h2>Stream Loop Launchpad</h2>
         <p class="subtitle">Configure grid targets manually or shuffle from active directory folders.</p>
 
