@@ -4,9 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multi-Stream Loop Launchpad (Cloud Sync)</title>
-    <!-- Favicon: place favicon files in the same folder as this HTML file -->
-    <!-- The data URI below acts as a fallback so something always shows in the tab -->
+    <title>GoonerScroll — Creativity Unleashed</title>
+    <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%233b82f6'/><text y='72' x='50' text-anchor='middle' font-size='60' font-weight='bold' fill='%23fff'>G</text></svg>">
     <link rel="icon" type="image/png" href="./favicon-96x96.png" sizes="96x96" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
@@ -17,27 +16,19 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script>
-        // Detect if this page is running nested inside another Launchpad
-        // iframe (e.g. via 🚀), and how many levels deep. Same-origin, so
-        // walking window.parent is safe. Runs synchronously before <style>
-        // so classes are set before first paint.
+        // Detect nesting depth and Ghost Mode (unchanged)
         (function () {
             var depth = 0;
             var win = window;
             while (win !== win.top) { depth += 1; win = win.parent; }
             if (depth >= 1) document.documentElement.classList.add('is-nested');
             if (depth === 1) document.documentElement.classList.add('layer-2');
-
-            // Ghost Mode — reads raw localStorage directly (the Store module
-            // isn't loaded yet at this point). Sets --ghost-opacity plus one
-            // class per target so each surface can opt in independently.
             try {
                 var opacityRaw = localStorage.getItem('hotswap_ghost_opacity');
                 var opacityPct = opacityRaw !== null ? parseFloat(opacityRaw) : 12;
                 if (isNaN(opacityPct)) opacityPct = 12;
                 opacityPct = Math.max(0, Math.min(100, opacityPct));
                 document.documentElement.style.setProperty('--ghost-opacity', opacityPct / 100);
-
                 var targetsRaw = localStorage.getItem('hotswap_ghost_targets');
                 var targets = targetsRaw ? JSON.parse(targetsRaw) : {};
                 if (targets.trigger) document.documentElement.classList.add('ghost-trigger');
@@ -88,7 +79,6 @@
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
         html { color-scheme: dark; }
 
         body {
@@ -106,10 +96,7 @@
             background-attachment: fixed;
         }
 
-        ::selection {
-            background: rgba(59, 130, 246, 0.35);
-            color: #fff;
-        }
+        ::selection { background: rgba(59, 130, 246, 0.35); color: #fff; }
 
         /* ── Setup shell ──────────────────────────────────────────────────── */
         #setup-screen {
@@ -167,6 +154,14 @@
             letter-spacing: 0.01em;
         }
 
+        .app-brand-tagline {
+            font-size: 11px;
+            color: var(--text-faint);
+            letter-spacing: 0.02em;
+            margin-top: 2px;
+            font-weight: 450;
+        }
+
         .config-card {
             background: var(--bg-surface);
             border: 1px solid var(--border);
@@ -179,9 +174,7 @@
             transition: border-color 0.2s var(--ease);
         }
 
-        .config-card:hover {
-            border-color: var(--border-strong);
-        }
+        .config-card:hover { border-color: var(--border-strong); }
 
         .config-card h2 {
             font-size: 15px;
@@ -201,7 +194,7 @@
             max-width: 52ch;
         }
 
-        /* Panel accents — restrained left edge */
+        /* Panel accents */
         .grid-panel { box-shadow: inset 3px 0 0 0 var(--accent); }
         .workspace-panel { box-shadow: inset 3px 0 0 0 var(--violet); }
         .ingest-panel { box-shadow: inset 3px 0 0 0 var(--warning); }
@@ -210,14 +203,8 @@
         .blacklist-panel { box-shadow: inset 3px 0 0 0 #a855f7; }
         .manager-panel { box-shadow: inset 3px 0 0 0 var(--teal); }
 
-        .settings-hint-card {
-            padding: 16px 24px;
-        }
-
-        .settings-hint-card .subtitle {
-            margin: 0;
-            max-width: none;
-        }
+        .settings-hint-card { padding: 16px 24px; }
+        .settings-hint-card .subtitle { margin: 0; max-width: none; }
 
         .settings-link {
             color: var(--accent-hover);
@@ -267,85 +254,65 @@
             border-color: var(--border-strong);
         }
 
-        /*
-         * Living RGB — active workspace only
-         * Selector: .workspace-tab.active
-         * Why: app.js already toggles class "active" on the selected tab
-         *      during _renderWorkspaceTabs(); hook that existing state — no JS.
-         * Tradeoffs: CSS-only ::before/::after (no SVG/Canvas). Purple-anchored
-         *   full-spectrum plasma: high saturation, ~25% faster layered motion,
-         *   edge-pressure glow. Scrim kept just opaque enough for AA text.
-         * Feel: contained liquid light trying to break free — bold, not gaming.
-         */
+        /* ── RGB Backlit Active Tab ───────────────────────────────────────── */
+        @property --rgb-spin {
+            syntax: "<angle>";
+            inherits: false;
+            initial-value: 0deg;
+        }
+
         .workspace-tab.active {
             position: relative;
             isolation: isolate;
             overflow: hidden;
             background: transparent;
-            border-color: rgba(192, 132, 252, 0.7);
+            border-color: rgba(255, 255, 255, 0.35);
             color: #ffffff;
+            font-weight: 650;
             box-shadow:
-                0 0 0 1px rgba(168, 85, 247, 0.4),
-                0 0 18px rgba(139, 92, 246, 0.45),
-                0 0 40px rgba(59, 130, 246, 0.22),
-                0 0 56px rgba(236, 72, 153, 0.12),
-                inset 0 0 18px rgba(167, 139, 250, 0.18),
-                inset 0 1px 0 rgba(255, 255, 255, 0.18);
+                0 0 0 1px rgba(255, 255, 255, 0.25),
+                0 0 24px rgba(168, 85, 247, 0.5),
+                0 0 48px rgba(59, 130, 246, 0.3),
+                0 0 72px rgba(236, 72, 153, 0.15),
+                inset 0 0 24px rgba(255, 255, 255, 0.08);
             text-shadow:
-                0 1px 3px rgba(0, 0, 0, 0.75),
-                0 0 14px rgba(0, 0, 0, 0.45);
-            animation:
-                living-wake 0.65s var(--ease) both,
-                living-pressure 8.25s ease-in-out 0.65s infinite alternate;
+                0 0 2px rgba(0, 0, 0, 1),
+                0 1px 4px rgba(0, 0, 0, 0.95),
+                0 0 12px rgba(0, 0, 0, 0.8);
+            animation: rgb-wake 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
         }
 
-        .workspace-tab.active:hover {
-            background: transparent;
-            color: #ffffff;
-            border-color: rgba(216, 180, 254, 0.85);
-        }
-
-        /*
-         * Plasma core — purple-anchored spectrum colliding beneath glass.
-         * Speeds ~25% faster than prior: 22s orbit / 8.25s breathe.
-         */
         .workspace-tab.active::before {
             content: "";
             position: absolute;
-            inset: -90%;
+            inset: -80%;
             z-index: 0;
             pointer-events: none;
             background:
-                /* Violet anchor — always present */
-                radial-gradient(ellipse 58% 50% at 44% 48%, rgba(147, 51, 234, 0.88), transparent 66%),
-                radial-gradient(ellipse 48% 44% at 58% 30%, rgba(124, 58, 237, 0.78), transparent 62%),
-                radial-gradient(ellipse 42% 48% at 30% 70%, rgba(168, 85, 247, 0.72), transparent 60%),
-                /* Blue + cyan */
-                radial-gradient(ellipse 44% 38% at 82% 40%, rgba(37, 99, 235, 0.7), transparent 60%),
-                radial-gradient(ellipse 36% 32% at 16% 24%, rgba(14, 165, 233, 0.62), transparent 56%),
-                radial-gradient(ellipse 30% 28% at 68% 18%, rgba(34, 211, 238, 0.55), transparent 54%),
-                /* Magenta */
-                radial-gradient(ellipse 34% 30% at 72% 68%, rgba(236, 72, 153, 0.58), transparent 56%),
-                radial-gradient(ellipse 26% 24% at 38% 16%, rgba(217, 70, 239, 0.48), transparent 52%),
-                /* Emerald / teal */
-                radial-gradient(ellipse 34% 30% at 14% 82%, rgba(16, 185, 129, 0.55), transparent 54%),
-                radial-gradient(ellipse 28% 26% at 88% 78%, rgba(45, 212, 191, 0.48), transparent 52%),
-                /* Amber / gold / crimson */
-                radial-gradient(ellipse 24% 22% at 92% 52%, rgba(251, 191, 36, 0.5), transparent 50%),
-                radial-gradient(ellipse 20% 18% at 50% 88%, rgba(245, 158, 11, 0.4), transparent 48%),
-                radial-gradient(ellipse 18% 16% at 6% 46%, rgba(225, 29, 72, 0.42), transparent 46%);
-            filter: saturate(1.3) brightness(1.08);
-            will-change: transform, opacity;
+                conic-gradient(
+                    from var(--rgb-spin) at 50% 50%,
+                    #ff0000 0deg,
+                    #ff8800 20deg,
+                    #ffff00 40deg,
+                    #00ff00 60deg,
+                    #00ffff 80deg,
+                    #0088ff 100deg,
+                    #8800ff 120deg,
+                    #ff00ff 140deg,
+                    #ff0088 160deg,
+                    #ff0000 180deg
+                ),
+                radial-gradient(ellipse 60% 50% at 30% 40%, rgba(255, 100, 200, 0.5), transparent 60%),
+                radial-gradient(ellipse 50% 60% at 70% 60%, rgba(100, 200, 255, 0.5), transparent 60%),
+                radial-gradient(ellipse 40% 40% at 50% 80%, rgba(255, 200, 50, 0.4), transparent 50%);
+            filter: saturate(1.6) brightness(1.1) contrast(1.05);
+            mix-blend-mode: normal;
+            will-change: transform, filter, --rgb-spin;
             animation:
-                living-orbit 21.75s ease-in-out infinite,
-                living-breathe 8.25s ease-in-out infinite alternate;
+                rgb-spin 8s linear infinite,
+                rgb-orbit 6s ease-in-out infinite alternate;
         }
 
-        /*
-         * Glass scrim + edge-pressure wash.
-         * Open enough for plasma to read; dark enough for AA text.
-         * Inset glow pulses so energy feels pressed against the rim.
-         */
         .workspace-tab.active::after {
             content: "";
             position: absolute;
@@ -354,31 +321,62 @@
             pointer-events: none;
             border-radius: inherit;
             background:
-                linear-gradient(
-                    160deg,
-                    rgba(12, 6, 24, 0.42) 0%,
-                    rgba(16, 8, 32, 0.28) 40%,
-                    rgba(8, 8, 18, 0.4) 100%
-                ),
-                radial-gradient(ellipse 95% 80% at 50% 45%, rgba(168, 85, 247, 0.38), transparent 70%),
-                radial-gradient(ellipse 70% 55% at 80% 25%, rgba(56, 189, 248, 0.28), transparent 60%),
-                radial-gradient(ellipse 60% 50% at 15% 80%, rgba(52, 211, 153, 0.22), transparent 58%),
-                radial-gradient(ellipse 45% 40% at 70% 85%, rgba(236, 72, 153, 0.2), transparent 55%),
-                radial-gradient(ellipse 35% 30% at 90% 40%, rgba(251, 191, 36, 0.14), transparent 50%);
+                radial-gradient(ellipse 100% 100% at 50% 50%, rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0.75) 70%);
             box-shadow:
-                inset 0 0 12px rgba(192, 132, 252, 0.35),
-                inset 0 0 28px rgba(9, 9, 11, 0.35);
-            will-change: transform, opacity, box-shadow;
-            animation:
-                living-wash 12.75s ease-in-out infinite alternate,
-                living-scrim-glow 8.25s ease-in-out infinite alternate,
-                living-rim-surge 6.5s ease-in-out infinite alternate;
+                inset 0 0 20px rgba(0, 0, 0, 0.7),
+                inset 0 0 60px rgba(0, 0, 0, 0.3);
+            animation: rgb-breathe 3s ease-in-out infinite alternate;
         }
 
         .workspace-tab.active .workspace-tab-name,
         .workspace-tab.active .workspace-tab-meta {
             position: relative;
             z-index: 2;
+        }
+
+        @keyframes rgb-wake {
+            0% {
+                filter: brightness(0.8) saturate(1);
+                box-shadow: 0 0 0 1px rgba(255,255,255,0.05), 0 0 0 transparent;
+            }
+            100% {
+                filter: brightness(1) saturate(1.4);
+                box-shadow:
+                    0 0 0 1px rgba(255,255,255,0.25),
+                    0 0 24px rgba(168,85,247,0.5),
+                    0 0 48px rgba(59,130,246,0.3),
+                    0 0 72px rgba(236,72,153,0.15),
+                    inset 0 0 24px rgba(255,255,255,0.08);
+            }
+        }
+
+        @keyframes rgb-spin {
+            0%   { --rgb-spin: 0deg; }
+            100% { --rgb-spin: 360deg; }
+        }
+
+        @keyframes rgb-orbit {
+            0%   { transform: translate3d(-8%, -6%, 0) scale(1.1); }
+            100% { transform: translate3d(8%, 6%, 0) scale(1.3); }
+        }
+
+        @keyframes rgb-breathe {
+            0%   { opacity: 0.75; transform: scale(1); }
+            100% { opacity: 0.9; transform: scale(1.02); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .workspace-tab.active {
+                animation: none;
+                background: linear-gradient(135deg, rgba(124,58,237,0.4), rgba(37,99,235,0.3));
+                box-shadow: 0 0 0 1px rgba(255,255,255,0.1);
+            }
+            .workspace-tab.active::before,
+            .workspace-tab.active::after {
+                animation: none;
+                transform: none;
+                opacity: 0.3;
+            }
         }
 
         .workspace-tab-name {
@@ -394,137 +392,7 @@
         }
 
         .workspace-tab.active .workspace-tab-meta {
-            color: rgba(245, 243, 255, 0.92);
-        }
-
-        @keyframes living-wake {
-            0% {
-                filter: brightness(0.85) saturate(1);
-                box-shadow:
-                    0 0 0 1px rgba(139, 92, 246, 0.15),
-                    0 0 0 rgba(124, 58, 237, 0);
-            }
-            45% {
-                filter: brightness(1.35) saturate(1.4);
-                box-shadow:
-                    0 0 0 1px rgba(233, 213, 255, 0.65),
-                    0 0 32px rgba(168, 85, 247, 0.55),
-                    0 0 48px rgba(34, 211, 238, 0.28),
-                    0 0 24px rgba(236, 72, 153, 0.25),
-                    inset 0 0 24px rgba(192, 132, 252, 0.3),
-                    inset 0 1px 0 rgba(255, 255, 255, 0.22);
-            }
-            100% {
-                filter: brightness(1.08) saturate(1.25);
-                box-shadow:
-                    0 0 0 1px rgba(168, 85, 247, 0.4),
-                    0 0 18px rgba(139, 92, 246, 0.45),
-                    0 0 40px rgba(59, 130, 246, 0.22),
-                    0 0 56px rgba(236, 72, 153, 0.12),
-                    inset 0 0 18px rgba(167, 139, 250, 0.18),
-                    inset 0 1px 0 rgba(255, 255, 255, 0.18);
-            }
-        }
-
-        /* Contained energy pressing outward against the glass rim */
-        @keyframes living-pressure {
-            0% {
-                box-shadow:
-                    0 0 0 1px rgba(168, 85, 247, 0.35),
-                    0 0 14px rgba(139, 92, 246, 0.35),
-                    0 0 32px rgba(59, 130, 246, 0.16),
-                    0 0 48px rgba(236, 72, 153, 0.08),
-                    inset 0 0 14px rgba(167, 139, 250, 0.12),
-                    inset 0 1px 0 rgba(255, 255, 255, 0.14);
-            }
-            100% {
-                box-shadow:
-                    0 0 0 1px rgba(216, 180, 254, 0.55),
-                    0 0 26px rgba(168, 85, 247, 0.55),
-                    0 0 52px rgba(34, 211, 238, 0.28),
-                    0 0 64px rgba(236, 72, 153, 0.2),
-                    inset 0 0 26px rgba(192, 132, 252, 0.28),
-                    inset 0 1px 0 rgba(255, 255, 255, 0.22);
-            }
-        }
-
-        /* Aggressive organic drift — light colliding & pushing toward edges */
-        @keyframes living-orbit {
-            0%   { transform: translate3d(-10%, -8%, 0) rotate(0deg) scale(1.02); }
-            18%  { transform: translate3d(12%, -10%, 0) rotate(12deg) scale(1.14); }
-            36%  { transform: translate3d(9%, 12%, 0) rotate(-8deg) scale(0.94); }
-            54%  { transform: translate3d(-14%, 9%, 0) rotate(10deg) scale(1.16); }
-            72%  { transform: translate3d(6%, -12%, 0) rotate(-14deg) scale(1.08); }
-            100% { transform: translate3d(-10%, -8%, 0) rotate(0deg) scale(1.02); }
-        }
-
-        @keyframes living-breathe {
-            0%   { opacity: 0.88; }
-            100% { opacity: 1; }
-        }
-
-        @keyframes living-wash {
-            0%   { transform: translate3d(6%, 4%, 0) scale(1.04); }
-            35%  { transform: translate3d(-8%, -5%, 0) scale(1.1); }
-            70%  { transform: translate3d(5%, -7%, 0) scale(1.02); }
-            100% { transform: translate3d(-4%, 5%, 0) scale(1.08); }
-        }
-
-        @keyframes living-scrim-glow {
-            0%   { opacity: 0.82; }
-            100% { opacity: 1; }
-        }
-
-        @keyframes living-rim-surge {
-            0% {
-                box-shadow:
-                    inset 0 0 8px rgba(192, 132, 252, 0.25),
-                    inset 0 0 24px rgba(9, 9, 11, 0.4);
-            }
-            100% {
-                box-shadow:
-                    inset 0 0 18px rgba(34, 211, 238, 0.35),
-                    inset 0 0 32px rgba(236, 72, 153, 0.2),
-                    inset 0 0 20px rgba(9, 9, 11, 0.28);
-            }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-            .workspace-tab.active {
-                animation: none;
-                filter: none;
-                background:
-                    linear-gradient(
-                        145deg,
-                        rgba(147, 51, 234, 0.42),
-                        rgba(124, 58, 237, 0.32) 28%,
-                        rgba(37, 99, 235, 0.28) 45%,
-                        rgba(34, 211, 238, 0.18) 58%,
-                        rgba(236, 72, 153, 0.2) 72%,
-                        rgba(16, 185, 129, 0.16) 85%,
-                        rgba(251, 191, 36, 0.12)
-                    ),
-                    rgba(12, 6, 24, 0.88);
-                box-shadow:
-                    0 0 0 1px rgba(168, 85, 247, 0.4),
-                    0 0 24px rgba(139, 92, 246, 0.35),
-                    inset 0 0 18px rgba(167, 139, 250, 0.15);
-            }
-            .workspace-tab.active::before,
-            .workspace-tab.active::after {
-                animation: none;
-                will-change: auto;
-            }
-            .workspace-tab.active::before {
-                inset: 0;
-                opacity: 0.55;
-                transform: none;
-                filter: saturate(1.2);
-            }
-            .workspace-tab.active::after {
-                opacity: 1;
-                transform: none;
-            }
+            color: rgba(255, 255, 255, 0.92);
         }
 
         .workspace-tab-divider {
@@ -808,9 +676,7 @@
             letter-spacing: -0.01em;
         }
 
-        .btn-launch:hover {
-            filter: brightness(1.08);
-        }
+        .btn-launch:hover { filter: brightness(1.08); }
 
         .btn-grid {
             background: #16a34a;
@@ -2005,6 +1871,7 @@
         <div class="app-brand-text">
             <div class="app-brand-name">GoonerScroll</div>
             <div class="app-brand-tag">Multi-Stream Loop Launchpad</div>
+            <div class="app-brand-tagline">Creativity Unleashed.</div>
         </div>
     </header>
 
