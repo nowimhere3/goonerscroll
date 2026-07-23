@@ -143,13 +143,24 @@
   {
     "id": 4,
     "name": "Preset 4",
-    "urls": [],
+    "panels": [
+      {
+        "type": "url",
+        "source": "",
+        "options": {}
+      },
+      {
+        "type": "url",
+        "source": "",
+        "options": {}
+      }
+    ],
     "folderMap": {},
     "lockState": {},
-    "rowCount": 0,
+    "rowCount": 2,
     "streamCount": 0,
     "isEmpty": true,
-    "savedAt": null
+    "savedAt": "2026-07-23T08:15:52.256Z"
   },
   {
     "id": 5,
