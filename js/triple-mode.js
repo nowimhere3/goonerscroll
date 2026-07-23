@@ -13,7 +13,7 @@ import { populateBookmarkFolderSelect } from './folders.js';
 import { buildStreamPanel } from './launch.js';
 import {
     initGridSession, updateGridSession, setGridSessionSilently, getSessionUrls,
-    canUndoGridSession, undoGridSession,
+    getSessionFolderMap, getSourceWorkspaceInfo, canUndoGridSession, undoGridSession,
 } from './grid-session.js';
 
 const SLOT_IDS = ['screen-1-slot', 'screen-2-slot', 'screen-3-slot', 'screen-4-slot'];
@@ -79,6 +79,17 @@ let _currentLayout = DEFAULT_LAYOUT;
 let _dragOverlayEl = null;
 
 let _activeFolder = '';
+
+const GRID_TRACE = '[Grid boot trace]';
+function _traceGrid(stage, details) {
+    console.groupCollapsed(`${GRID_TRACE} ${stage}`);
+    Object.entries(details).forEach(([key, value]) => {
+        // JSON snapshots keep DevTools from displaying a later-mutated object.
+        const snapshot = JSON.parse(JSON.stringify(value ?? null));
+        console.log(key, snapshot);
+    });
+    console.groupEnd();
+}
 
 function _pickRandom(arr) {
     if (!Array.isArray(arr) || arr.length === 0) return null;
@@ -407,9 +418,26 @@ function _applyLayout(layoutName, tripleLayoutEl, layoutBtns) {
     });
 
     Store.set('tripleLayout', safeName);
+    _traceGrid('shared Store write', {
+        key: 'tripleLayout',
+        value: safeName,
+        note: 'Layout preference only; not workspace URLs or folder assignments.',
+    });
 }
 
 function _renderPanels(urls, map, ctx, { skipUndoSnapshot = false } = {}) {
+    _traceGrid('render request', {
+        source: getSourceWorkspaceInfo(),
+        skipUndoSnapshot,
+        requestedUrls: urls,
+        requestedFolderMap: map,
+        sessionUrlsBefore: getSessionUrls(),
+        sessionFolderMapBefore: getSessionFolderMap(),
+        persistedUrlsBefore: Store.get('matrixUrls'),
+        persistedFolderMapBefore: Store.get('folderMap'),
+        note: 'This function must not write matrixUrls or folderMap to Store.',
+    });
+
     // Phase 4B: this used to call Store.set('matrixUrls', urls) here, which
     // silently overwrote whatever workspace was active on index.html on
     // every single render (initial load, every Shuffle, every folder
@@ -427,8 +455,18 @@ function _renderPanels(urls, map, ctx, { skipUndoSnapshot = false } = {}) {
     } else {
         updateGridSession(urls, map);
     }
+    // These calls update index3.html's own state.js module instance only.
+    // They do not persist to Store and cannot share object identity with index.html.
     setTargetUrls(urls);
     setUrlFolderMap(map);
+
+    _traceGrid('render state applied', {
+        sessionUrlsAfter: getSessionUrls(),
+        sessionFolderMapAfter: getSessionFolderMap(),
+        persistedUrlsAfter: Store.get('matrixUrls'),
+        persistedFolderMapAfter: Store.get('folderMap'),
+        note: 'Persisted values above should match their pre-render values.',
+    });
 
     SLOT_IDS.forEach((id, index) => {
         const slot = document.getElementById(id);
@@ -573,10 +611,23 @@ document.addEventListener('DOMContentLoaded', async () => {
             : 'Not connected';
     });
 
-    initGridSession(); // Phase 4B: load the working copy from whichever workspace launched this session
+    const initialSession = initGridSession(); // Phase 4B: load the working copy from the URL-selected workspace
+    _traceGrid('after session initialization', {
+        source: getSourceWorkspaceInfo(),
+        initialSession,
+        sessionUrls: getSessionUrls(),
+        sessionFolderMap: getSessionFolderMap(),
+        presetsLoadedBeforeSession: getSourceWorkspaceInfo().type === 'live' ? 'not required' : 'inspect the preset source log above',
+    });
 
     const initialDb = getDatabaseStructure();
     const initialSet = _buildTripleSet(initialDb, _activeFolder);
+    _traceGrid('initial triple set', {
+        sessionBeforeRender: initialSession,
+        databaseFolders: initialDb ? Object.keys(initialDb) : [],
+        generatedUrls: initialSet.urls,
+        generatedFolderMap: initialSet.map,
+    });
     _renderPanels(initialSet.urls, initialSet.map, ctx, { skipUndoSnapshot: true });
 
     // 🎲 Shuffle — reshuffle every panel independently, each from its OWN
