@@ -107,15 +107,22 @@
   {
     "id": 3,
     "name": "Preset 3",
-    "urls": [
-      "https://chaturbate.com/followed-cams/",
-      "https://www.xvideos.red/video.kvcltuda19d/relentless_teen_throat_fucking_extreme_rough_and_sloppy_facefuck._tiny_tits_skinny_chick_gagging_on_hard_cock_meat?pl=124970211&plname=bjs&pltype=random",
-      "https://www.imagefap.com/photo/1023769725/?pgid=&gid=13742604&page=0#11",
-      "https://www.imagefap.com/photo/1267639948/?pgid=&gid=14027075&page=0#3",
-      "https://www.imagefap.com/photo/1667356140/?link=thm",
-      "https://www.xvideos.red/video.okvuvhv6050/pee_in_my_mouth_6on1_gangbang_altera_pars_dp_atm_squirt_manhandle_deep_throat_cum_in_mouth_facial_and_swallow_eks011p02?pl=124513227&plname=small_t_s_group&pltype=random",
-      "https://onlinestars.net/videos/193945/neli-elinek-amateur-cam-video-09-18-2021/",
-      "https://www.elitebabes.com/metart-x-hareniks-in-glamour-reader-1-119223/#gallery-01-1"
+    "panels": [
+      {
+        "type": "url",
+        "source": "https://chaturbate.com/followed-cams/",
+        "options": {}
+      },
+      {
+        "type": "url",
+        "source": "https://www.xvideos.red/video.kvcltuda19d/relentless_teen_throat_fucking_extreme_rough_and_sloppy_facefuck._tiny_tits_skinny_chick_gagging_on_hard_cock_meat?pl=124970211&plname=bjs&pltype=random",
+        "options": {}
+      },
+      {
+        "type": "url",
+        "source": "https://www.imagefap.com/photo/1023769725/?pgid=&gid=13742604&page=0#11",
+        "options": {}
+      }
     ],
     "folderMap": {
       "0": "ChaterBate_FOLLOWED_1",
@@ -128,10 +135,10 @@
       "7": "IMAGES___EliteBabes___CURATED__Fav__"
     },
     "lockState": {},
-    "rowCount": 8,
-    "streamCount": 8,
+    "rowCount": 3,
+    "streamCount": 3,
     "isEmpty": false,
-    "savedAt": "2026-07-21T22:42:14.049Z"
+    "savedAt": "2026-07-23T08:10:03.466Z"
   },
   {
     "id": 4,
