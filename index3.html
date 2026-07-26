@@ -142,11 +142,13 @@
         .master-btn.undo-btn    { background: #2a2210; border-color: #6a4a1a; color: #d4a94a; }
         .master-btn.undo-btn:hover:not(:disabled) { background: #3a2e14; }
         .master-btn.undo-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+        .master-btn.save-btn    { background: #241a38; border-color: #9d6dff; color: #c9b3ff; }
+        .master-btn.save-btn:hover { background: #2e2246; }
         .master-btn.close-btn   { background: #1a1a2a; border-color: #0095f6; color: #0095f6; }
         .master-btn.back-btn    { background: #1a1a1a; border-color: #555; color: #999; }
         .master-btn.layout-btn  { padding: 8px 11px; }
         .master-btn.layout-btn.active { background: #0e1e2e; border-color: #0095f6; }
-        #master-status { font-size: 11px; color: #555; font-family: monospace; margin-left: auto; flex-shrink: 0; }
+        #master-status { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); font-size: 11px; color: #555; font-family: monospace; }
 
         /* Mini layout-preview icons for the layout-switcher buttons.
            These are temporary CSS-drawn placeholders — swap in your 56px
@@ -176,6 +178,17 @@
         .dropup-item:last-child { border-bottom: none; }
         .dropup-item.selected { background: #0e1e2e; color: #4ab0f5; font-weight: bold; }
         .dropup-count { font-size: 11px; color: #555; margin-left: 8px; }
+
+        /* Save Session As drop-up */
+        #master-save-dropup { position: fixed; bottom: 80px; right: 20px; background: #141414; border: 1px solid #333; border-radius: 10px; box-shadow: 0 -8px 24px rgba(0,0,0,0.7); max-height: 360px; overflow-y: auto; z-index: 30001; min-width: 240px; display: none; }
+        #master-save-dropup.open { display: block; }
+        .save-session-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #222; transition: background 0.1s; }
+        .save-session-item:hover { background: #241a38; }
+        .save-session-item:last-child { border-bottom: none; }
+        .save-session-item.current { background: #1e1530; }
+        .save-session-item-main { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #ddd; font-weight: bold; }
+        .save-session-current-badge { font-size: 10px; color: #c9b3ff; background: #33245a; border-radius: 6px; padding: 2px 6px; font-weight: normal; }
+        .save-session-item-meta, .save-session-item-saved { font-size: 11px; color: #777; margin-top: 2px; }
 
         /* Per-panel hotswap trigger */
         .hotswap-trigger { position: absolute; top: 16px; right: 16px; background: rgba(0,0,0,0.75); border: 1px solid #555; border-radius: 12px; color: #ccc; font-size: 16px; font-weight: bold; letter-spacing: 2px; cursor: pointer; padding: 6px 14px; z-index: 10001; backdrop-filter: blur(6px); transition: background 0.15s, color 0.15s, border-color 0.15s, opacity 0.15s; user-select: none; }
@@ -403,6 +416,10 @@
         <button class="master-btn shuffle-btn"   id="btn-master-shuffle">🎲 Shuffle</button>
         <button class="master-btn shuffall-btn"  id="btn-master-shuffle-all">🎲🎲 Shuffle All</button>
         <button class="master-btn undo-btn" id="btn-master-undo" disabled title="Undo the last change to this session">↩ Undo</button>
+        <div style="position:relative;">
+            <button class="master-btn save-btn" id="btn-master-save">💾 Save Session As...</button>
+            <div id="master-save-dropup"></div>
+        </div>
         <span id="master-status">Not connected</span>
         <button class="master-btn close-btn" id="btn-master-close">🎬 Close</button>
         <a href="index.html" class="master-btn back-btn">⚙ Launchpad</a>
