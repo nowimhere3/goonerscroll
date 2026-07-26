@@ -9,6 +9,7 @@ import {
 } from './state.js';
 import { initBlacklist } from './blacklist.js';
 import { fetchDatabaseSilently, pushDatabaseToRemote } from './sync.js';
+import { loadPresetsSilently } from './presets.js';
 import { populateBookmarkFolderSelect } from './folders.js';
 import { buildStreamPanel } from './launch.js';
 import {
@@ -425,6 +426,18 @@ function _applyLayout(layoutName, tripleLayoutEl, layoutBtns) {
     });
 }
 
+/** Keep the master-bar Undo button's enabled/disabled state in sync with
+ * whether there's actually anything left in THIS session's undo stack. Called
+ * from _renderPanels() itself so every render path (initial load, Shuffle,
+ * Shuffle All, folder selection, undo) keeps it correct automatically —
+ * previously this was only refreshed at boot and after undo() itself, so it
+ * stayed permanently disabled after the first Shuffle even though there was
+ * something to undo. */
+function _updateGridUndoButtonState() {
+    const btn = document.getElementById('btn-master-undo');
+    if (btn) btn.disabled = !canUndoGridSession();
+}
+
 function _renderPanels(urls, map, ctx, { skipUndoSnapshot = false } = {}) {
     _traceGrid('render request', {
         source: getSourceWorkspaceInfo(),
@@ -488,6 +501,8 @@ function _renderPanels(urls, map, ctx, { skipUndoSnapshot = false } = {}) {
     const visibleSlots = (LAYOUT_POSITION_ORDER[_currentLayout] || [0, 1, 2]).length;
     const active = urls.slice(0, visibleSlots).filter(Boolean).length;
     ctx.statusEl.textContent = `${active} streams`;
+
+    _updateGridUndoButtonState();
 }
 
 /** Build the 🌐 Folder dropup list (matches .dropup-item / .dropup-count CSS in index3.html) */
@@ -611,6 +626,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             : 'Not connected';
     });
 
+    // Grid sessions can be launched directly in a fresh tab, so this page
+    // must load presets.json before resolving ?workspace=<id> — otherwise
+    // getPresetById() falls back to an empty default preset and Grid fills
+    // every slot with random picks instead of the actual saved workspace.
+    await loadPresetsSilently();
+
     const initialSession = initGridSession(); // Phase 4B: load the working copy from the URL-selected workspace
     _traceGrid('after session initialization', {
         source: getSourceWorkspaceInfo(),
@@ -651,15 +672,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Shuffle All, folder reassignment, position swaps). Never touches
     // index.html's Undo — these are two entirely separate undo stacks.
     if (undoBtn) {
-        const _updateUndoBtnState = () => { undoBtn.disabled = !canUndoGridSession(); };
         undoBtn.onclick = () => {
             const restored = undoGridSession();
             if (!restored) return;
             setTargetUrls(restored.urls);
             setUrlFolderMap(restored.folderMap);
             _renderPanels(restored.urls, restored.folderMap, ctx, { skipUndoSnapshot: true });
-            _updateUndoBtnState();
         };
-        _updateUndoBtnState();
     }
+    _updateGridUndoButtonState();
 });
