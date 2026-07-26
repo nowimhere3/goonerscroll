@@ -134,6 +134,20 @@ export function getSourceWorkspaceInfo() {
     return { type: _sourceType, id: _sourceId };
 }
 
+/**
+ * Called after a successful "💾 Save Session As... → Preset N" — the running
+ * session's identity updates to that target, same as "Save As" in a normal
+ * document editor. This does NOT touch the working copy's actual content
+ * (panels/folderMap) or the undo stack — only which workspace this session
+ * now considers itself saved-as, so reopening the dropup afterward correctly
+ * highlights Preset N as current instead of wherever the session originally
+ * launched from.
+ */
+export function setSessionSource(presetId) {
+    _sourceType = 'preset';
+    _sourceId = Number(presetId);
+}
+
 export function getSessionUrls() {
     return _panels.map(getUrlPanelSource);
 }
