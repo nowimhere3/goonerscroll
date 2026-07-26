@@ -9,12 +9,13 @@ import {
 } from './state.js';
 import { initBlacklist } from './blacklist.js';
 import { fetchDatabaseSilently, pushDatabaseToRemote } from './sync.js';
-import { loadPresetsSilently } from './presets.js';
+import { loadPresetsSilently, getPresets, getPresetSummary, saveWorkspaceToPreset } from './presets.js';
 import { populateBookmarkFolderSelect } from './folders.js';
 import { buildStreamPanel } from './launch.js';
 import {
     initGridSession, updateGridSession, setGridSessionSilently, getSessionUrls,
-    getSessionFolderMap, getSourceWorkspaceInfo, canUndoGridSession, undoGridSession,
+    getSessionFolderMap, getSourceWorkspaceInfo, setSessionSource,
+    canUndoGridSession, undoGridSession,
 } from './grid-session.js';
 
 const SLOT_IDS = ['screen-1-slot', 'screen-2-slot', 'screen-3-slot', 'screen-4-slot'];
@@ -542,6 +543,66 @@ function _renderFolderDropup(folderDropupEl, ctx) {
     });
 }
 
+/**
+ * Build the 💾 Save Session As... dropup — one row per preset, each showing
+ * enough context (rows/streams, or "Empty", plus when it was last saved) to
+ * avoid overwriting the wrong one by accident. The preset this session is
+ * currently saved-as (if any) is visually marked as current.
+ */
+function _renderSaveSessionDropup(dropupEl, statusEl) {
+    dropupEl.innerHTML = '';
+    const source = getSourceWorkspaceInfo();
+
+    getPresets().forEach((preset) => {
+        const summary = getPresetSummary(preset);
+        const isCurrent = source.type === 'preset' && Number(source.id) === Number(preset.id);
+
+        const item = document.createElement('div');
+        item.className = 'save-session-item' + (isCurrent ? ' current' : '');
+        item.innerHTML = `
+            <div class="save-session-item-main">
+                <span>📁 ${preset.name}</span>
+                ${isCurrent ? '<span class="save-session-current-badge">current</span>' : ''}
+            </div>
+            <div class="save-session-item-meta">${summary.isEmpty ? 'Empty' : `${summary.rowsLabel} · ${summary.streamsLabel}`}</div>
+            <div class="save-session-item-saved">${summary.savedLabel}</div>
+        `;
+        item.onclick = () => {
+            dropupEl.classList.remove('open');
+            _handleSaveSessionAs(preset.id, statusEl);
+        };
+        dropupEl.appendChild(item);
+    });
+}
+
+/**
+ * The ONLY path anything from a running Grid session reaches a saved
+ * preset. Reads the session's own in-memory working copy (never Store,
+ * never the shared editing surface) and hands it to presets.js directly.
+ * lockState is reset for the target — a Grid session has no lock-state
+ * concept of its own to contribute, and carrying over the target preset's
+ * OLD lockState (indexed against whatever it used to contain) wouldn't
+ * meaningfully correspond to this session's content anyway.
+ */
+async function _handleSaveSessionAs(presetId, statusEl) {
+    const urls = getSessionUrls();
+    const folderMap = getSessionFolderMap();
+
+    if (statusEl) statusEl.textContent = 'Saving…';
+
+    const { updated, synced } = await saveWorkspaceToPreset(presetId, {
+        panels: urls, // presets.js normalizes plain URL strings into url-type panels
+        folderMap,
+        lockState: {},
+    });
+
+    setSessionSource(presetId);
+
+    if (statusEl) {
+        statusEl.textContent = synced ? `Saved to ${updated.name}` : `Saved locally — sync pending`;
+    }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     Store.warmCache();
     initBlacklist();
@@ -558,6 +619,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const shuffleBtn      = document.getElementById('btn-master-shuffle');
     const shuffleAllBtn   = document.getElementById('btn-master-shuffle-all');
     const undoBtn         = document.getElementById('btn-master-undo');
+    const saveSessionBtn  = document.getElementById('btn-master-save');
+    const saveDropupEl    = document.getElementById('master-save-dropup');
     const tripleLayoutEl  = document.getElementById('triple-layout');
     const layoutBtns = {
         top2:      document.getElementById('btn-layout-top2'),
@@ -681,4 +744,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
     }
     _updateGridUndoButtonState();
+
+    // 💾 Save Session As... — the ONLY way this session's changes ever reach
+    // a real preset. Nothing else in this file writes to presets.json.
+    if (saveSessionBtn && saveDropupEl) {
+        saveSessionBtn.onclick = () => {
+            const willOpen = !saveDropupEl.classList.contains('open');
+            if (willOpen) _renderSaveSessionDropup(saveDropupEl, statusEl);
+            saveDropupEl.classList.toggle('open', willOpen);
+        };
+        document.addEventListener('click', (e) => {
+            if (saveDropupEl.classList.contains('open')
+                && !saveDropupEl.contains(e.target)
+                && e.target !== saveSessionBtn) {
+                saveDropupEl.classList.remove('open');
+            }
+        });
+    }
 });
