@@ -180,7 +180,7 @@
     "panels": [
       {
         "type": "url",
-        "source": "",
+        "source": "https://chaturbate.com/followed-cams/",
         "options": {}
       },
       {
@@ -199,11 +199,13 @@
         "options": {}
       }
     ],
-    "folderMap": {},
+    "folderMap": {
+      "0": "CB_followed_cams"
+    },
     "lockState": {},
     "rowCount": 4,
-    "streamCount": 0,
-    "isEmpty": true,
-    "savedAt": "2026-07-27T20:05:48.330Z"
+    "streamCount": 1,
+    "isEmpty": false,
+    "savedAt": "2026-07-27T20:06:02.955Z"
   }
 ]
