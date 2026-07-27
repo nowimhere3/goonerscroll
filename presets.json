@@ -180,44 +180,30 @@
     "panels": [
       {
         "type": "url",
-        "source": "index.html",
+        "source": "",
         "options": {}
       },
       {
         "type": "url",
-        "source": "http://10.0.0.211:8096/web/#/home",
+        "source": "",
         "options": {}
       },
       {
         "type": "url",
-        "source": "http://10.0.0.211:8096/web/#/home",
+        "source": "",
         "options": {}
       },
       {
         "type": "url",
-        "source": "http://10.0.0.211:8096/web/#/home",
-        "options": {}
-      },
-      {
-        "type": "url",
-        "source": "http://10.0.0.211:8096/web/#/home",
+        "source": "",
         "options": {}
       }
     ],
-    "folderMap": {
-      "0": "ChaterBate_FOLLOWED_1",
-      "1": "MasterAll_XV",
-      "2": "ChaterBate_FOLLOWED_1",
-      "3": "ChaterBate_FOLLOWED_1"
-    },
-    "lockState": {
-      "0": 2,
-      "2": 2,
-      "3": 2
-    },
-    "rowCount": 5,
-    "streamCount": 5,
-    "isEmpty": false,
-    "savedAt": "2026-07-27T06:21:39.248Z"
+    "folderMap": {},
+    "lockState": {},
+    "rowCount": 4,
+    "streamCount": 0,
+    "isEmpty": true,
+    "savedAt": "2026-07-27T20:05:48.330Z"
   }
 ]
