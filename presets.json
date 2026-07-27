@@ -176,7 +176,7 @@
     "panels": [
       {
         "type": "url",
-        "source": "http://10.0.0.211:8096/web/#/home",
+        "source": "index.html",
         "options": {}
       },
       {
@@ -214,6 +214,6 @@
     "rowCount": 5,
     "streamCount": 5,
     "isEmpty": false,
-    "savedAt": "2026-07-27T06:20:37.680Z"
+    "savedAt": "2026-07-27T06:21:14.993Z"
   }
 ]
