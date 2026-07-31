@@ -23,11 +23,10 @@ Items are grouped by architectural phase rather than priority.
 ## User Experience
 
 - [ ] 🖥 Quick Action shortcut
-- [ ] Master overlay centering
 - [ ] Quick Favourite
 - [ ] Favourite Panel collection
 - [ ] Runtime zoom in/out
-- [ ] Adjustable runtime panel borders
+- [ ] Adjustable (stream) runtime panel borders
 
 ---
 
