@@ -1,31 +1,110 @@
 # Runtime Invariants
 
-These are architectural rules that should not be violated unless intentionally redesigned.
+These are architectural rules.
+
+They are expected to remain true unless intentionally redesigned.
+
+Features should conform to these rules.
+
+If a feature appears to require violating one of these invariants, the architecture should be reconsidered before implementation.
 
 ---
 
-## Runtime Session
+# Single Source of Truth
 
-The Runtime Session is the single source of truth while a Grid/Stream/Solo session is running.
+Every layer has exactly one owner.
 
-All runtime mutations update the Runtime Session first.
+Workspace owns design.
 
-UI should render from Runtime Session.
+Runtime owns execution.
+
+GitHub owns persistence.
+
+Store owns user preferences.
+
+Collections own media libraries.
+
+No state should have multiple competing owners.
+
+---
+
+# Runtime Session
+
+The Runtime Session is the authoritative in-memory representation of a running session.
+
+Everything currently visible belongs to Runtime Session.
+
+Every runtime mutation updates Runtime Session first.
+
+UI renders from Runtime Session.
 
 Save Session serializes Runtime Session.
 
 Undo restores Runtime Session.
 
-No runtime feature should reconstruct state by inspecting the DOM.
+The DOM is never treated as state.
 
 ---
 
-## Content vs Presentation
+# Runtime Ownership
 
-Content State and Presentation State are separate.
+Every runtime action updates Runtime Session.
+
+Examples include:
+
+- Master Shuffle
+- Panel Shuffle
+- Manual URL edits
+- Folder assignment
+- Position swaps
+- Kill panel
+- Launchpad
+- Runtime variables
+
+If the user can currently see it, Runtime Session owns it.
+
+---
+
+# Working Copies
+
+Launching a Workspace creates a working copy.
+
+The running Runtime Session is not the Workspace itself.
+
+It is an isolated execution copy.
+
+Changes remain local until the user explicitly saves.
+
+This applies equally to:
+
+- Saved Workspaces
+- The Live Builder
+
+Runtime must never silently modify its source Workspace.
+
+---
+
+# Runtime Boot
+
+Runtime copies its initial state exactly once.
+
+After initialization:
+
+Workspace is no longer consulted.
+
+Runtime owns itself.
+
+All subsequent changes belong only to Runtime Session.
+
+---
+
+# Content vs Presentation
+
+Content State and Presentation State are independent.
 
 Content includes:
 
+- Panels
 - URLs
 - Folder assignments
 - Collections
@@ -33,112 +112,112 @@ Content includes:
 
 Presentation includes:
 
-- Panel arrangement
 - Layout
+- Arrangement
 - Orientation
-- Visible positions
+- Visible screen positions
 
 Changing presentation must never require content to reload.
 
 ---
 
-## Panel Identity
+# Panel Identity
 
 A panel owns its content.
 
 A slot owns its position.
 
-Moving a panel between slots must never reload the iframe.
+A panel may move between slots without changing identity.
 
-Position swaps should only change presentation state.
+Position swaps modify presentation only.
 
----
-
-## Runtime Ownership
-
-Every runtime action must update Runtime Session.
-
-Examples:
-
-✓ Master Shuffle
-
-✓ Panel Shuffle
-
-✓ Manual URL
-
-✓ Folder Assignment
-
-✓ Position Swap
-
-✓ Kill Panel
-
-✓ Launchpad
-
-Everything that changes what the user is currently seeing belongs in Runtime Session.
+The panel itself never changes ownership.
 
 ---
 
-## Undo
+# Undo
 
 Undo is optional.
 
-Session synchronization is mandatory.
+Runtime synchronization is mandatory.
 
-Never couple the two.
+Undo must never become the mechanism that keeps Runtime synchronized.
+
+The Runtime Session is always updated regardless of whether Undo exists.
 
 ---
 
-## Workspace Editor
+# Serialization
 
-index.html is a design environment.
+Saving serializes Runtime Session.
 
-It never performs autonomous behavior.
+Loading reconstructs Runtime Session.
 
-It edits presets.
+Serialization never inspects:
+
+- DOM
+- Store
+- Workspace
+- UI
+
+Runtime already contains the complete answer.
+
+---
+
+# Workspace Editor
+
+The Workspace Editor is a design environment.
+
+It edits Workspaces.
 
 It does not execute them.
 
+It never performs autonomous behavior.
+
 ---
 
-## Runtime
+# Runtime
 
-index3.html is the execution environment.
+Runtime is the execution environment.
 
 Timers
 
 Automations
 
-Agents
-
 Runtime Events
+
+Agents
 
 Session State
 
-All live behavior belongs here.
+Live orchestration
+
+All runtime behavior belongs here.
 
 ---
 
-## Automations
+# Automations
 
-Automations may only execute inside Runtime.
+Automations execute only inside Runtime.
 
-The Workspace Editor never executes automations.
+The Workspace Editor never executes automation.
 
-A Workspace only becomes automatable once running inside Runtime.
+A Workspace becomes automatable only after Runtime has been launched.
 
 ---
 
-## Future Direction
+# Future Direction
 
-The Runtime Session will eventually contain:
+Runtime Session is expected to eventually own:
 
 - Panels
 - Layout
+- Arrangement
 - Collections
-- Timers
-- Automations
 - Runtime Variables
+- Timers
+- Runtime Events
 - Agents
 - Event Queue
 
-Everything live modifies this object.
+Everything that is alive belongs here.
