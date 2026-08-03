@@ -80,11 +80,6 @@
       },
       {
         "type": "url",
-        "source": "https://nowimhere3.github.io/gallery/index.html",
-        "options": {}
-      },
-      {
-        "type": "url",
         "source": "",
         "options": {}
       }
@@ -96,13 +91,12 @@
     },
     "lockState": {
       "0": 2,
-      "1": 2,
       "2": 2
     },
-    "rowCount": 4,
-    "streamCount": 3,
+    "rowCount": 3,
+    "streamCount": 2,
     "isEmpty": false,
-    "savedAt": "2026-08-03T20:04:38.720Z"
+    "savedAt": "2026-08-03T20:10:59.192Z"
   },
   {
     "id": 3,
