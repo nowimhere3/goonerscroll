@@ -180,7 +180,13 @@
   {
     "id": 5,
     "name": "Preset 5",
-    "panels": [],
+    "panels": [
+      {
+        "type": "url",
+        "source": "",
+        "options": {}
+      }
+    ],
     "folderMap": {
       "0": "CB___GB_",
       "1": "ChaterBate_FOLLOWED_1",
@@ -188,9 +194,9 @@
       "3": "Bjs"
     },
     "lockState": {},
-    "rowCount": 0,
+    "rowCount": 1,
     "streamCount": 0,
     "isEmpty": true,
-    "savedAt": "2026-08-28T00:54:24.460Z"
+    "savedAt": "2026-08-28T00:54:27.014Z"
   }
 ]
