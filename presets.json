@@ -188,6 +188,11 @@
       },
       {
         "type": "url",
+        "source": "https://nowimhere3.github.io/gallerytest/?launch=streamloop",
+        "options": {}
+      },
+      {
+        "type": "url",
         "source": "",
         "options": {}
       }
@@ -199,9 +204,9 @@
       "3": "Bjs"
     },
     "lockState": {},
-    "rowCount": 2,
-    "streamCount": 1,
+    "rowCount": 3,
+    "streamCount": 2,
     "isEmpty": false,
-    "savedAt": "2026-08-28T00:54:28.701Z"
+    "savedAt": "2026-08-28T00:54:30.596Z"
   }
 ]
