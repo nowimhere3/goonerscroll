@@ -223,14 +223,20 @@
   {
     "id": 7,
     "name": "Preset 7",
-    "panels": [],
+    "panels": [
+      {
+        "type": "url",
+        "source": "",
+        "options": {}
+      }
+    ],
     "folderMap": {},
     "lockState": {},
     "layout": null,
-    "rowCount": 0,
+    "rowCount": 1,
     "streamCount": 0,
     "isEmpty": true,
-    "savedAt": null
+    "savedAt": "2026-09-01T15:00:34.052Z"
   },
   {
     "id": 8,
