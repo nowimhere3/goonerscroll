@@ -234,13 +234,14 @@
       "2": "cleaned_bookmarks"
     },
     "lockState": {
-      "0": 1
+      "0": 1,
+      "1": 1
     },
     "layout": null,
     "rowCount": 3,
     "streamCount": 3,
     "isEmpty": false,
-    "savedAt": "2026-09-01T15:07:18.978Z"
+    "savedAt": "2026-09-01T15:07:21.215Z"
   },
   {
     "id": 7,
