@@ -228,7 +228,7 @@
       },
       {
         "type": "url",
-        "source": "https://nowimhere3.github.io/gallerytest/",
+        "source": "https://nowimhere3.github.io/gallerytest/?launch=streamloop",
         "options": {}
       },
       {
@@ -251,7 +251,7 @@
     "rowCount": 4,
     "streamCount": 4,
     "isEmpty": false,
-    "savedAt": "2026-09-01T22:31:57.981Z"
+    "savedAt": "2026-09-01T22:32:03.099Z"
   },
   {
     "id": 7,
