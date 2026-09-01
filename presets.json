@@ -226,17 +226,19 @@
     "panels": [
       {
         "type": "url",
-        "source": "",
+        "source": "https://nowimhere3.github.io/gallery/",
         "options": {}
       }
     ],
-    "folderMap": {},
+    "folderMap": {
+      "0": "CB___GB_"
+    },
     "lockState": {},
     "layout": null,
     "rowCount": 1,
-    "streamCount": 0,
-    "isEmpty": true,
-    "savedAt": "2026-09-01T15:00:34.052Z"
+    "streamCount": 1,
+    "isEmpty": false,
+    "savedAt": "2026-09-01T15:00:43.070Z"
   },
   {
     "id": 8,
