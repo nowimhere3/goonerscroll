@@ -223,22 +223,16 @@
   {
     "id": 7,
     "name": "Preset 7",
-    "panels": [
-      {
-        "type": "url",
-        "source": "https://nowimhere3.github.io/gallerytest/",
-        "options": {}
-      }
-    ],
+    "panels": [],
     "folderMap": {
       "0": "CB___GB_"
     },
     "lockState": {},
     "layout": null,
-    "rowCount": 1,
-    "streamCount": 1,
-    "isEmpty": false,
-    "savedAt": "2026-09-01T15:00:51.193Z"
+    "rowCount": 0,
+    "streamCount": 0,
+    "isEmpty": true,
+    "savedAt": "2026-09-01T15:01:34.033Z"
   },
   {
     "id": 8,
