@@ -226,17 +226,27 @@
     "panels": [
       {
         "type": "url",
-        "source": "https://chaturbate.com/followed-cams/",
+        "source": "",
+        "options": {}
+      },
+      {
+        "type": "url",
+        "source": "",
+        "options": {}
+      },
+      {
+        "type": "url",
+        "source": "",
         "options": {}
       }
     ],
     "folderMap": {},
     "lockState": {},
     "layout": null,
-    "rowCount": 1,
-    "streamCount": 1,
-    "isEmpty": false,
-    "savedAt": "2026-09-01T15:03:30.948Z"
+    "rowCount": 3,
+    "streamCount": 0,
+    "isEmpty": true,
+    "savedAt": "2026-09-01T15:03:44.518Z"
   },
   {
     "id": 8,
