@@ -223,16 +223,22 @@
   {
     "id": 7,
     "name": "Preset 7",
-    "panels": [],
+    "panels": [
+      {
+        "type": "url",
+        "source": "",
+        "options": {}
+      }
+    ],
     "folderMap": {
       "0": "CB___GB_"
     },
     "lockState": {},
     "layout": null,
-    "rowCount": 0,
+    "rowCount": 1,
     "streamCount": 0,
     "isEmpty": true,
-    "savedAt": "2026-09-01T15:01:37.290Z"
+    "savedAt": "2026-09-01T15:01:39.482Z"
   },
   {
     "id": 8,
