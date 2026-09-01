@@ -223,14 +223,20 @@
   {
     "id": 7,
     "name": "Preset 7",
-    "panels": [],
+    "panels": [
+      {
+        "type": "url",
+        "source": "https://chaturbate.com/followed-cams/",
+        "options": {}
+      }
+    ],
     "folderMap": {},
     "lockState": {},
     "layout": null,
-    "rowCount": 0,
-    "streamCount": 0,
-    "isEmpty": true,
-    "savedAt": "2026-09-01T15:03:18.241Z"
+    "rowCount": 1,
+    "streamCount": 1,
+    "isEmpty": false,
+    "savedAt": "2026-09-01T15:03:30.948Z"
   },
   {
     "id": 8,
