@@ -250,7 +250,7 @@
     "panels": [
       {
         "type": "url",
-        "source": "",
+        "source": "https://youtube",
         "options": {}
       }
     ],
@@ -258,8 +258,8 @@
     "lockState": {},
     "layout": null,
     "rowCount": 1,
-    "streamCount": 0,
-    "isEmpty": true,
-    "savedAt": "2026-09-01T02:51:36.378Z"
+    "streamCount": 1,
+    "isEmpty": false,
+    "savedAt": "2026-09-01T02:51:46.035Z"
   }
 ]
