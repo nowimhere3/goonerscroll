@@ -246,13 +246,13 @@
     },
     "lockState": {
       "1": 1,
-      "2": 2
+      "2": 0
     },
     "layout": "lefttall",
     "rowCount": 4,
     "streamCount": 4,
     "isEmpty": false,
-    "savedAt": "2026-09-09T07:43:34.167Z"
+    "savedAt": "2026-09-09T07:43:38.950Z"
   },
   {
     "id": 7,
